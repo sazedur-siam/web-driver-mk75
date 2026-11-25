@@ -181,7 +181,14 @@ select {
 
 .pill { padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
 .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
-.pill.demo, .pill.low { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.pill.demo { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+
+.batt { display: inline-flex; align-items: center; gap: 0.5em; color: var(--text); line-height: 1; vertical-align: middle; }
+.batt-body { position: relative; box-sizing: border-box; width: 2.4em; height: 1.25em; padding: 0.12em; border: 0.14em solid currentColor; border-radius: 0.32em; }
+.batt-body::after { content: ''; position: absolute; right: -0.34em; top: 50%; transform: translateY(-50%); width: 0.18em; height: 0.5em; border-radius: 0 0.1em 0.1em 0; background: currentColor; }
+.batt-fill { display: block; height: 100%; border-radius: 0.12em; background: var(--ok); }
+.batt.low .batt-fill { background: var(--danger); }
+.batt.low b { color: var(--danger); }
 
 .banner { padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); position: relative; }
 .banner.busy { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
