@@ -229,7 +229,15 @@ export default function App() {
         </>
       )}
       <footer className="muted small">
-        Not affiliated with Lingbao. Protocol reverse-engineered from the official LINGBAO Keyboard Driver v2.0 for Windows. Use at your own risk.
+        <p className="made-in">
+          Made in Bangladesh
+          {/* Flag of Bangladesh (10:6, red disc offset towards the hoist). Drawn as SVG because Windows shows flag emoji as letters. */}
+          <svg className="bd-flag" viewBox="0 0 10 6" width="20" height="12" role="img" aria-label="Flag of Bangladesh">
+            <rect width="10" height="6" fill="#006a4e" />
+            <circle cx="4.5" cy="3" r="2" fill="#f42a41" />
+          </svg>
+        </p>
+        <p>Not affiliated with Lingbao. Protocol reverse-engineered from the official LINGBAO Keyboard Driver v2.0 for Windows. Use at your own risk.</p>
       </footer>
     </div>
   );
