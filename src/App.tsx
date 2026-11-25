@@ -32,8 +32,8 @@ export default function App() {
             <path d="M6 10h1M9 10h1M12 10h1M15 10h1M18 10h1M7 14h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
           </svg>
           <div>
-            <h1>AU75 Web Driver</h1>
-            <p className="muted small">Unofficial WebHID port of the AULA AU75 configuration tool</p>
+            <h1>Lingbao MK75 Driver</h1>
+            <p className="muted small">Unofficial web-based configuration tool for the MK75 keyboard</p>
           </div>
         </div>
         <div className="conn">
@@ -68,12 +68,12 @@ export default function App() {
       {!api.dev ? (
         <main className="welcome">
           <section className="card">
-            <h2>Connect your AULA AU75</h2>
+            <h2>Connect your MK75</h2>
             <ol>
               <li>Plug the keyboard in with the USB cable. The 2.4 GHz dongle and Bluetooth aren't supported.</li>
               <li>Switch it to Windows mode with <kbd>Fn</kbd>+<kbd>W</kbd>, as the vendor tool requires.</li>
               <li>
-                Click <b>Connect keyboard</b> and pick <span className="mono">AU75</span> (USB ID 258A:010C) in the browser dialog. If several
+                Click <b>Connect keyboard</b> and pick the keyboard (USB ID <span className="mono">258A:010C</span>) in the browser dialog. If several
                 entries appear, pick any one; the app opens the vendor interfaces it needs.
               </li>
               <li>Download a backup from the <b>Backup &amp; log</b> tab before changing anything.</li>

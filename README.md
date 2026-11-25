@@ -1,9 +1,9 @@
-# AU75 Web Driver
+# Lingbao MK75 Driver
 
-A browser-based (WebHID) replacement for the AULA AU75 Windows configuration tool. It runs in
+A browser-based (WebHID) configuration tool for the MK75 keyboard (USB `258A:010C`, the same board and protocol as the AULA AU75). It runs in
 Chrome, Edge or Opera on Windows, macOS, Linux and ChromeOS, with nothing to install.
 
-> Unofficial. The protocol was reverse-engineered from the vendor driver (see [PROTOCOL.md](PROTOCOL.md)).
+> Unofficial. The protocol was reverse-engineered from the AULA AU75 vendor driver (see [PROTOCOL.md](PROTOCOL.md)).
 > **Download a backup before changing anything.**
 
 ## Features
@@ -32,8 +32,8 @@ WebHID needs a secure context: `localhost` or HTTPS.
 
 ## Using it
 
-1. Connect the AU75 with the **USB cable** and press **Fn+W** (Windows mode).
-2. Click **Connect keyboard** and choose the AU75 (`258A:010C`).
+1. Connect the MK75 with the **USB cable** and press **Fn+W** (Windows mode).
+2. Click **Connect keyboard** and choose the keyboard (`258A:010C`).
 3. **Backup & log → Download backup.**
 4. Make changes. Every *Save* does a read-modify-write and reads the result back from the keyboard.
 
@@ -41,7 +41,7 @@ WebHID needs a secure context: `localhost` or HTTPS.
 
 ```bash
 echo 'KERNEL=="hidraw*", ATTRS{idVendor}=="258a", ATTRS{idProduct}=="010c", MODE="0660", TAG+="uaccess"' \
-  | sudo tee /etc/udev/rules.d/70-aula-au75.rules
+  | sudo tee /etc/udev/rules.d/70-mk75.rules
 sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
 

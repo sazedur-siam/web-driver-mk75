@@ -50,7 +50,7 @@ export class WebHidTransport implements FeatureTransport {
   }
 
   get name(): string {
-    return this.devices[0]?.productName || 'AULA AU75';
+    return this.devices[0]?.productName || 'MK75';
   }
 
   static isSupported(): boolean {

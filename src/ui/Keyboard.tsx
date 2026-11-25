@@ -64,7 +64,7 @@ export function Keyboard({ selected, onSelect, fill, sublabel, multi, highlight 
       onPointerMove={onMove}
       onPointerUp={onUp}
       role="group"
-      aria-label="AU75 keyboard layout"
+      aria-label="MK75 keyboard layout"
     >
       <rect className="kb-case" x={VB.x + 1} y={VB.y + 1} width={VB.w - 2} height={VB.h - 2} rx={10} />
       {AU75_KEYS.map((k) => {

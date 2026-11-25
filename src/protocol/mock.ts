@@ -24,7 +24,7 @@ export function vkToHid(vk: number): number | undefined {
 }
 
 export class MockAu75 implements FeatureTransport {
-  readonly name = 'Simulated AU75';
+  readonly name = 'Simulated MK75';
   profile = new Uint8Array(PROFILE_LEN);
   matrix = new Uint8Array(PAGE_LEN);
   rgbTable = new Uint8Array(PAGE_LEN);

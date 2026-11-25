@@ -33,7 +33,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
     const url = URL.createObjectURL(new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = `au75-backup-${b.created.slice(0, 19).replace(/[:T]/g, '-')}.json`;
+    a.download = `mk75-backup-${b.created.slice(0, 19).replace(/[:T]/g, '-')}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -42,7 +42,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
     if (!f) return;
     try {
       const b = JSON.parse(await f.text()) as BackupFile;
-      if (b.format !== 'au75-web-driver-backup') throw new Error('Not an AU75 web-driver backup file');
+      if (b.format !== 'au75-web-driver-backup') throw new Error('Not a Lingbao MK75 Driver backup file');
       if (fromHexStr(b.profile).length !== PROFILE_LEN || fromHexStr(b.keyMatrix).length !== PAGE_LEN || fromHexStr(b.rgbTable).length !== PAGE_LEN)
         throw new Error('Backup file is truncated or corrupted');
       setPending(b);
