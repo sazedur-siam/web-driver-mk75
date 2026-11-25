@@ -230,7 +230,7 @@ export default function App() {
       )}
       <footer className="muted small">
         <p className="made-in">
-          Made in Bangladesh
+          Ported in Bangladesh
           {/* Flag of Bangladesh (10:6, red disc offset towards the hoist). Drawn as SVG because Windows shows flag emoji as letters. */}
           <svg className="bd-flag" viewBox="0 0 10 6" width="20" height="12" role="img" aria-label="Flag of Bangladesh">
             <rect width="10" height="6" fill="#006a4e" />
