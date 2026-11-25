@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { WebHidTransport } from './protocol/transport';
 import { BackupTab } from './ui/BackupTab';
 import { DeviceTab } from './ui/DeviceTab';
+import { GuideView } from './ui/GuideView';
 import { LiveTab } from './ui/LiveTab';
 import { MacrosTab } from './ui/MacrosTab';
 import { KeymapTab } from './ui/KeymapTab';
@@ -66,6 +67,7 @@ export default function App() {
   const api = useDevice();
   const [tab, setTab] = useState<Tab>('Lighting');
   const [testerOnly, setTesterOnly] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
   const pwa = usePwa();
   useEffect(() => {
     void loadPresetFromHash();
@@ -105,6 +107,9 @@ export default function App() {
         </div>
         <div className="conn">
           <ThemeSwitch />
+          <button className={guideOpen ? 'primary' : ''} onClick={() => setGuideOpen(!guideOpen)} aria-pressed={guideOpen}>
+            Guide
+          </button>
           {pwa.canInstall && (
             <button onClick={pwa.install} title="Install as an app (opens in its own window, works offline)">
               Install app
@@ -154,7 +159,9 @@ export default function App() {
         </div>
       )}
 
-      {!api.dev && testerOnly ? (
+      {guideOpen ? (
+        <GuideView onClose={() => setGuideOpen(false)} />
+      ) : !api.dev && testerOnly ? (
         <main className="stack">
           <button onClick={() => setTesterOnly(false)} style={{ alignSelf: 'flex-start' }}>
             ← Back
@@ -195,6 +202,10 @@ export default function App() {
             <div className="row">
               <span className="muted small">Just swapped switches?</span>
               <button onClick={() => setTesterOnly(true)}>Open key tester</button>
+            </div>
+            <div className="row">
+              <span className="muted small">New here?</span>
+              <button onClick={() => setGuideOpen(true)}>How to use (manual)</button>
             </div>
             {!supported && (
               <p className="banner err">
