@@ -4,6 +4,7 @@ import { BackupTab } from './ui/BackupTab';
 import { DeviceTab } from './ui/DeviceTab';
 import { GuideView } from './ui/GuideView';
 import { ReportDialog } from './ui/ReportDialog';
+import { ContributeDialog } from './ui/ContributeDialog';
 import { LiveTab } from './ui/LiveTab';
 import { MacrosTab } from './ui/MacrosTab';
 import { KeymapTab } from './ui/KeymapTab';
@@ -72,6 +73,7 @@ export default function App() {
   const [testerOnly, setTesterOnly] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [contributeOpen, setContributeOpen] = useState(false);
   useEffect(() => {
     const open = () => setReportOpen(true);
     window.addEventListener('mk75:report', open);
@@ -258,10 +260,14 @@ export default function App() {
         </>
       )}
       {reportOpen && <ReportDialog api={api} onClose={() => setReportOpen(false)} />}
+      {contributeOpen && <ContributeDialog api={api} onClose={() => setContributeOpen(false)} />}
       <footer className="muted small">
         <p>
           <button className="report-btn" onClick={() => setReportOpen(true)}>
             Report an Issue
+          </button>{' '}
+          <button className="report-btn" onClick={() => setContributeOpen(true)}>
+            Contribute device data
           </button>
         </p>
         <p className="made-in">

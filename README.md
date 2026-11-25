@@ -123,6 +123,9 @@ hardware. They are hidden on the live site and only appear when you run it local
   keyboard drawing (with knob, mode switch and indicator LEDs) recolours to match.
 - **Report an Issue:** a short form (title, what happened, steps, expected, optional diagnostics) that opens a
   pre-filled GitHub issue. Screenshots are pasted on GitHub. Needs a free GitHub account.
+- **Contribute device data:** saves one JSON file (HID interface layout, keyboard settings, configuration
+  traffic) to attach to a GitHub issue, so more firmware variants and modes can be supported. Never includes
+  typing or macro contents. Full list: [DEVICE_DATA.md](DEVICE_DATA.md).
 - **Installable (PWA):** an *Install app* button, works offline, shows an update notice after a new version is
   deployed, and reconnects to previously allowed keyboards in one click.
 

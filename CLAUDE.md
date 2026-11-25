@@ -196,7 +196,8 @@ src/protocol/            pure logic + device I/O (unit-tested, no React)
 src/device/              mk75Layout.ts (generated from KB.ini), mk75Units.ts (unit files), codeMap.ts
 src/ui/                  React tabs + browser stores (profileStore, macroStore, effectStore, perKeyStore,
                          presetStore), applyProfile.ts, saveKeys.ts, useDevice.ts, ticker.ts, pwa.ts,
-                         guide.ts/GuideView.tsx (MANUAL/README reader), report.ts/ReportDialog.tsx
+                         guide.ts/GuideView.tsx (MANUAL/README reader), report.ts/ReportDialog.tsx,
+                         contribute.ts/ContributeDialog.tsx (device-data JSON; contents in DEVICE_DATA.md)
 src/presets/gallery.ts   bundled presets
 public/                  manifest, sw.js (cache name `mk75-vN`), icons, manual/*.webp screenshots
 ```
