@@ -57,7 +57,7 @@ The `sub` bytes look like flash page addresses (`0xB600`, `0xB800`, `0xBC00`, `0
 |---|---|
 | `0x04` | 1 if the active effect is Self-define (`GaoshouIndex`=18), else 0 |
 | `0x05` | hardware effect ID (`LedOptN` first column) |
-| `0x06` | custom colour group = `StartGp` + group (0) |
+| `0x06` | custom colour group = `StartGp` + group (`0x20` on MK75; `0` on AU75) |
 | `0x11` | sleep code, written only if `ShowSleep` (AU75: off) |
 | `0x14`, `0x15` | always `0xFF` |
 | `0x16+2i` | effect *i* colour: palette index 0–6, or `RandomVal` (7) = colourful |

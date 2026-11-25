@@ -5,7 +5,7 @@
 import { MK75_KEYS } from '../device/mk75Layout';
 import { DATA_FRAME_LEN, DATA_HEADER_LEN, PAGE_LEN, PROFILE_LEN, REPORT_CMD, REPORT_DATA, REPORT_STREAM, STREAM_LEN } from './mk75';
 import { encodeAction } from './keycodes';
-import { LED_MATRIX_LEN, LED_MODES, RGB_TABLE_STRIDE } from './lighting';
+import { CUSTOM_GROUP, LED_MATRIX_LEN, LED_MODES, RGB_TABLE_STRIDE } from './lighting';
 import type { FeatureTransport } from './transport';
 
 const VK_TO_HID: Record<number, number> = {
@@ -40,6 +40,7 @@ export class MockMk75 implements FeatureTransport {
   constructor() {
     // Plausible factory defaults: Fixed on, full brightness, red.
     this.profile[0x05] = 1;
+    this.profile[0x06] = CUSTOM_GROUP;
     this.profile[0x11] = 4; // sleep after 120 s (vendor SleepTime default)
     this.profile[0x14] = this.profile[0x15] = 0xff;
     LED_MODES.forEach((_, i) => {

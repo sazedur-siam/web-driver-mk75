@@ -5,7 +5,7 @@
  * Profile block (254 bytes, op 0x83/0x03 sub 0xB6) — fields the vendor driver touches:
  *   [0x04]            1 when the active mode is "Self-define" (per-key custom colours), else 0
  *   [0x05]            hardware effect ID of the active mode
- *   [0x06]            custom colour group (StartGp + group, 0 on AU75)
+ *   [0x06]            custom colour group (StartGp + group, 0x20 on MK75)
  *   [0x11]            sleep timer code (only when the INI enables ShowSleep; AU75 does not)
  *   [0x14],[0x15]     always written as 0xFF
  *   [0x16 + 2*i]      mode i colour byte: palette index 0..6, or 7 (RandomVal) = colourful
@@ -83,6 +83,8 @@ export const PER_MODE_SLOTS = LED_MODES.filter((m) => !m.hidden).length; // 17
 
 /** GaoshouIndex in KB.ini: the per-key custom ("Self-define") mode. */
 export const CUSTOM_MODE_INDEX = 18;
+/** Custom colour group (StartGp + group); confirmed 0x20 on MK75 hardware. */
+export const CUSTOM_GROUP = 0x20;
 /** RandomVal default in the vendor driver (not overridden by AU75's INI). */
 export const RANDOM_COLOR_CODE = 7;
 export const LEVELS = 5; // Light=0..4, Speed=0..4
@@ -132,7 +134,7 @@ export function patchProfile(original: Uint8Array, state: LightingState): Uint8A
   const mode = LED_MODES[state.activeIndex];
   p[P_CUSTOM] = state.activeIndex === CUSTOM_MODE_INDEX ? 1 : 0;
   p[P_MODE] = mode.hw;
-  p[P_GROUP] = 0; // StartGp(0) + group 0 (AU75 has a single colour group)
+  p[P_GROUP] = CUSTOM_GROUP;
   p[0x14] = 0xff;
   p[0x15] = 0xff;
   state.perMode.forEach((s, i) => {

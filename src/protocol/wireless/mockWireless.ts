@@ -1,5 +1,6 @@
 /** In-memory MK75 behind a 2.4 GHz receiver, speaking the 20-byte packet protocol. */
 import { MK75_KEYS } from '../../device/mk75Layout';
+import { CUSTOM_GROUP } from '../lighting';
 import { vkToHid } from '../mock';
 import type { ReportIO } from './link';
 import { buildPacket, chunk, checksum, parsePacket, WCmd } from './packet';
@@ -21,6 +22,7 @@ export class MockWirelessIO implements ReportIO {
 
   constructor() {
     this.led[0x0a] = 1; // Fixed on
+    this.led[0x0b] = CUSTOM_GROUP;
     this.led[0x16] = 1;
     this.led[0x18] = 4; // sleep 120 s
     this.led[0x38] = this.led[0x39] = 0xff;

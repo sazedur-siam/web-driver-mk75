@@ -93,9 +93,9 @@ export class Mk75Wireless implements Mk75Device {
     const raw = await this.readLedRaw();
     const prev = this.ledView ?? (await this.readProfile());
     const changed = (o: number) => p[o] !== prev[o];
-    if (changed(0x04)) raw[0x09] = p[0x04];
-    if (changed(0x05)) raw[0x0a] = p[0x05];
-    if (changed(0x06)) raw[0x0b] = p[0x06];
+    raw[0x09] = p[0x04];
+    raw[0x0a] = p[0x05];
+    raw[0x0b] = p[0x06];
     if (changed(0x11)) {
       if (p[0x11] === 0xff) {
         raw[0x16] = 0;
