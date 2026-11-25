@@ -5,7 +5,7 @@ import { renderGuide } from './guide';
 
 const DOCS = [
   { id: 'manual', title: 'User manual', md: manual },
-  { id: 'readme', title: 'README', md: readme },
+  { id: 'readme', title: 'About', md: readme },
 ] as const;
 type DocId = (typeof DOCS)[number]['id'];
 
