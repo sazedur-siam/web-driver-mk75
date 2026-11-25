@@ -23,7 +23,9 @@ Windows, macOS, Linux and ChromeOS. There's nothing to install, and you can also
 4. Go to **Backup & log → Download backup**.
 5. Make changes. Every *Save* writes to the keyboard's memory, where it stays after you close the tab.
 
-No keyboard handy? Use **Simulator (USB)** or **Simulator (2.4 GHz)** on the start screen.
+**Simulators (developers only).** The app has a USB and a 2.4 GHz keyboard simulator for testing without
+hardware. They are hidden on the live site and only appear when you run it locally with `npm run dev`
+(**Simulator (USB)** / **Simulator (2.4 GHz)** on the start screen). The unit tests (`npm test`) also use them.
 
 ---
 
