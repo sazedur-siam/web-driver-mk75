@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Battery } from './battery';
 import type { DeviceApi } from './useDevice';
 
 /** Sleep timer: profile[0x11] = 0xFF (off) or seconds/30 (vendor default SleepUI/SleepHW tables). */
@@ -46,16 +47,12 @@ const SHORTCUTS: [string, string, boolean?][] = [
   ['Fn + Esc (hold)', 'Factory reset', true],
 ];
 
-export function DeviceTab({ api }: { api: DeviceApi }) {
+export function DeviceTab({ api, battery }: { api: DeviceApi; battery: Battery | null }) {
   const { snap, dev, modelId } = api;
   const current = snap?.profile[P_SLEEP] ?? 0xff;
   const [sleep, setSleep] = useState(current);
   useEffect(() => setSleep(current), [current]);
-  const [battery, setBattery] = useState<{ level: number; charging: boolean } | null>(null);
-  useEffect(() => {
-    if (!dev?.caps.battery || !dev.readBattery) return;
-    dev.readBattery().then(setBattery).catch(() => setBattery(null));
-  }, [dev]);
+  const [notify, setNotify] = useState(() => ('Notification' in window ? Notification.permission : 'denied'));
   if (!snap || !dev) return null;
 
   const known = SLEEP_OPTIONS.some((o) => o.code === current);
@@ -94,6 +91,11 @@ export function DeviceTab({ api }: { api: DeviceApi }) {
                 <dt>Battery</dt>
                 <dd>
                   {battery.level}%{battery.charging ? ' · charging' : ''}
+                  {notify === 'default' && (
+                    <button className="small" style={{ marginLeft: 8 }} onClick={() => void Notification.requestPermission().then(setNotify)}>
+                      Notify me when low
+                    </button>
+                  )}
                 </dd>
               </div>
             )}
