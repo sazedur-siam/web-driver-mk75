@@ -4,7 +4,7 @@ A browser-based configuration app for the **Lingbao MK75** keyboard. It covers e
 "LINGBAO Keyboard Driver" does, adds features the official app doesn't have, and runs in Chrome, Edge or Opera on
 Windows, macOS, Linux and ChromeOS. There's nothing to install, and you can also install it as an app.
 
-**Live app:** https://mk75-web.vercel.app/
+**Live app:** https://mk75-web.vercel.app/ · **New here?** Read the [user manual](MANUAL.md) (also in the app under **Guide**).
 
 > Unofficial and not affiliated with Lingbao. The protocol was reverse-engineered from the official driver
 > (see [PROTOCOL.md](PROTOCOL.md)). **Download a backup before changing anything.**
@@ -156,6 +156,19 @@ the keyboard can't run them by itself.
 - **Firmware version display:** only reported in the USB descriptor, which browsers can't read.
 - **Per-app profiles:** a web page can't see which app is in focus.
 - **Background live effects:** they stop when the page is closed.
+
+## Planned features
+
+Not built yet. Most need testing on a real MK75 first. Details are in [features/](features/README.md).
+
+| Feature | What it will do | Status |
+|---|---|---|
+| **Macros over 2.4 GHz / Bluetooth** | Write macros without the cable, and read them back from the keyboard | Needs the wireless macro format finished, then hardware testing |
+| **Fn-layer remapping** | Change what Fn + key does, with one-click "restore Fn defaults" | Needs hardware reads to confirm the layer layout (likely over 2.4 GHz first) |
+| **Knob remapping** | Choose what the knob does (volume, brightness, scroll…) | Needs hardware testing of the knob's function codes |
+| **Debounce setting** | Adjust switch debounce to fix chatter | Needs hardware testing (wireless only; the wired protocol doesn't send it) |
+| **Low-battery alerts** | Battery icon in the header and a notification below 20 % / 10 % | Depends on which receiver type the MK75 ships with |
+| **Desktop tray app** | Run live effects and music sync with no browser open, using system audio directly | Planned as a separate Electron app sharing this codebase |
 
 ---
 
