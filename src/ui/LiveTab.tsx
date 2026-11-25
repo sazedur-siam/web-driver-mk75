@@ -5,6 +5,7 @@ import { fromHex, hex, type RGB } from '../protocol/lighting';
 import { compose, frameToFill, MUSIC_MODES, MusicVisualizer, RT_MODES, RtEffect, type ColorSource, type MusicMode, type RtMode } from '../protocol/live';
 import { vkToHid } from '../protocol/mock';
 import { Keyboard } from './Keyboard';
+import { startTicker } from './ticker';
 import type { DeviceApi } from './useDevice';
 
 const FRAME_MS = 30; // ~33 fps (vendor streams ~50 fps)
@@ -76,7 +77,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
     const t0 = performance.now();
     const perkey = loadPerKey();
     const bins = new Uint8Array(128);
-    const id = window.setInterval(async () => {
+    const ticker = startTicker(FRAME_MS, async () => {
       if (busy) return; // never queue frames behind a slow USB write
       busy = true;
       try {
@@ -109,8 +110,8 @@ export function LiveTab({ api }: { api: DeviceApi }) {
       } finally {
         busy = false;
       }
-    }, FRAME_MS);
-    return () => window.clearInterval(id);
+    });
+    return () => ticker.stop();
   }, [running, dev, api]);
 
   // Leaving the tab stops streaming; restore the saved effect if we were live.
