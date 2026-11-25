@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MK75_KEYS } from '../device/mk75Layout';
 import { buildLedMatrix, CUSTOM_MODE_INDEX, fromHex, hex, parseProfile, patchProfile, type RGB } from '../protocol/lighting';
 import { COLOURWAY_FILLS, colourwayFill, gradient, REGIONS, type GradientDir } from '../protocol/perKeyTools';
+import { ImageToKeys } from './ImageToKeys';
 import { Keyboard } from './Keyboard';
 import { loadPerKey, savePerKey } from './perKeyStore';
 import { shareLink } from './presetStore';
@@ -185,6 +186,7 @@ export function PerKeyTab({ api }: { api: DeviceApi }) {
           The keyboard can't send this table back, so the editor keeps your last layout in this browser. LEDs show saturated colours best.
         </p>
       </section>
+      <ImageToKeys api={api} onSaved={update} />
     </div>
   );
 }
