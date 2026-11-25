@@ -139,9 +139,11 @@ export default function App() {
               <button className={canReconnect ? '' : 'primary'} onClick={api.connect} disabled={!supported || !!api.busy}>
                 Connect keyboard
               </button>
-              <button onClick={() => api.connectDemo('wired')} disabled={!!api.busy}>
-                Try simulator
-              </button>
+              {import.meta.env.DEV && (
+                <button onClick={() => api.connectDemo('wired')} disabled={!!api.busy}>
+                  Try simulator
+                </button>
+              )}
             </>
           )}
         </div>
@@ -197,15 +199,17 @@ export default function App() {
               Everything works over the cable. Over 2.4 GHz / Bluetooth: lighting, per-key colours, live effects and key mapping work;
               macros need the cable for now.
             </p>
-            <div className="row">
-              <span className="muted small">No keyboard handy?</span>
-              <button onClick={() => api.connectDemo('wired')} disabled={!!api.busy}>
-                Simulator (USB)
-              </button>
-              <button onClick={() => api.connectDemo('wireless')} disabled={!!api.busy}>
-                Simulator (2.4 GHz)
-              </button>
-            </div>
+            {import.meta.env.DEV && (
+              <div className="row">
+                <span className="muted small">No keyboard handy?</span>
+                <button onClick={() => api.connectDemo('wired')} disabled={!!api.busy}>
+                  Simulator (USB)
+                </button>
+                <button onClick={() => api.connectDemo('wireless')} disabled={!!api.busy}>
+                  Simulator (2.4 GHz)
+                </button>
+              </div>
+            )}
             <div className="row">
               <span className="muted small">Just swapped switches?</span>
               <button onClick={() => setTesterOnly(true)}>Open key tester</button>

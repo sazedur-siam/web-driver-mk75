@@ -66,7 +66,7 @@ export function SharedPresetBanner({ api }: { api: DeviceApi }) {
           Save as profile
         </button>
         <button onClick={() => presetStore.dismiss()}>Dismiss</button>
-        {!dev && <span className="hint">Connect your MK75 (or a simulator) to apply or save this preset.</span>}
+        {!dev && <span className="hint">Connect your MK75 to apply or save this preset.</span>}
       </div>
     </section>
   );

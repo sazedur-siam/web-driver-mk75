@@ -34,7 +34,7 @@ features. No technical knowledge needed.
 **Next time**, just click **Reconnect MK75** on the start page. No list to choose from.
 
 ![Start page with the Connect keyboard button](public/manual/start.webp)
-*The start page: click Connect keyboard (top right). No keyboard? Try a Simulator first.*
+*The start page: click Connect keyboard (top right).*
 
 ### With the 2.4 GHz receiver
 
