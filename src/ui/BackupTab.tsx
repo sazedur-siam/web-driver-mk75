@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { PAGE_LEN, PROFILE_LEN } from '../protocol/mk75';
+import { effectStore } from './effectStore';
 import { macroStore } from './macroStore';
 import { profileStore, validateProfile, type Profile } from './profileStore';
 import { withMacroCodes } from './saveKeys';
@@ -19,6 +20,8 @@ interface BackupFile {
   macros?: ReturnType<typeof macroStore.get>;
   /** Saved profiles (browser only). */
   profiles?: Profile[];
+  /** Custom live effects (browser only). */
+  effects?: ReturnType<typeof effectStore.get>;
 }
 
 export function BackupTab({ api }: { api: DeviceApi }) {
@@ -38,6 +41,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
       rgbTable: toHex(snap.rgbTable),
       macros: macroStore.get(),
       profiles: profileStore.get().profiles,
+      effects: effectStore.get(),
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
@@ -64,6 +68,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
     pending &&
     api.run('Restoring backup', async () => {
       if (pending.macros?.macros) macroStore.replaceAll(pending.macros);
+      if (Array.isArray(pending.effects) && pending.effects.length) effectStore.replaceAll(pending.effects);
       if (Array.isArray(pending.profiles) && pending.profiles.length) profileStore.replaceAll(pending.profiles.map(validateProfile));
       await dev.writeRgbTable(fromHexStr(pending.rgbTable));
       // Macro pages first (ids are re-planned deterministically in key order), then the matrix.

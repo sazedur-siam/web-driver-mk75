@@ -4,6 +4,9 @@ import { compose, frameToFill, MUSIC_MODES, MusicVisualizer, RT_MODES, RtEffect,
 import { keyIndexForCode } from '../device/codeMap';
 import { SCREEN_MODES, ScreenSync, type ScreenMode } from '../protocol/screenSync';
 import { batteryColours, clockColours, coloursToFrame, timerColours } from '../protocol/signals';
+import { renderEffect } from '../protocol/effectDesigner';
+import { EffectDesigner } from './EffectDesigner';
+import { effectStore } from './effectStore';
 import { Keyboard } from './Keyboard';
 import { loadPerKey, perKeyMap } from './perKeyStore';
 import { startTicker } from './ticker';
@@ -18,7 +21,9 @@ type Source = 'solid' | 'rainbow' | 'perkey';
 
 export function LiveTab({ api }: { api: DeviceApi }) {
   const { dev, snap } = api;
-  const [kind, setKind] = useState<'effects' | 'music' | 'screen' | 'signals'>('effects');
+  const [kind, setKind] = useState<'effects' | 'music' | 'screen' | 'signals' | 'custom'>('effects');
+  const [customId, setCustomId] = useState(() => effectStore.get()[0].id);
+  const pressedAt = useRef(new Map<number, number>());
   const [signal, setSignal] = useState<'timer' | 'clock' | 'battery'>('timer');
   const [timerMin, setTimerMin] = useState(25);
   const [battery, setBattery] = useState<{ level: number; charging: boolean } | null>(null);
@@ -47,8 +52,8 @@ export function LiveTab({ api }: { api: DeviceApi }) {
   const sync = useRef(new ScreenSync());
   Object.assign(sync.current, { mode: screenMode, smooth: screenSmooth, saturation });
   const music = useRef(new MusicVisualizer(musicMode, gain, smooth, autoGain));
-  const cfg = useRef({ kind, source, color, brightness, signal, timerMin, battery });
-  cfg.current = { kind, source, color, brightness, signal, timerMin, battery };
+  const cfg = useRef({ kind, source, color, brightness, signal, timerMin, battery, customId });
+  cfg.current = { kind, source, color, brightness, signal, timerMin, battery, customId };
   effect.current.mode = rtMode;
   effect.current.speed = speed;
   Object.assign(music.current, { mode: musicMode, gain, smooth, autoGain });
@@ -58,7 +63,10 @@ export function LiveTab({ api }: { api: DeviceApi }) {
     if (!running) return;
     const kd = (e: KeyboardEvent) => {
       const led = keyIndexForCode(e.code);
-      if (led !== undefined) effect.current.press(led);
+      if (led !== undefined) {
+        effect.current.press(led);
+        pressedAt.current.set(led, performance.now() / 1000);
+      }
     };
     window.addEventListener('keydown', kd);
     return () => window.removeEventListener('keydown', kd);
@@ -86,7 +94,10 @@ export function LiveTab({ api }: { api: DeviceApi }) {
           c.source === 'solid' ? { kind: 'solid', color: fromHex(c.color) } : c.source === 'perkey' ? { kind: 'perkey', colors: perkey, fallback: fromHex(c.color) } : { kind: 'rainbow' };
         let frame: Uint8Array;
         const bg = c.source === 'solid' ? fromHex(c.color) : ([60, 120, 90] as [number, number, number]);
-        if (c.kind === 'signals') {
+        if (c.kind === 'custom') {
+          const fx = effectStore.get().find((e) => e.id === c.customId) ?? effectStore.get()[0];
+          frame = coloursToFrame(renderEffect(fx, performance.now() / 1000, pressedAt.current), c.brightness);
+        } else if (c.kind === 'signals') {
           if (c.signal === 'timer') {
             const total = c.timerMin * 60_000;
             const el = performance.now() - t0;
@@ -304,8 +315,13 @@ export function LiveTab({ api }: { api: DeviceApi }) {
             <button role="tab" aria-selected={kind === 'signals'} className={kind === 'signals' ? 'on' : ''} onClick={() => setKind('signals')}>
               Signals
             </button>
+            <button role="tab" aria-selected={kind === 'custom'} className={kind === 'custom' ? 'on' : ''} onClick={() => setKind('custom')}>
+              Custom
+            </button>
           </div>
-          {kind === 'signals' ? (
+          {kind === 'custom' ? (
+            <EffectDesigner selectedId={customId} onSelect={setCustomId} />
+          ) : kind === 'signals' ? (
             <>
               <div className="modes">
                 {(
@@ -391,8 +407,8 @@ export function LiveTab({ api }: { api: DeviceApi }) {
 
         <section className="card">
           <h2>Colour</h2>
-          {kind === 'screen' ? (
-            <p className="muted small">Colours come from the shared screen.</p>
+          {kind === 'screen' || kind === 'custom' ? (
+            <p className="muted small">{kind === 'screen' ? 'Colours come from the shared screen.' : 'Colours are set per layer in the designer.'}</p>
           ) : (
             <>
           <div className="seg">
