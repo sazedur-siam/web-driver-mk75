@@ -7,11 +7,14 @@ import { Mk75 } from '../protocol/mk75';
 import { WirelessLink } from '../protocol/wireless/link';
 import { MockWirelessIO } from '../protocol/wireless/mockWireless';
 import { Mk75Wireless } from '../protocol/wireless/mk75Wireless';
+import { toHex } from './profileStore';
 
 export interface LogLine {
   t: number;
   dir: 'out' | 'in' | 'info' | 'error';
   text: string;
+  /** Full packet bytes (hex) for the device-data contribution; the text above shows only 16. */
+  hex?: string;
 }
 
 export interface DeviceSnapshot {
@@ -24,6 +27,17 @@ const fmt = (d: Uint8Array) => {
   const head = [...d.slice(0, 16)].map((b) => b.toString(16).padStart(2, '0')).join(' ');
   return `${head}${d.length > 16 ? ' …' : ''} (${d.length} B)`;
 };
+
+/**
+ * Macro writes can hold typed text (passwords), so logs keep only their 7-byte header:
+ * wired report 0x06 op 0x05/0x85, wireless cmd 0x03/0x43.
+ */
+export function logBytes(d: Uint8Array, macro: boolean): Pick<LogLine, 'text' | 'hex'> {
+  const shown = macro ? d.slice(0, 7) : d;
+  return { text: macro ? `${fmt(shown).replace(/ \(\d+ B\)$/, '')} … macro data hidden (${d.length} B)` : fmt(d), hex: toHex(shown) };
+}
+const isWiredMacro = (id: number, d: Uint8Array) => id === 0x06 && (d[0] & 0x7f) === 0x05;
+const isWirelessMacro = (d: Uint8Array) => (d[0] & 0xbf) === 0x03;
 
 export function useDevice() {
   const [dev, setDev] = useState<Mk75Device | null>(null);
@@ -57,8 +71,20 @@ export function useDevice() {
     [push],
   );
 
-  const wiredLog = useCallback((dir: 'out' | 'in', id: number, data: Uint8Array) => push({ dir, text: `#${id.toString(16).padStart(2, '0')} ${fmt(data)}` }), [push]);
-  const wirelessLog = useCallback((dir: 'out' | 'in', body: Uint8Array) => push({ dir, text: `2.4G ${fmt(body)}` }), [push]);
+  const wiredLog = useCallback(
+    (dir: 'out' | 'in', id: number, data: Uint8Array) => {
+      const b = logBytes(data, isWiredMacro(id, data));
+      push({ dir, text: `#${id.toString(16).padStart(2, '0')} ${b.text}`, hex: `${id.toString(16).padStart(2, '0')}${b.hex}` });
+    },
+    [push],
+  );
+  const wirelessLog = useCallback(
+    (dir: 'out' | 'in', body: Uint8Array) => {
+      const b = logBytes(body, isWirelessMacro(body));
+      push({ dir, text: `2.4G ${b.text}`, hex: b.hex });
+    },
+    [push],
+  );
 
   const attach = useCallback(
     async (d: Mk75Device) => {
