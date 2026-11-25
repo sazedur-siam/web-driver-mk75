@@ -24,17 +24,17 @@ USB IDs: wired `258A:010C` (Sinowealth), 2.4 GHz receiver `3554:FA09`. Bluetooth
 
 ---
 
-## 2. Source material (not in git)
+## 2. Source material
 
 | File | What |
 |---|---|
-| `mk_75 driver.zip` (repo root, ignored via `*.zip`) | `LINGBAO Keyboard Driver Setup v2.0 20250716.exe`, an **Inno Setup** installer |
+| `vendor-driver/mk_75 driver.zip` (committed; see its README) | `LINGBAO Keyboard Driver Setup v2.0 20250716.exe`, an **Inno Setup** installer |
 | `../AULA AU75.rar` (outside the repo) | AU75 installer (`OemDrv.exe` build 2025-08-05), the first target |
 
 Unpack (macOS):
 ```bash
 brew install innoextract
-mkdir -p /tmp/mk75 && cd /tmp/mk75 && bsdtar -xf "<repo>/mk_75 driver.zip"
+mkdir -p /tmp/mk75 && cd /tmp/mk75 && bsdtar -xf "<repo>/vendor-driver/mk_75 driver.zip"
 innoextract -d out "LINGBAO Keyboard Driver Setup v2.0 20250716.exe"
 ```
 

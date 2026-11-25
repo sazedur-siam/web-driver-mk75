@@ -5,3 +5,6 @@ tsconfig.tsbuildinfo
 *.zip
 *.exe
 *.rar
+
+# Original vendor driver, kept for reverse-engineering reference
+!vendor-driver/*.zip
