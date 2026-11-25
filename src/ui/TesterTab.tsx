@@ -3,12 +3,14 @@ import { keyIndexForCode } from '../device/codeMap';
 import { MK75_KEYS } from '../device/mk75Layout';
 import { ChatterDetector } from '../protocol/chatter';
 import { Keyboard } from './Keyboard';
+import { TypingHeatmap } from './TypingHeatmap';
+import type { DeviceApi } from './useDevice';
 
 const TESTABLE = MK75_KEYS.filter((k) => k.label !== 'FN');
 const label = (idx: number) => MK75_KEYS.find((k) => k.index === idx)?.label ?? `#${idx}`;
 
 /** Key tester & chatter check. Works without a keyboard connection (uses normal key events). */
-export function TesterTab() {
+export function TesterTab({ api }: { api?: DeviceApi }) {
   const det = useRef(new ChatterDetector(30));
   const [, redraw] = useReducer((n: number) => n + 1, 0);
   const [active, setActive] = useState(true);
@@ -18,7 +20,9 @@ export function TesterTab() {
 
   useEffect(() => {
     if (!active) return;
+    const inTyping = (e: KeyboardEvent) => !!(e.target as HTMLElement | null)?.closest?.('.typing-area');
     const down = (e: KeyboardEvent) => {
+      if (inTyping(e)) return;
       const idx = keyIndexForCode(e.code);
       if (idx === undefined) return;
       e.preventDefault();
@@ -27,6 +31,7 @@ export function TesterTab() {
       redraw();
     };
     const up = (e: KeyboardEvent) => {
+      if (inTyping(e)) return;
       const idx = keyIndexForCode(e.code);
       if (idx === undefined) return;
       e.preventDefault();
@@ -94,6 +99,7 @@ export function TesterTab() {
           Fn, media and some OS keys (Win, Print Screen) can't be seen by the browser. Pause capture to type elsewhere.
         </p>
       </section>
+      <TypingHeatmap api={api} />
       <section className="card">
         <h2>Chatter report</h2>
         {chatter.length === 0 ? (

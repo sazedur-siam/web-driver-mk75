@@ -222,7 +222,7 @@ export default function App() {
             {tab === 'Live effects' && <LiveTab api={api} />}
             {tab === 'Key mapping' && <KeymapTab api={api} />}
             {tab === 'Macros' && <MacrosTab api={api} />}
-            {tab === 'Key tester' && <TesterTab />}
+            {tab === 'Key tester' && <TesterTab api={api} />}
             {tab === 'Device' && <DeviceTab api={api} />}
             {tab === 'Backup & log' && <BackupTab api={api} />}
           </main>
