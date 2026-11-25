@@ -3,6 +3,7 @@ import { WebHidTransport } from './protocol/transport';
 import { BackupTab } from './ui/BackupTab';
 import { DeviceTab } from './ui/DeviceTab';
 import { GuideView } from './ui/GuideView';
+import { ReportDialog } from './ui/ReportDialog';
 import { LiveTab } from './ui/LiveTab';
 import { MacrosTab } from './ui/MacrosTab';
 import { KeymapTab } from './ui/KeymapTab';
@@ -68,6 +69,12 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('Lighting');
   const [testerOnly, setTesterOnly] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  useEffect(() => {
+    const open = () => setReportOpen(true);
+    window.addEventListener('mk75:report', open);
+    return () => window.removeEventListener('mk75:report', open);
+  }, []);
   const pwa = usePwa();
   useEffect(() => {
     void loadPresetFromHash();
@@ -239,7 +246,13 @@ export default function App() {
           </main>
         </>
       )}
+      {reportOpen && <ReportDialog api={api} onClose={() => setReportOpen(false)} />}
       <footer className="muted small">
+        <p>
+          <button className="report-btn" onClick={() => setReportOpen(true)}>
+            Report an Issue
+          </button>
+        </p>
         <p className="made-in">
           Ported in Bangladesh
           {/* Flag of Bangladesh (10:6, red disc offset towards the hoist). Drawn as SVG because Windows shows flag emoji as letters. */}

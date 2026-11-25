@@ -159,6 +159,19 @@ driver.
 
 ---
 
+## Report a problem
+
+Click **Report an Issue** at the bottom of any page (or in **Backup & log**):
+1. Give it a short title and describe what happened.
+2. Leave **Include diagnostics** ticked. It adds technical details that help fix the problem.
+3. Click **Continue on GitHub**. A new issue opens with everything filled in.
+4. Add screenshots by pasting or dragging them into the text box, then click **Submit new issue**.
+
+You need a free GitHub account to submit. You can also see existing reports at
+https://github.com/sazedur-siam/web-driver-mk75/issues.
+
+---
+
 ## Frequently asked questions
 
 **Is it safe?** The website sends the keyboard the same commands as the official driver and only changes the
