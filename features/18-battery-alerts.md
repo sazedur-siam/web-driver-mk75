@@ -8,7 +8,9 @@ Show battery level in the header when connected wirelessly and send a browser no
 ## What we know
 - Battery read = cmd `0x4A` on report-ID `0x13` receivers (`CDev3632`): byte0 = level %, charging flag in byte1.
 - On `0x15` ("Combo") receivers `0x4A` is the on-board profile, not battery — no battery read known.
-- Already implemented: `Mk75Wireless.readBattery()` and the Device-tab row.
+- Already implemented: `Mk75Wireless.readBattery()`, the Device-tab row, and step 2 below (`src/ui/battery.ts`:
+  5-minute poll, header pill, one notification per threshold, re-armed by charging; permission button on the
+  Device tab). It only runs on `caps.battery` (0x13) receivers and is untested on hardware.
 
 ## Plan
 1. Confirm which receiver type the MK75 ships with (TESTING W9).

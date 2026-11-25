@@ -181,7 +181,7 @@ select {
 
 .pill { padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
 .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
-.pill.demo { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.pill.demo, .pill.low { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
 
 .banner { padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); position: relative; }
 .banner.busy { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }

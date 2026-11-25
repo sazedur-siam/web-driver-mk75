@@ -222,6 +222,7 @@ export class Mk75Wireless implements Mk75Device {
   async readBattery(): Promise<{ level: number; charging: boolean } | null> {
     if (this.flavour !== '3632') return null;
     const r = await this.link.read(WCmd.GetOnBoard, 0, 2);
+    if (r[0] > 100) return null; // not a percentage: unknown reply
     return { level: r[0], charging: (r[1] & 0xf0) !== 0 && (r[1] & 0x0f) === 0 };
   }
 }

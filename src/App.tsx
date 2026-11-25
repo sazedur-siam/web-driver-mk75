@@ -16,6 +16,7 @@ import { usePwa } from './ui/pwa';
 import { loadPresetFromHash } from './ui/presetStore';
 import { SharedPresetBanner } from './ui/SharedPresetBanner';
 import { useDevice } from './ui/useDevice';
+import { useBattery } from './ui/battery';
 
 /** One theme per official MK75 colourway (product page): case / keycap colours for the swatch. */
 const THEMES = [
@@ -66,6 +67,7 @@ type Tab = (typeof TABS)[number];
 
 export default function App() {
   const api = useDevice();
+  const battery = useBattery(api.dev);
   const [tab, setTab] = useState<Tab>('Lighting');
   const [testerOnly, setTesterOnly] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -127,6 +129,11 @@ export default function App() {
               <span className={`pill ${api.isDemo ? 'demo' : 'ok'}`}>
                 {api.dev.transport.name} · {api.dev.kind === 'wired' ? 'USB' : '2.4G / BT'}
               </span>
+              {battery && (
+                <span className={`pill ${battery.level < 20 && !battery.charging ? 'low' : ''}`} title="Keyboard battery" aria-label={`Keyboard battery ${battery.level}%${battery.charging ? ', charging' : ''}`}>
+                  {battery.charging ? '⚡' : '🔋'} {battery.level}%
+                </span>
+              )}
               <button onClick={api.disconnect}>Disconnect</button>
             </>
           ) : (
@@ -245,7 +252,7 @@ export default function App() {
             {tab === 'Key mapping' && <KeymapTab api={api} />}
             {tab === 'Macros' && <MacrosTab api={api} />}
             {tab === 'Key tester' && <TesterTab api={api} />}
-            {tab === 'Device' && <DeviceTab api={api} />}
+            {tab === 'Device' && <DeviceTab api={api} battery={battery} />}
             {tab === 'Backup & log' && <BackupTab api={api} />}
           </main>
         </>
