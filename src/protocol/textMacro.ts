@@ -35,6 +35,11 @@ MAP.set(' ', [0x2c, false]);
 MAP.set('\n', [0x28, false]);
 MAP.set('\t', [0x2b, false]);
 
+/** HID usage for a character's key on a US layout (ignoring Shift), or undefined. */
+export function charUsage(ch: string): number | undefined {
+  return MAP.get(ch)?.[0];
+}
+
 export function isTypeable(ch: string): boolean {
   return MAP.has(ch);
 }

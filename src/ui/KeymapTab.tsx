@@ -16,6 +16,7 @@ import {
   type KeyAction,
 } from '../protocol/keycodes';
 import { vkToHid } from '../protocol/mock';
+import { LAYOUTS, layoutActions, type LayoutTweaks } from '../protocol/layouts';
 import { Keyboard } from './Keyboard';
 import { REPEAT_LABELS } from './MacrosTab';
 import { macroStore, useMacros } from './macroStore';
@@ -43,6 +44,8 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
   const [macroMode, setMacroMode] = useState<number>(1);
   // Assignments as they were when the tab opened, so "Revert all" can restore them too.
   const [savedAssignments] = useState(() => macroStore.get().assignments);
+  const [layoutId, setLayoutId] = useState('qwerty');
+  const [tweaks, setTweaks] = useState<LayoutTweaks>({});
 
   useEffect(() => setMatrix(snap?.matrix ?? null), [snap]);
 
@@ -114,6 +117,17 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
 
   const save = () => api.run('Saving key mapping', () => saveKeysAndMacros(api, matrix));
 
+  /** Preview a hardware layout + tweaks on the pending matrix (saved with the normal Save button). */
+  function previewLayout(id = layoutId, t = tweaks) {
+    if (!matrix) return;
+    let m = matrix;
+    for (const [idx, action] of layoutActions(id, t)) {
+      if (macros.assignments[idx]) macroStore.assign(idx, null);
+      m = setKeyCode(m, idx, encodeAction(action));
+    }
+    setMatrix(m);
+  }
+
   return (
     <div className="stack">
       <section className="card">
@@ -132,6 +146,48 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
             return d && encodeAction(d) === encodeAction(a) ? undefined : describe(k.index);
           }}
         />
+        <div className="layout-row">
+          <label className="field-l" htmlFor="layout-select">
+            Layout
+          </label>
+          <select
+            id="layout-select"
+            value={layoutId}
+            onChange={(e) => {
+              setLayoutId(e.target.value);
+              previewLayout(e.target.value, tweaks);
+            }}
+          >
+            {LAYOUTS.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+          {(
+            [
+              ['macSwap', 'Mac: Ctrl · Option · Cmd'],
+              ['capsToCtrl', 'Caps Lock → Ctrl'],
+              ['capsToEsc', 'Caps Lock → Esc'],
+            ] as const
+          ).map(([k, label]) => (
+            <label key={k} className="chk">
+              <input
+                type="checkbox"
+                checked={!!tweaks[k]}
+                onChange={(e) => {
+                  const t = { ...tweaks, [k]: e.target.checked };
+                  if (k === 'capsToCtrl' && e.target.checked) t.capsToEsc = false;
+                  if (k === 'capsToEsc' && e.target.checked) t.capsToCtrl = false;
+                  setTweaks(t);
+                  previewLayout(layoutId, t);
+                }}
+              />
+              {label}
+            </label>
+          ))}
+          <span className="hint">Stored in the keyboard: keep your computer on US QWERTY. Review the highlighted keys, then Save.</span>
+        </div>
         <div className="actions">
           <button className="primary" disabled={!changed.size || !!api.busy} onClick={save}>
             Save to keyboard

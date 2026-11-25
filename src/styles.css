@@ -319,3 +319,5 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .text-input { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; min-width: 0; flex: 1; }
 .text-macro { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 10px; }
 textarea.text-input { resize: vertical; font-family: inherit; }
+.layout-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 10px; }
+.layout-row .hint { flex-basis: 100%; }
