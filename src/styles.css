@@ -317,3 +317,5 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .profile-main b { display: inline-flex; align-items: center; gap: 8px; }
 .small-pill { font-size: 11px; padding: 1px 8px; font-weight: 500; }
 .text-input { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; min-width: 0; flex: 1; }
+.text-macro { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: 10px; }
+textarea.text-input { resize: vertical; font-family: inherit; }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MK75_KEYS } from '../device/mk75Layout';
 import { HID_KEYS, HID_MODIFIERS } from '../protocol/keycodes';
 import { MACRO_SLOT, MAX_MACROS, macroBytes, MOUSE_USAGE, RepeatMode, type Macro, type MacroEvent } from '../protocol/macro';
+import { splitText, textToEvents } from '../protocol/textMacro';
 import { macroStore, newId, useMacros } from './macroStore';
 import { saveKeysAndMacros } from './saveKeys';
 import type { DeviceApi } from './useDevice';
@@ -128,6 +129,13 @@ export function MacrosTab({ api }: { api: DeviceApi }) {
             Write macros to keyboard
           </button>
         </div>
+        <TextMacroPanel
+          count={store.macros.length}
+          onCreate={(ms) => {
+            ms.forEach((m) => macroStore.upsert(m));
+            setEditing(ms[0]);
+          }}
+        />
         {api.dev && !api.dev.caps.macros && (
           <p className="hint warn">You can edit macros here, but writing them needs the USB cable (the wireless macro format isn't supported yet).</p>
         )}
@@ -213,6 +221,71 @@ export function MacrosTab({ api }: { api: DeviceApi }) {
           <p className="hint">Wired MK75 macros support keyboard keys, modifiers and left/right/middle mouse buttons (about 60 events).</p>
         </section>
       )}
+    </div>
+  );
+}
+
+/** "New from text": builds macro events from typed text (US layout), splitting across macros if needed. */
+function TextMacroPanel({ count, onCreate }: { count: number; onCreate: (m: Macro[]) => void }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [name, setName] = useState('');
+  const [delay, setDelay] = useState(5);
+  const r = textToEvents(text, delay);
+  const parts = r.fits ? [text] : splitText(text, delay);
+  const room = MAX_MACROS - count;
+
+  const create = () => {
+    const base = name.trim() || (text.trim().slice(0, 24) || 'Text macro');
+    const ms = parts.map((t, i) => ({
+      id: newId(),
+      name: parts.length > 1 ? `${base} (${i + 1}/${parts.length})` : base,
+      events: textToEvents(t, delay).events,
+    }));
+    onCreate(ms);
+    setText('');
+    setName('');
+    setOpen(false);
+  };
+
+  if (!open)
+    return (
+      <button onClick={() => setOpen(true)} disabled={room <= 0} style={{ alignSelf: 'flex-start' }}>
+        New from text…
+      </button>
+    );
+  return (
+    <div className="text-macro">
+      <span className="field-l">New macro from text</span>
+      <textarea
+        className="text-input"
+        rows={3}
+        placeholder="e.g. your email address or a signature"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        aria-label="Macro text"
+      />
+      <div className="row">
+        <input className="text-input" placeholder="Name (optional)" value={name} onChange={(e) => setName(e.target.value)} aria-label="Macro name" />
+        <label className="chk">
+          delay <input type="number" min={3} max={500} value={delay} onChange={(e) => setDelay(Number(e.target.value))} style={{ width: 64 }} /> ms
+        </label>
+      </div>
+      <div className="capacity" title="Bytes used in one 128-byte macro slot">
+        <div style={{ width: `${Math.min(100, (r.bytes / MACRO_SLOT) * 100)}%` }} className={r.fits ? '' : 'over'} />
+        <span className="small muted">
+          {r.bytes}/{MACRO_SLOT} bytes{r.fits ? '' : ` · will be split into ${parts.length} macros`}
+        </span>
+      </div>
+      {r.unsupported.length > 0 && <p className="hint warn">Skipped (not on a US keyboard): {r.unsupported.join(' ')}</p>}
+      {parts.length > room && <p className="hint warn">Not enough free macro slots ({room} left).</p>}
+      <div className="row">
+        <button className="primary" disabled={!r.events.length || parts.length > room} onClick={create}>
+          Create {parts.length > 1 ? `${parts.length} macros` : 'macro'}
+        </button>
+        <button onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+      <p className="hint">Types as on a US layout; set your computer to US English for exact symbols.</p>
     </div>
   );
 }
