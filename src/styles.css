@@ -335,3 +335,10 @@ textarea.text-input { resize: vertical; font-family: inherit; }
 .chip-dots { display: inline-flex; gap: 2px; margin-right: 6px; vertical-align: middle; }
 .chip-dots i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2); }
 .pill { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* --- typing test --- */
+.typing-target { font-size: 15px; line-height: 1.7; margin: 0; padding: 10px 12px; background: var(--surface-2); border-radius: 8px; }
+.typing-target .ok { color: var(--ok); }
+.typing-target .bad { color: var(--danger); text-decoration: underline; }
+.typing-target .cur { box-shadow: inset 0 -2px 0 var(--accent); }
+.typing-target.done { opacity: 0.8; }
