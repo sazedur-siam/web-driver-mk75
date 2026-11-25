@@ -8,6 +8,7 @@ import { KeymapTab } from './ui/KeymapTab';
 import { LightingTab } from './ui/LightingTab';
 import { PerKeyTab } from './ui/PerKeyTab';
 import { ProfilesTab } from './ui/ProfilesTab';
+import { TesterTab } from './ui/TesterTab';
 import { Keyboard } from './ui/Keyboard';
 import { useDevice } from './ui/useDevice';
 
@@ -55,12 +56,13 @@ function ThemeSwitch() {
   );
 }
 
-const TABS = ['Profiles', 'Lighting', 'Per-key RGB', 'Live effects', 'Key mapping', 'Macros', 'Device', 'Backup & log'] as const;
+const TABS = ['Profiles', 'Lighting', 'Per-key RGB', 'Live effects', 'Key mapping', 'Macros', 'Key tester', 'Device', 'Backup & log'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function App() {
   const api = useDevice();
   const [tab, setTab] = useState<Tab>('Lighting');
+  const [testerOnly, setTesterOnly] = useState(false);
   const supported = WebHidTransport.isSupported();
 
   useEffect(() => {
@@ -118,7 +120,14 @@ export default function App() {
         </div>
       )}
 
-      {!api.dev ? (
+      {!api.dev && testerOnly ? (
+        <main className="stack">
+          <button onClick={() => setTesterOnly(false)} style={{ alignSelf: 'flex-start' }}>
+            ← Back
+          </button>
+          <TesterTab />
+        </main>
+      ) : !api.dev ? (
         <main className="welcome">
           <div className="hero-kb">
             <Keyboard selected={new Set()} onSelect={() => {}} />
@@ -149,6 +158,10 @@ export default function App() {
                 Simulator (2.4 GHz)
               </button>
             </div>
+            <div className="row">
+              <span className="muted small">Just swapped switches?</span>
+              <button onClick={() => setTesterOnly(true)}>Open key tester</button>
+            </div>
             {!supported && (
               <p className="banner err">
                 This browser doesn't support WebHID. Use Chrome, Edge or Opera on desktop, over HTTPS or on localhost.
@@ -175,6 +188,7 @@ export default function App() {
             {tab === 'Live effects' && <LiveTab api={api} />}
             {tab === 'Key mapping' && <KeymapTab api={api} />}
             {tab === 'Macros' && <MacrosTab api={api} />}
+            {tab === 'Key tester' && <TesterTab />}
             {tab === 'Device' && <DeviceTab api={api} />}
             {tab === 'Backup & log' && <BackupTab api={api} />}
           </main>
