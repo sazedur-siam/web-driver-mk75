@@ -1,23 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { MK75_KEYS } from '../device/mk75Layout';
-import { HID_KEYS, HID_MODIFIERS } from '../protocol/keycodes';
 import { fromHex, hex } from '../protocol/lighting';
 import { compose, frameToFill, MUSIC_MODES, MusicVisualizer, RT_MODES, RtEffect, type ColorSource, type MusicMode, type RtMode } from '../protocol/live';
-import { vkToHid } from '../protocol/mock';
+import { keyIndexForCode } from '../device/codeMap';
 import { Keyboard } from './Keyboard';
 import { loadPerKey, perKeyMap } from './perKeyStore';
 import { startTicker } from './ticker';
 import type { DeviceApi } from './useDevice';
 
 const FRAME_MS = 30; // ~33 fps (vendor streams ~50 fps)
-
-// KeyboardEvent.code → LED index, for the Follow (reactive) effect.
-const USAGE_BY_CODE = new Map<string, number>([...HID_KEYS.map((k) => [k.code, k.usage] as const), ...HID_MODIFIERS.map((m) => [m.code, m.usage] as const)]);
-const LED_BY_USAGE = new Map<number, number>();
-for (const k of MK75_KEYS) {
-  const u = vkToHid(k.vk);
-  if (u !== undefined) LED_BY_USAGE.set(u, k.index);
-}
 
 type Source = 'solid' | 'rainbow' | 'perkey';
 
@@ -51,8 +41,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
   useEffect(() => {
     if (!running) return;
     const kd = (e: KeyboardEvent) => {
-      const u = USAGE_BY_CODE.get(e.code);
-      const led = u !== undefined ? LED_BY_USAGE.get(u) : undefined;
+      const led = keyIndexForCode(e.code);
       if (led !== undefined) effect.current.press(led);
     };
     window.addEventListener('keydown', kd);
