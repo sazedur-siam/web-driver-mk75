@@ -3,6 +3,7 @@ import { fromHex, hex } from '../protocol/lighting';
 import { compose, frameToFill, MUSIC_MODES, MusicVisualizer, RT_MODES, RtEffect, type ColorSource, type MusicMode, type RtMode } from '../protocol/live';
 import { keyIndexForCode } from '../device/codeMap';
 import { SCREEN_MODES, ScreenSync, type ScreenMode } from '../protocol/screenSync';
+import { batteryColours, clockColours, coloursToFrame, timerColours } from '../protocol/signals';
 import { Keyboard } from './Keyboard';
 import { loadPerKey, perKeyMap } from './perKeyStore';
 import { startTicker } from './ticker';
@@ -17,7 +18,11 @@ type Source = 'solid' | 'rainbow' | 'perkey';
 
 export function LiveTab({ api }: { api: DeviceApi }) {
   const { dev, snap } = api;
-  const [kind, setKind] = useState<'effects' | 'music' | 'screen'>('effects');
+  const [kind, setKind] = useState<'effects' | 'music' | 'screen' | 'signals'>('effects');
+  const [signal, setSignal] = useState<'timer' | 'clock' | 'battery'>('timer');
+  const [timerMin, setTimerMin] = useState(25);
+  const [battery, setBattery] = useState<{ level: number; charging: boolean } | null>(null);
+  const [timerLeft, setTimerLeft] = useState<string | null>(null);
   const [screenMode, setScreenMode] = useState<ScreenMode>('zones');
   const [screenSmooth, setScreenSmooth] = useState(0.5);
   const [saturation, setSaturation] = useState(1.3);
@@ -42,8 +47,8 @@ export function LiveTab({ api }: { api: DeviceApi }) {
   const sync = useRef(new ScreenSync());
   Object.assign(sync.current, { mode: screenMode, smooth: screenSmooth, saturation });
   const music = useRef(new MusicVisualizer(musicMode, gain, smooth, autoGain));
-  const cfg = useRef({ kind, source, color, brightness });
-  cfg.current = { kind, source, color, brightness };
+  const cfg = useRef({ kind, source, color, brightness, signal, timerMin, battery });
+  cfg.current = { kind, source, color, brightness, signal, timerMin, battery };
   effect.current.mode = rtMode;
   effect.current.speed = speed;
   Object.assign(music.current, { mode: musicMode, gain, smooth, autoGain });
@@ -69,6 +74,8 @@ export function LiveTab({ api }: { api: DeviceApi }) {
     const t0 = performance.now();
     const perkey = perKeyMap(loadPerKey());
     const bins = new Uint8Array(128);
+    let timerDone = false;
+    let lastTimerLabel = '';
     const ticker = startTicker(FRAME_MS, async () => {
       if (busy) return; // never queue frames behind a slow USB write
       busy = true;
@@ -78,7 +85,25 @@ export function LiveTab({ api }: { api: DeviceApi }) {
         const src: ColorSource =
           c.source === 'solid' ? { kind: 'solid', color: fromHex(c.color) } : c.source === 'perkey' ? { kind: 'perkey', colors: perkey, fallback: fromHex(c.color) } : { kind: 'rainbow' };
         let frame: Uint8Array;
-        if (c.kind === 'screen') {
+        const bg = c.source === 'solid' ? fromHex(c.color) : ([60, 120, 90] as [number, number, number]);
+        if (c.kind === 'signals') {
+          if (c.signal === 'timer') {
+            const total = c.timerMin * 60_000;
+            const el = performance.now() - t0;
+            frame = coloursToFrame(timerColours(el, total, bg), c.brightness);
+            if (el >= total && !timerDone) {
+              timerDone = true;
+              notifyDone(c.timerMin);
+            }
+            const left = Math.max(0, Math.ceil((total - el) / 1000));
+            const label = el >= total ? "Time's up" : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} left`;
+            if (label !== lastTimerLabel) {
+              lastTimerLabel = label;
+              setTimerLeft(label);
+            }
+          } else if (c.signal === 'clock') frame = coloursToFrame(clockColours(new Date(), bg), c.brightness);
+          else frame = coloursToFrame(batteryColours(c.battery?.level ?? 0, !!c.battery?.charging, t, bg), c.brightness);
+        } else if (c.kind === 'screen') {
           const sc = screen.current;
           if (sc && sc.video.readyState >= 2) {
             sc.ctx.drawImage(sc.video, 0, 0, SCREEN_W, SCREEN_H);
@@ -114,6 +139,33 @@ export function LiveTab({ api }: { api: DeviceApi }) {
     });
     return () => ticker.stop();
   }, [running, dev, api]);
+
+  // Laptop battery (Chrome: navigator.getBattery) for the battery signal.
+  useEffect(() => {
+    if (kind !== 'signals' || signal !== 'battery') return;
+    const nav = navigator as Navigator & { getBattery?: () => Promise<{ level: number; charging: boolean; addEventListener(t: string, f: () => void): void; removeEventListener(t: string, f: () => void): void }> };
+    if (!nav.getBattery) return;
+    let b: Awaited<ReturnType<NonNullable<typeof nav.getBattery>>> | null = null;
+    const upd = () => b && setBattery({ level: b.level, charging: b.charging });
+    nav.getBattery().then((x) => {
+      b = x;
+      upd();
+      x.addEventListener('levelchange', upd);
+      x.addEventListener('chargingchange', upd);
+    });
+    return () => {
+      b?.removeEventListener('levelchange', upd);
+      b?.removeEventListener('chargingchange', upd);
+    };
+  }, [kind, signal]);
+
+  function notifyDone(min: number) {
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') new Notification('MK75 timer', { body: `${min} minutes are up.`, icon: 'icon-192.png' });
+    } catch {
+      /* notifications unavailable */
+    }
+  }
 
   // Leaving the tab stops streaming; restore the saved effect if we were live.
   const runningRef = useRef(running);
@@ -208,7 +260,10 @@ export function LiveTab({ api }: { api: DeviceApi }) {
       <section className="card">
         <header className="card-h">
           <h2>Live preview</h2>
-          <span className="muted small">{running ? `streaming · ${fps} fps` : 'stopped'}</span>
+          <span className="muted small">
+            {running ? `streaming · ${fps} fps` : 'stopped'}
+            {running && kind === 'signals' && signal === 'timer' && timerLeft ? ` · ${timerLeft}` : ''}
+          </span>
         </header>
         <Keyboard selected={new Set()} onSelect={() => {}} fill={(k) => (running ? preview.get(k.index) : undefined)} />
         <div className="actions">
@@ -217,7 +272,14 @@ export function LiveTab({ api }: { api: DeviceApi }) {
               ■ Stop
             </button>
           ) : (
-            <button className="primary" onClick={() => setRunning(true)} disabled={!!api.busy || (kind === 'music' && !audioLabel) || (kind === 'screen' && !screenLabel)}>
+            <button
+              className="primary"
+              onClick={() => {
+                if (kind === 'signals' && signal === 'timer' && 'Notification' in window && Notification.permission === 'default') void Notification.requestPermission();
+                setTimerLeft(null);
+                setRunning(true);
+              }}
+              disabled={!!api.busy || (kind === 'music' && !audioLabel) || (kind === 'screen' && !screenLabel)}>
               ▶ Start
             </button>
           )}
@@ -239,8 +301,40 @@ export function LiveTab({ api }: { api: DeviceApi }) {
             <button role="tab" aria-selected={kind === 'screen'} className={kind === 'screen' ? 'on' : ''} onClick={() => setKind('screen')}>
               Screen sync
             </button>
+            <button role="tab" aria-selected={kind === 'signals'} className={kind === 'signals' ? 'on' : ''} onClick={() => setKind('signals')}>
+              Signals
+            </button>
           </div>
-          {kind === 'screen' ? (
+          {kind === 'signals' ? (
+            <>
+              <div className="modes">
+                {(
+                  [
+                    ['timer', 'Timer (F-row progress)'],
+                    ['clock', 'Clock'],
+                    ['battery', 'Laptop battery'],
+                  ] as const
+                ).map(([id, name]) => (
+                  <button key={id} className={`mode${signal === id ? ' on' : ''}`} onClick={() => setSignal(id)} aria-pressed={signal === id}>
+                    {name}
+                  </button>
+                ))}
+              </div>
+              {signal === 'timer' && (
+                <label className="chk">
+                  Minutes <input type="number" min={1} max={180} value={timerMin} onChange={(e) => setTimerMin(Math.max(1, Number(e.target.value)))} style={{ width: 70 }} />
+                  <span className="hint">The F-row fills up; the board flashes and a notification appears when time's up. Start restarts the timer.</span>
+                </label>
+              )}
+              {signal === 'clock' && <p className="hint">Hours light the number row (1–12), each F-key is 5 minutes, Esc pulses every second.</p>}
+              {signal === 'battery' && (
+                <p className="hint">
+                  {battery ? `Battery ${Math.round(battery.level * 100)}%${battery.charging ? ' · charging' : ''}. ` : 'Battery level is not available in this browser. '}
+                  The number row shows this computer's battery (not the keyboard's).
+                </p>
+              )}
+            </>
+          ) : kind === 'screen' ? (
             <>
               <div className="row">
                 <button onClick={startScreen}>Share screen / window / tab…</button>
