@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import manual from '../../MANUAL.md?raw';
 import readme from '../../README.md?raw';
-import { renderGuide, resolveHref, slugify } from './guide';
+import { renderGuide, resolveHref, resolveImage, slugify } from './guide';
+
+const SHOTS = import.meta.glob('../../public/manual/*.webp', { query: '?url', import: 'default', eager: true });
 
 describe('guide renderer', () => {
   it('slugifies headings like GitHub', () => {
@@ -31,5 +33,14 @@ describe('guide renderer', () => {
   it('renders the user manual with its main sections', () => {
     const ids = renderGuide(manual).toc.map((t) => t.id);
     for (const id of ['what-you-need', 'connect-your-keyboard', 'with-the-usb-cable-recommended', 'everyday-tasks', 'troubleshooting']) expect(ids).toContain(id);
+  });
+  it('serves manual screenshots from the app root and every referenced image exists', () => {
+    expect(resolveImage('public/manual/start.webp')).toBe('manual/start.webp');
+    expect(resolveImage('https://x.test/a.png')).toBe('https://x.test/a.png');
+    const { html } = renderGuide(manual);
+    const srcs = [...html.matchAll(/<img src="([^"]+)"/g)].map((m) => m[1]);
+    expect(srcs.length).toBeGreaterThanOrEqual(10);
+    const files = Object.keys(SHOTS).map((k) => k.replace('../../public/', ''));
+    for (const src of srcs) expect(files).toContain(src);
   });
 });

@@ -33,6 +33,9 @@ features. No technical knowledge needed.
 
 **Next time**, just click **Reconnect MK75** on the start page. No list to choose from.
 
+![Start page with the Connect keyboard button](public/manual/start.webp)
+*The start page: click Connect keyboard (top right). No keyboard? Try a Simulator first.*
+
 ### With the 2.4 GHz receiver
 
 1. Slide the switch next to the knob to **2.4G**.
@@ -56,6 +59,9 @@ If the keyboard doesn't show up in the list over Bluetooth, use the cable or rec
 Go to the **Backup & log** tab and click **Download backup**. Keep the file. If you ever don't like your
 changes, click **Load backup…** and restore it.
 
+![Backup & log tab](public/manual/backup.webp)
+*Backup & log: Download backup saves your setup; Load backup… restores it.*
+
 ---
 
 ## Everyday tasks
@@ -66,6 +72,9 @@ changes, click **Load backup…** and restore it.
 3. Choose brightness, speed and colour on the right.
 4. Click **Save to keyboard**.
 
+![Lighting tab](public/manual/lighting.webp)
+*Lighting: pick an effect on the left, set brightness, speed and colour on the right, then Save to keyboard.*
+
 ### Give each key its own colour
 1. Open **Per-key RGB**.
 2. Click keys (or drag across several) to select them. Pick a colour and click **Paint selected**.
@@ -74,6 +83,9 @@ changes, click **Load backup…** and restore it.
 4. Click **Save to keyboard & activate Self-define**.
 
 You can also put a **picture or GIF** on your keys: scroll down to **Image / GIF to keys** and choose a file.
+
+![Per-key RGB tab](public/manual/per-key.webp)
+*Per-key RGB: select keys, pick a colour, paint. Region buttons and gradients save time.*
 
 ### Light shows, music and more (Live effects)
 1. Open **Live effects**.
@@ -87,6 +99,9 @@ You can also put a **picture or GIF** on your keys: scroll down to **Image / GIF
 
 Live effects run from your computer, so **keep the website open** while you use them.
 
+![Live effects tab](public/manual/live-effects.webp)
+*Live effects: the preview shows what your keyboard is doing. ■ Stop returns to your saved lighting.*
+
 ### Change what a key does
 1. Open **Key mapping** and click the key you want to change.
 2. Choose its new job: press a key combination, pick a media key (volume, play/pause), a mouse button, a shortcut,
@@ -94,6 +109,9 @@ Live effects run from your computer, so **keep the website open** while you use 
 3. Click **Save to keyboard**.
 
 To change the whole layout (Colemak, Dvorak, Mac-style keys), use the **Layout** box on the same tab.
+
+![Key mapping tab](public/manual/key-mapping.webp)
+*Key mapping: click a key (here Caps Lock), choose its new job below, then Save to keyboard.*
 
 ### Make a macro (one key types many keys)
 1. Open **Macros** and click **New macro**.
@@ -105,6 +123,9 @@ To change the whole layout (Colemak, Dvorak, Mac-style keys), use the **Layout**
 
 Macros need the **USB cable** to be saved.
 
+![Macros tab](public/manual/macros.webp)
+*Macros: a macro made with New from text…. Each step and its delay can be edited.*
+
 ### Save and switch setups (Profiles)
 1. Set up the keyboard the way you like.
 2. Open **Profiles**, type a name (for example "Gaming") and click **Save as profile**.
@@ -112,9 +133,15 @@ Macros need the **USB cable** to be saved.
 
 Use **Share link** to send a setup to a friend. Opening the link shows a preview with an **Apply** button.
 
+![Profiles tab](public/manual/profiles.webp)
+*Profiles: Apply puts a saved setup on the keyboard. The Preset gallery has ready-made looks.*
+
 ### Test your keys
 Open **Key tester** (or **Open key tester** on the start page; no connection needed). Press every key: working keys
 turn green. Keys that "double type" turn red. This is handy after changing switches.
+
+![Key tester tab](public/manual/key-tester.webp)
+*Key tester: keys you've pressed turn green with a press count. Red means a switch double-types.*
 
 ### Install it like an app
 Click **Install app** at the top (Chrome or Edge). It then opens from your Start menu or Dock in its own window and
@@ -169,6 +196,9 @@ Click **Report an Issue** at the bottom of any page (or in **Backup & log**):
 
 You need a free GitHub account to submit. You can also see existing reports at
 https://github.com/sazedur-siam/web-driver-mk75/issues.
+
+![Report an Issue form](public/manual/report.webp)
+*Report an Issue: fill in what happened, then Continue on GitHub and add screenshots there.*
 
 ---
 
