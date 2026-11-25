@@ -18,6 +18,7 @@ import { loadPresetFromHash } from './ui/presetStore';
 import { SharedPresetBanner } from './ui/SharedPresetBanner';
 import { useDevice } from './ui/useDevice';
 import { useBattery } from './ui/battery';
+import { BatteryIcon } from './ui/BatteryIcon';
 
 /** One theme per official MK75 colourway (product page): case / keycap colours for the swatch. */
 const THEMES = [
@@ -132,8 +133,8 @@ export default function App() {
                 {api.dev.transport.name} · {api.dev.kind === 'wired' ? 'USB' : '2.4G / BT'}
               </span>
               {battery && (
-                <span className={`pill ${battery.level < 20 && !battery.charging ? 'low' : ''}`} title="Keyboard battery" aria-label={`Keyboard battery ${battery.level}%${battery.charging ? ', charging' : ''}`}>
-                  {battery.charging ? '⚡' : '🔋'} {battery.level}%
+                <span className="pill" title="Keyboard battery">
+                  <BatteryIcon battery={battery} size={1.25} />
                 </span>
               )}
               <button onClick={api.disconnect}>Disconnect</button>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Battery } from './battery';
+import { BatteryIcon } from './BatteryIcon';
 import type { DeviceApi } from './useDevice';
 
 /** Sleep timer: profile[0x11] = 0xFF (off) or seconds/30 (vendor default SleepUI/SleepHW tables). */
@@ -90,7 +91,8 @@ export function DeviceTab({ api, battery }: { api: DeviceApi; battery: Battery |
               <div>
                 <dt>Battery</dt>
                 <dd>
-                  {battery.level}%{battery.charging ? ' · charging' : ''}
+                  <BatteryIcon battery={battery} size={1.6} />
+                  {battery.charging ? ' charging' : ''}
                   {notify === 'default' && (
                     <button className="small" style={{ marginLeft: 8 }} onClick={() => void Notification.requestPermission().then(setNotify)}>
                       Notify me when low
