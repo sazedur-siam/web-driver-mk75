@@ -2,8 +2,8 @@
  * In-memory AU75 simulator implementing the same feature-report protocol.
  * Lets you try the UI without hardware and backs the unit tests.
  */
-import { AU75_KEYS } from '../device/au75Layout';
-import { DATA_FRAME_LEN, DATA_HEADER_LEN, PAGE_LEN, PROFILE_LEN, REPORT_CMD, REPORT_DATA } from './au75';
+import { MK75_KEYS } from '../device/mk75Layout';
+import { DATA_FRAME_LEN, DATA_HEADER_LEN, PAGE_LEN, PROFILE_LEN, REPORT_CMD, REPORT_DATA } from './mk75';
 import { encodeAction } from './keycodes';
 import { LED_MATRIX_LEN, LED_MODES, RGB_TABLE_STRIDE } from './lighting';
 import type { FeatureTransport } from './transport';
@@ -23,7 +23,7 @@ export function vkToHid(vk: number): number | undefined {
   return VK_TO_HID[vk];
 }
 
-export class MockAu75 implements FeatureTransport {
+export class MockMk75 implements FeatureTransport {
   readonly name = 'Simulated MK75';
   profile = new Uint8Array(PROFILE_LEN);
   matrix = new Uint8Array(PAGE_LEN);
@@ -45,7 +45,7 @@ export class MockAu75 implements FeatureTransport {
     const pal = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255], [255, 0, 255], [255, 255, 255]];
     LED_MODES.forEach((_, i) => pal.forEach((c, k) => this.rgbTable.set(c, RGB_TABLE_STRIDE * (i + 1) + 3 * k)));
     const v = new DataView(this.matrix.buffer);
-    for (const k of AU75_KEYS) {
+    for (const k of MK75_KEYS) {
       const hid = vkToHid(k.vk);
       if (hid !== undefined) v.setUint32(k.index * 4, encodeAction({ kind: 'key', usage: hid, mods: 0 }), true);
     }

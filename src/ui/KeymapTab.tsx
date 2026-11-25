@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AU75_KEYS } from '../device/au75Layout';
+import { MK75_KEYS } from '../device/mk75Layout';
 import {
   actionFromKeyboardEvent,
   CONSUMER_KEYS,
@@ -20,13 +20,13 @@ import { Keyboard } from './Keyboard';
 import type { DeviceApi } from './useDevice';
 
 function defaultAction(index: number): KeyAction | null {
-  const k = AU75_KEYS.find((x) => x.index === index);
+  const k = MK75_KEYS.find((x) => x.index === index);
   if (!k || k.vk === 0xfa) return null; // Fn key: firmware-handled, never remap
   const hid = vkToHid(k.vk);
   return hid === undefined ? null : { kind: 'key', usage: hid, mods: 0 };
 }
 
-const FN_INDEX = AU75_KEYS.find((k) => k.vk === 0xfa)?.index;
+const FN_INDEX = MK75_KEYS.find((k) => k.vk === 0xfa)?.index;
 
 export function KeymapTab({ api }: { api: DeviceApi }) {
   const { snap, dev } = api;
@@ -40,7 +40,7 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
 
   const changed = useMemo(() => {
     if (!snap || !matrix) return new Set<number>();
-    return new Set(AU75_KEYS.filter((k) => getKeyCode(snap.matrix, k.index) !== getKeyCode(matrix, k.index)).map((k) => k.index));
+    return new Set(MK75_KEYS.filter((k) => getKeyCode(snap.matrix, k.index) !== getKeyCode(matrix, k.index)).map((k) => k.index));
   }, [snap, matrix]);
 
   const assignRef = useRef<(a: KeyAction) => void>(() => {});
@@ -76,7 +76,7 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
 
   if (!snap || !dev || !matrix) return null;
   const index = [...sel][0];
-  const key = AU75_KEYS.find((k) => k.index === index);
+  const key = MK75_KEYS.find((k) => k.index === index);
   const current = index !== undefined ? decodeAction(getKeyCode(matrix, index)) : null;
   const isFn = index === FN_INDEX;
 

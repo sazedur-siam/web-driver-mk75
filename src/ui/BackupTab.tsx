@@ -1,12 +1,12 @@
 import { useRef, useState } from 'react';
-import { PAGE_LEN, PROFILE_LEN } from '../protocol/au75';
+import { PAGE_LEN, PROFILE_LEN } from '../protocol/mk75';
 import type { DeviceApi } from './useDevice';
 
 const toHex = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
 const fromHexStr = (s: string) => new Uint8Array((s.match(/../g) ?? []).map((h) => parseInt(h, 16)));
 
 interface BackupFile {
-  format: 'au75-web-driver-backup';
+  format: 'mk75-driver-backup';
   version: 1;
   created: string;
   profile: string;
@@ -23,7 +23,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
 
   const exportBackup = () => {
     const b: BackupFile = {
-      format: 'au75-web-driver-backup',
+      format: 'mk75-driver-backup',
       version: 1,
       created: new Date().toISOString(),
       profile: toHex(snap.profile),
@@ -42,7 +42,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
     if (!f) return;
     try {
       const b = JSON.parse(await f.text()) as BackupFile;
-      if (b.format !== 'au75-web-driver-backup') throw new Error('Not a Lingbao MK75 Driver backup file');
+      if (b.format !== 'mk75-driver-backup') throw new Error('Not a Lingbao MK75 Driver backup file');
       if (fromHexStr(b.profile).length !== PROFILE_LEN || fromHexStr(b.keyMatrix).length !== PAGE_LEN || fromHexStr(b.rgbTable).length !== PAGE_LEN)
         throw new Error('Backup file is truncated or corrupted');
       setPending(b);

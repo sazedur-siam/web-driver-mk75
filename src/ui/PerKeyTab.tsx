@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { AU75_KEYS } from '../device/au75Layout';
+import { MK75_KEYS } from '../device/mk75Layout';
 import { buildLedMatrix, CUSTOM_MODE_INDEX, fromHex, hex, parseProfile, patchProfile, type RGB } from '../protocol/lighting';
 import { Keyboard } from './Keyboard';
 import type { DeviceApi } from './useDevice';
 
-const STORE = 'au75.perkey.v1';
+const STORE = 'mk75.perkey.v1';
 
 function load(): Record<number, RGB> {
   try {
@@ -74,8 +74,8 @@ export function PerKeyTab({ api }: { api: DeviceApi }) {
           <button disabled={!sel.size} onClick={() => paint(brush)}>
             Paint selected
           </button>
-          <button onClick={() => setSel(new Set(AU75_KEYS.map((k) => k.index)))}>Select all</button>
-          <button onClick={() => paint(brush, AU75_KEYS.map((k) => k.index))}>Fill all</button>
+          <button onClick={() => setSel(new Set(MK75_KEYS.map((k) => k.index)))}>Select all</button>
+          <button onClick={() => paint(brush, MK75_KEYS.map((k) => k.index))}>Fill all</button>
           <button onClick={() => update({})}>Clear</button>
         </div>
         <div className="actions">

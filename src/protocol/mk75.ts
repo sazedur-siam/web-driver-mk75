@@ -38,7 +38,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class ProtocolError extends Error {}
 
-export interface Au75Options {
+export interface Mk75Options {
   /** Delay between the read command and fetching the reply (vendor uses a per-device value). */
   readDelayMs?: number;
   /** Delay after each write so the MCU can commit to flash. Vendor uses 30-50 ms. */
@@ -47,14 +47,14 @@ export interface Au75Options {
   onFrame?: (dir: 'out' | 'in', reportId: number, data: Uint8Array) => void;
 }
 
-export class Au75 {
+export class Mk75 {
   private queue: Promise<unknown> = Promise.resolve();
   private readDelay: number;
   private writeDelay: number;
 
   constructor(
     readonly transport: FeatureTransport,
-    private opts: Au75Options = {},
+    private opts: Mk75Options = {},
   ) {
     this.readDelay = opts.readDelayMs ?? 30;
     this.writeDelay = opts.writeDelayMs ?? 50;

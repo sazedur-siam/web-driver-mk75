@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { Au75, DATA_FRAME_LEN } from './au75';
+import { Mk75, DATA_FRAME_LEN } from './mk75';
 import { decodeAction, encodeAction, getKeyCode, setKeyCode, resolveSlot } from './keycodes';
 import { buildLedMatrix, CUSTOM_MODE_INDEX, LED_MODES, parseProfile, parseRgbTable, patchProfile, patchRgbTable, PER_MODE_SLOTS } from './lighting';
-import { MockAu75 } from './mock';
+import { MockMk75 } from './mock';
 import type { FeatureTransport } from './transport';
 
 /** Records frames; answers reads with an echo of the op so readBlock succeeds. */
@@ -33,32 +33,32 @@ const hex = (a: number[], n: number) => a.slice(0, n).map((b) => b.toString(16).
 describe('wire format matches vendor driver', () => {
   it('read profile = report 5 [83 b6 00 00 00 00]', async () => {
     const t = new Recorder();
-    await new Au75(t, fast).readProfile();
+    await new Mk75(t, fast).readProfile();
     expect(t.frames[0].id).toBe(5);
     expect(hex(t.frames[0].data, 6)).toBe('83 b6 00 00 00 00');
   });
   it('write profile = report 6 [03 b6 00 00 00 00 00 | 254 bytes]', async () => {
     const t = new Recorder();
     const p = new Uint8Array(254).map((_, i) => i);
-    await new Au75(t, fast).writeProfile(p);
+    await new Mk75(t, fast).writeProfile(p);
     expect(t.frames[0].id).toBe(6);
     expect(t.frames[0].data.length).toBe(1031);
     expect(hex(t.frames[0].data, 10)).toBe('03 b6 00 00 00 00 00 00 01 02');
   });
   it('write key matrix = [04 d4 00 40 00 00 00 | 1024]', async () => {
     const t = new Recorder();
-    await new Au75(t, fast).writeKeyMatrix(new Uint8Array(1024).fill(0xaa));
+    await new Mk75(t, fast).writeKeyMatrix(new Uint8Array(1024).fill(0xaa));
     expect(hex(t.frames[0].data, 8)).toBe('04 d4 00 40 00 00 00 aa');
     expect(t.frames[0].data.length).toBe(1031);
   });
   it('read key matrix = report 5 [84 d4 ...]', async () => {
     const t = new Recorder();
-    await new Au75(t, fast).readKeyMatrix();
+    await new Mk75(t, fast).readKeyMatrix();
     expect(hex(t.frames[0].data, 6)).toBe('84 d4 00 00 00 00');
   });
   it('rgb table read/write = 88 b8 / 08 b8 00 40', async () => {
     const t = new Recorder();
-    const d = new Au75(t, fast);
+    const d = new Mk75(t, fast);
     await d.readRgbTable();
     await d.writeRgbTable(new Uint8Array(1024));
     expect(hex(t.frames[0].data, 6)).toBe('88 b8 00 00 00 00');
@@ -70,7 +70,7 @@ describe('wire format matches vendor driver', () => {
     const buf = new Uint8Array(0x762);
     buf[0] = 1;
     buf[0x400] = 2;
-    await new Au75(t, fast).writeLedMatrix(buf);
+    await new Mk75(t, fast).writeLedMatrix(buf);
     expect(hex(t.frames[0].data, 8)).toBe('09 bc 00 40 00 00 00 01');
     expect(hex(t.frames[1].data, 8)).toBe('09 c0 00 40 00 00 00 02');
   });
@@ -144,14 +144,14 @@ describe('lighting', () => {
   });
   it('mode table matches KB.ini', () => {
     expect(LED_MODES.map((m) => m.hw)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 0]);
-    expect(LED_MODES.filter((m) => m.hidden).map((m) => m.name)).toEqual(['Rainbow wheel', 'Retinue scanning', 'Rotating storm']);
+    expect(LED_MODES.filter((m) => m.hidden).map((m) => m.name)).toEqual(['Rainbow wheel', 'Shadow disappear', 'Retinue scanning', 'Rotating storm']);
   });
 });
 
 describe('end to end against simulator', () => {
   it('read-modify-write profile and matrix', async () => {
-    const mock = new MockAu75();
-    const d = new Au75(mock, fast);
+    const mock = new MockMk75();
+    const d = new Mk75(mock, fast);
     const prof = await d.readProfile();
     const st = parseProfile(prof);
     expect(st.activeIndex).toBe(0);

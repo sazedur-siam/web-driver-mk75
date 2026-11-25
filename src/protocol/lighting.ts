@@ -29,8 +29,8 @@ export interface LedMode {
   hidden: boolean;
 }
 
-/** KB.ini LedMask=0x22020: bit i hides LedOpt index i from the effect list. */
-const LED_MASK = 0x22020;
+/** MK75 KB.ini LedMask=0x22120: bit i hides LedOpt index i from the effect list. */
+const LED_MASK = 0x22120;
 
 // LedOptN = hw, effect(preview id), speed, light, direct, random, color  (from KB.ini)
 const LEDOPT: [number, number, number, number, number, number, number][] = [

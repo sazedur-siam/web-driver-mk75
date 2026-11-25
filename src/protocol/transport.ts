@@ -19,7 +19,7 @@ export interface FeatureTransport {
   close(): Promise<void>;
 }
 
-export const AU75_USB = {
+export const MK75_USB = {
   vendorId: 0x258a,
   productId: 0x010c,
   /** 2.4 GHz dongle: uses a different (20-byte, checksummed) protocol that this port does not implement. */
@@ -61,7 +61,7 @@ export class WebHidTransport implements FeatureTransport {
   static async request(): Promise<WebHidTransport> {
     if (!WebHidTransport.isSupported()) throw new Error('WebHID is not available. Use Chrome, Edge or Opera on desktop over HTTPS or localhost.');
     const picked = await navigator.hid.requestDevice({
-      filters: [{ vendorId: AU75_USB.vendorId, productId: AU75_USB.productId, usagePage: AU75_USB.usagePage }],
+      filters: [{ vendorId: MK75_USB.vendorId, productId: MK75_USB.productId, usagePage: MK75_USB.usagePage }],
     });
     if (picked.length === 0) throw new Error('No device selected.');
     return WebHidTransport.open(picked);
@@ -71,7 +71,7 @@ export class WebHidTransport implements FeatureTransport {
   static async reconnect(): Promise<WebHidTransport | null> {
     if (!WebHidTransport.isSupported()) return null;
     const granted = (await navigator.hid.getDevices()).filter(
-      (d) => d.vendorId === AU75_USB.vendorId && d.productId === AU75_USB.productId,
+      (d) => d.vendorId === MK75_USB.vendorId && d.productId === MK75_USB.productId,
     );
     return granted.length ? WebHidTransport.open(granted) : null;
   }
@@ -80,8 +80,8 @@ export class WebHidTransport implements FeatureTransport {
     // Chrome may only return the interface the user clicked; pull in sibling interfaces we already have permission for.
     const all = await navigator.hid.getDevices();
     const set = new Set<HIDDevice>(candidates);
-    for (const d of all) if (d.vendorId === AU75_USB.vendorId && d.productId === AU75_USB.productId) set.add(d);
-    const vendor = [...set].filter((d) => d.collections.some((c) => c.usagePage === AU75_USB.usagePage));
+    for (const d of all) if (d.vendorId === MK75_USB.vendorId && d.productId === MK75_USB.productId) set.add(d);
+    const vendor = [...set].filter((d) => d.collections.some((c) => c.usagePage === MK75_USB.usagePage));
     for (const d of vendor) if (!d.opened) await d.open();
     const t = new WebHidTransport(vendor);
     for (const id of [0x05, 0x06]) {

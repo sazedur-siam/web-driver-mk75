@@ -4,7 +4,42 @@ import { BackupTab } from './ui/BackupTab';
 import { KeymapTab } from './ui/KeymapTab';
 import { LightingTab } from './ui/LightingTab';
 import { PerKeyTab } from './ui/PerKeyTab';
+import { Keyboard } from './ui/Keyboard';
 import { useDevice } from './ui/useDevice';
+
+type Theme = 'dark' | 'light';
+const THEME_KEY = 'mk75.theme';
+
+function readTheme(): Theme {
+  try {
+    return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
+/** MK75 colourways: "Dark green-orange" (default) and a cream/pink light variant. */
+function ThemeSwitch() {
+  const [theme, setTheme] = useState<Theme>(readTheme);
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      /* storage unavailable */
+    }
+  }, [theme]);
+  return (
+    <div className="theme-switch" role="radiogroup" aria-label="Colour theme">
+      <button role="radio" aria-checked={theme === 'dark'} className={theme === 'dark' ? 'on' : ''} onClick={() => setTheme('dark')}>
+        Green-orange
+      </button>
+      <button role="radio" aria-checked={theme === 'light'} className={theme === 'light' ? 'on' : ''} onClick={() => setTheme('light')}>
+        Cream
+      </button>
+    </div>
+  );
+}
 
 const TABS = ['Lighting', 'Per-key RGB', 'Key mapping', 'Backup & log'] as const;
 type Tab = (typeof TABS)[number];
@@ -27,16 +62,18 @@ export default function App() {
     <div className="app">
       <header className="top">
         <div className="brand">
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden>
-            <rect x="2" y="6" width="20" height="12" rx="2.5" fill="none" stroke="currentColor" strokeWidth="1.6" />
-            <path d="M6 10h1M9 10h1M12 10h1M15 10h1M18 10h1M7 14h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
+          <div className="brand-logo" aria-hidden>
+            MK
+          </div>
           <div>
-            <h1>Lingbao MK75 Driver</h1>
+            <h1>
+              Lingbao <span className="brand-mk">MK75</span> Driver
+            </h1>
             <p className="muted small">Unofficial web-based configuration tool for the MK75 keyboard</p>
           </div>
         </div>
         <div className="conn">
+          <ThemeSwitch />
           {api.dev ? (
             <>
               <span className={`pill ${api.isDemo ? 'demo' : 'ok'}`}>{api.isDemo ? 'Simulator' : api.dev.transport.name}</span>
@@ -67,6 +104,9 @@ export default function App() {
 
       {!api.dev ? (
         <main className="welcome">
+          <div className="hero-kb">
+            <Keyboard selected={new Set()} onSelect={() => {}} />
+          </div>
           <section className="card">
             <h2>Connect your MK75</h2>
             <ol>
@@ -106,7 +146,7 @@ export default function App() {
         </>
       )}
       <footer className="muted small">
-        Not affiliated with AULA. Protocol reverse-engineered from the vendor's Windows driver v2.0. Use at your own risk.
+        Not affiliated with Lingbao. Protocol reverse-engineered from the official LINGBAO Keyboard Driver v2.0 for Windows. Use at your own risk.
       </footer>
     </div>
   );

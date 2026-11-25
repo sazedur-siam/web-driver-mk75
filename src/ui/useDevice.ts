@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { Au75 } from '../protocol/au75';
-import { MockAu75 } from '../protocol/mock';
+import { Mk75 } from '../protocol/mk75';
+import { MockMk75 } from '../protocol/mock';
 import { WebHidTransport, type FeatureTransport } from '../protocol/transport';
 
 export interface LogLine {
@@ -21,7 +21,7 @@ const fmt = (d: Uint8Array) => {
 };
 
 export function useDevice() {
-  const [dev, setDev] = useState<Au75 | null>(null);
+  const [dev, setDev] = useState<Mk75 | null>(null);
   const [snap, setSnap] = useState<DeviceSnapshot | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +53,7 @@ export function useDevice() {
 
   const attach = useCallback(
     async (t: FeatureTransport) => {
-      const d = new Au75(t, { onFrame: (dir, id, data) => push({ dir, text: `#${id.toString(16).padStart(2, '0')} ${fmt(data)}` }) });
+      const d = new Mk75(t, { onFrame: (dir, id, data) => push({ dir, text: `#${id.toString(16).padStart(2, '0')} ${fmt(data)}` }) });
       push({ dir: 'info', text: `Connected: ${t.name}` });
       const profile = await d.readProfile();
       const matrix = await d.readKeyMatrix();
@@ -65,7 +65,7 @@ export function useDevice() {
   );
 
   const connect = useCallback(() => run('Connecting', async () => attach(await WebHidTransport.request())), [run, attach]);
-  const connectDemo = useCallback(() => run('Starting simulator', async () => attach(new MockAu75())), [run, attach]);
+  const connectDemo = useCallback(() => run('Starting simulator', async () => attach(new MockMk75())), [run, attach]);
 
   const disconnect = useCallback(async () => {
     await dev?.transport.close();
@@ -83,7 +83,7 @@ export function useDevice() {
     [dev, run],
   );
 
-  return { dev, snap, setSnap, busy, error, setError, log, push, run, connect, connectDemo, disconnect, refresh, isDemo: dev?.transport instanceof MockAu75 };
+  return { dev, snap, setSnap, busy, error, setError, log, push, run, connect, connectDemo, disconnect, refresh, isDemo: dev?.transport instanceof MockMk75 };
 }
 
 export type DeviceApi = ReturnType<typeof useDevice>;

@@ -1,62 +1,74 @@
+/* Lingbao MK75 colour language (sampled from the official MK75 product poster):
+   deep green-black base, lime-green highlight, mint keycaps, charcoal modifiers, orange accents.
+   "light" mirrors the cream / pink MK75 colourway. */
 :root {
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --surface-2: #eef0f3;
-  --border: #d9dde3;
-  --text: #1b1f24;
-  --muted: #5f6873;
-  --accent: #0a7cff;
-  --accent-ink: #ffffff;
-  --danger: #d6343a;
-  --ok: #1f9d55;
-  --warn: #b7791f;
-  --key: #e6e9ee;
-  --key-stroke: #b9c0ca;
-  --key-text: #2a3038;
-  --case: #d3d8df;
-  --focus: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #111317;
-    --surface: #1a1d22;
-    --surface-2: #23272e;
-    --border: #2f343c;
-    --text: #e7eaee;
-    --muted: #9aa3ad;
-    --accent: #3d9bff;
-    --key: #2a2f37;
-    --key-stroke: #3c434d;
-    --key-text: #d5dae0;
-    --case: #15181c;
-    color-scheme: dark;
-  }
-}
-:root[data-theme='dark'] {
-  --bg: #111317;
-  --surface: #1a1d22;
-  --surface-2: #23272e;
-  --border: #2f343c;
-  --text: #e7eaee;
-  --muted: #9aa3ad;
-  --accent: #3d9bff;
-  --key: #2a2f37;
-  --key-stroke: #3c434d;
-  --key-text: #d5dae0;
-  --case: #15181c;
+  --bg: #050e0a;
+  --bg-glow: rgba(63, 220, 95, 0.16);
+  --surface: #0b1811;
+  --surface-2: #10231a;
+  --border: #1c3829;
+  --text: #e8f5ee;
+  --muted: #8ba999;
+  --accent: #3fdc5f;
+  --accent-ink: #03140a;
+  --accent-2: #f5922a;
+  --mint: #8fd8c5;
+  --danger: #ff6b6b;
+  --ok: #3fdc5f;
+  --warn: #f5a524;
+  --case: #0a0e0c;
+  --plate: #121815;
+  --cap-alpha: #93d6c6;
+  --cap-alpha-ink: #0b2a22;
+  --cap-mod: #1e2523;
+  --cap-mod-ink: #d3e6dd;
+  --cap-accent: #f39a2b;
+  --cap-accent-ink: #2a1503;
+  --cap-edge: rgba(0, 0, 0, 0.45);
+  --knob: #1b201e;
+  --focus: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent);
   color-scheme: dark;
+}
+:root[data-theme='light'] {
+  --bg: #f5f1e9;
+  --bg-glow: rgba(22, 163, 74, 0.1);
+  --surface: #ffffff;
+  --surface-2: #f2ede3;
+  --border: #e2d9c8;
+  --text: #1c2a23;
+  --muted: #687a70;
+  --accent: #16a34a;
+  --accent-ink: #ffffff;
+  --accent-2: #e8892a;
+  --mint: #3fae95;
+  --danger: #d6343a;
+  --ok: #16a34a;
+  --warn: #b7791f;
+  --case: #f8f6f1;
+  --plate: #ebe5da;
+  --cap-alpha: #faf3e6;
+  --cap-alpha-ink: #3b302a;
+  --cap-mod: #f3d3cf;
+  --cap-mod-ink: #5a3a38;
+  --cap-accent: #e9aaa3;
+  --cap-accent-ink: #4a2522;
+  --cap-edge: rgba(80, 60, 40, 0.25);
+  --knob: #e9e4da;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
-  background: var(--bg);
+  background: radial-gradient(1200px 520px at 50% -120px, var(--bg-glow), transparent 70%), var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
 }
-h1, h2 { margin: 0; font-weight: 600; }
-h1 { font-size: 17px; }
+h1, h2 { margin: 0; font-weight: 650; }
+h1 { font-size: 18px; letter-spacing: 0.01em; }
+h1 .brand-mk { color: var(--accent); }
 h2 { font-size: 15px; }
 p { margin: 0.4em 0; }
 .muted { color: var(--muted); }
@@ -74,7 +86,7 @@ kbd {
 .app { max-width: 1120px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; min-height: 100vh; }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; }
-.brand svg { color: var(--accent); }
+.brand-logo { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-weight: 800; font-size: 13px; letter-spacing: -0.02em; box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
 .conn { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 footer { margin-top: auto; padding-top: 12px; text-align: center; }
 
@@ -86,12 +98,13 @@ button {
   border-radius: 8px;
   padding: 7px 12px;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
 }
 button:hover:not(:disabled) { border-color: var(--accent); }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: none; box-shadow: var(--focus); }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
-button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.primary:hover:not(:disabled) { box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent); }
 button.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
 select {
   font: inherit;
@@ -101,6 +114,9 @@ select {
   border-radius: 8px;
   padding: 6px 8px;
 }
+.theme-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; background: var(--surface); }
+.theme-switch button { border: none; border-radius: 999px; padding: 4px 10px; font-size: 12px; background: none; color: var(--muted); }
+.theme-switch button.on { background: var(--surface-2); color: var(--text); }
 
 .pill { padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
 .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }
@@ -121,13 +137,14 @@ select {
 .stack { display: flex; flex-direction: column; gap: 14px; }
 @media (max-width: 820px) { .panel-grid { grid-template-columns: minmax(0, 1fr); } }
 
-.welcome { display: grid; place-items: start center; }
-.welcome .card { max-width: 640px; }
+.welcome { display: grid; place-items: start center; gap: 14px; }
+.welcome .card { max-width: 680px; width: 100%; }
 .welcome ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.hero-kb { max-width: 680px; width: 100%; }
 
 .modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
 .mode { text-align: left; padding: 10px 12px; }
-.mode.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+.mode.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
 .mode.hidden-mode { border-style: dashed; }
 .chk { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; cursor: pointer; }
 .hint { color: var(--muted); font-size: 12px; margin: 0; }
@@ -158,24 +175,44 @@ select {
 .assign { display: flex; flex-direction: column; gap: 14px; }
 .confirm { border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent); border-radius: 8px; padding: 10px 12px; }
 
+/* --- keyboard --- */
 .kb { width: 100%; height: auto; display: block; user-select: none; touch-action: none; }
-.kb-case { fill: var(--case); }
-.key rect { fill: var(--key); stroke: var(--key-stroke); stroke-width: 1; cursor: pointer; }
-.key:hover rect { stroke: var(--accent); }
+.kb-case { fill: var(--case); stroke: var(--border); stroke-width: 1; }
+.kb-plate { fill: var(--plate); }
+.kb-deco rect { fill: var(--cap-mod); }
+.kb-deco .kb-switch { fill: var(--muted); }
+.kb-led { fill: var(--accent); opacity: 0.8; }
+.key rect { stroke: var(--cap-edge); stroke-width: 1; cursor: pointer; transition: filter 0.1s; }
+.key.cap-alpha rect { fill: var(--cap-alpha); }
+.key.cap-mod rect { fill: var(--cap-mod); }
+.key.cap-accent rect { fill: var(--cap-accent); }
+.key.cap-alpha .kl { fill: var(--cap-alpha-ink); }
+.key.cap-mod .kl { fill: var(--cap-mod-ink); }
+.key.cap-accent .kl { fill: var(--cap-accent-ink); }
+.key:hover rect { filter: brightness(1.12); }
 .key.sel rect { stroke: var(--accent); stroke-width: 2.5; }
-.key.hl rect { stroke: var(--warn); stroke-width: 2; stroke-dasharray: 3 2; }
+.key.hl rect { stroke: var(--accent-2); stroke-width: 2; stroke-dasharray: 3 2; }
 .key.sel.hl rect { stroke: var(--accent); stroke-dasharray: none; }
-.kl { font-size: 7.5px; fill: var(--key-text); pointer-events: none; paint-order: stroke; stroke: color-mix(in srgb, var(--key) 70%, transparent); stroke-width: 2px; }
-.ks { font-size: 5.5px; fill: var(--accent); pointer-events: none; font-weight: 600; }
+.key.lit .kl { fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 2px; }
+.kl { font-size: 7.5px; pointer-events: none; font-weight: 600; }
+.ks { font-size: 5.5px; fill: var(--accent-2); pointer-events: none; font-weight: 700; paint-order: stroke; stroke: var(--case); stroke-width: 1.5px; }
 .kb-lasso { fill: color-mix(in srgb, var(--accent) 15%, transparent); stroke: var(--accent); stroke-dasharray: 3 2; }
+.knob-ring { fill: var(--knob); stroke: var(--cap-edge); }
+.knob-cap { fill: var(--cap-mod); stroke: color-mix(in srgb, var(--accent-2) 70%, transparent); stroke-width: 1.2; }
+.knob-tick { stroke: var(--accent-2); stroke-width: 1.6; stroke-linecap: round; }
+.knob.clickable { cursor: pointer; }
+.knob.clickable:hover .knob-cap, .knob.sel .knob-cap { stroke: var(--accent); stroke-width: 2.2; }
 
 .log { max-height: 360px; overflow: auto; background: var(--surface-2); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
 .log-error { color: var(--danger); }
 .log-info { color: var(--ok); }
 pre { white-space: pre-wrap; word-break: break-all; margin: 8px 0 0; }
 details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+.shortcuts { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 14px; margin: 0; }
+.shortcuts div { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; border-bottom: 1px dashed var(--border); padding: 4px 0; }
+.shortcuts dt { white-space: nowrap; }
+.shortcuts dd { margin: 0; color: var(--muted); text-align: right; }
 
 @media (max-width: 520px) {
-  .app { padding: 16px; }
   .kl { font-size: 9px; }
 }
