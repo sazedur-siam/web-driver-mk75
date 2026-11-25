@@ -137,7 +137,11 @@ export function MacrosTab({ api }: { api: DeviceApi }) {
           }}
         />
         {api.dev && !api.dev.caps.macros && (
-          <p className="hint warn">You can edit macros here, but writing them needs the USB cable (the wireless macro format isn't supported yet).</p>
+          <p className="hint warn">
+            {api.dev.kind === 'wired'
+              ? "You can edit macros here, but this keyboard revision's macro format isn't supported yet."
+              : "You can edit macros here, but writing them needs the USB cable (the wireless macro format isn't supported yet)."}
+          </p>
         )}
         <p className="hint">
           Assign macros to keys on the <b>Key mapping</b> tab. The keyboard can't send macros back, so they're kept in this browser

@@ -84,7 +84,8 @@ export class WebHidTransport implements FeatureTransport {
     const vendor = [...set].filter((d) => d.collections.some((c) => c.usagePage === MK75_USB.usagePage));
     for (const d of vendor) if (!d.opened) await d.open();
     const t = new WebHidTransport(vendor);
-    for (const id of [0x05, 0x06]) {
+    // IC2481 boards (519-byte report 0x06) carry everything on 0x06; report 0x05 isn't used.
+    for (const id of t.routes.get(0x06)?.size === 0x207 ? [0x06] : [0x05, 0x06]) {
       if (!t.routes.has(id)) {
         throw new Error(
           `The keyboard did not expose feature report 0x0${id}. Make sure it is connected by USB cable (not 2.4 GHz/Bluetooth) and in Windows mode (Fn+W).`,

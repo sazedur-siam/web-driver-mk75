@@ -80,7 +80,7 @@ export async function applyProfile(dev: Mk75Device, snap: DeviceSnapshot, p: Pro
   const target = profileMatrix(p, dev.caps.macros, snap.matrix);
   const matrix = target.matrix;
   if (target.plan.pages.length) {
-    if (!dev.caps.macros) skipped.push('macros (need the USB cable)');
+    if (!dev.caps.macros) skipped.push(dev.kind === 'wired' ? 'macros (not supported on this keyboard revision yet)' : 'macros (need the USB cable)');
     else if (eq(matrix, snap.matrix) && macroPagesUnchanged(target.plan.pages)) {
       /* same macros already written from this browser */
     } else {

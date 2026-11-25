@@ -111,6 +111,17 @@ Address notes:
 | Macros | `05 DC/E0/E4/E8` | 32 × 128-byte slots; write-only |
 | Model check | report 05 `05 81` | Reply `01 03 00 00 00 00 C6` (KB.ini `Psd`) |
 
+### Wired, IC2481 boards (`g5Wired.ts`)
+Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** class on the cable, not CDev916KB.
+`openMk75` picks it when feature report 0x06 is **519 bytes** (CDev916KB boards: 1031); report 0x05 isn't used.
+- Frame on report 0x06: `[cmd, sub, 0, total, index, lenLo, lenHi, payload ≤ 512]` (AccessData `0x498F70`).
+- Reads send `cmd|0x80`, wait 20 ms, then get report 0x06; the payload starts at offset 7. Writes wait 20 ms
+  (7 ms for live) before each 512-byte chunk.
+- Opcodes (read/write): matrix `83/03` (sub = layer), LED `84/04`, per-key `86/06`, palette `8A/0A`, live `08`,
+  model id `82` sub 1 len 6, macros `85/05` (format unverified, so `caps.macros` is false).
+- The blocks are wireless "layout B", so `Mk75G5Wired` reuses `Mk75Wireless` with USB opcodes. Unlike wireless,
+  the colour nibble keeps palette index 0..6.
+
 ### Wired key codes (u32 LE, low byte = type)
 - **Types:**
   - `00` key: byte2 = HID modifier mask, byte3 = usage
@@ -172,6 +183,7 @@ src/protocol/            pure logic + device I/O (unit-tested, no React)
   device.ts              Mk75Device interface + caps (macros, paletteIndex, battery)
   transport.ts           WebHID feature transport; routes report IDs to the right HID interface
   mk75.ts                wired protocol (readProfile/writeProfile/…/writeMacroPages/sendLiveFrame/checkModel)
+  g5Wired.ts             wired protocol on IC2481 boards (520-byte report 0x06, layout B via Mk75Wireless)
   wireless/              packet.ts (framing) · link.ts (ack/retry engine) · codes.ts (wired↔wireless codes)
                          mk75Wireless.ts (adapter) · webhid.ts · mockWireless.ts (2.4 GHz simulator)
   connect.ts             requestMk75/openMk75: one Connect for cable / receiver / Bluetooth
