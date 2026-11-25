@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MK75_KEYS } from '../../device/mk75Layout';
 import { encodeAction, getKeyCode, setKeyCode } from '../keycodes';
-import { parseProfile, patchProfile, parseRgbTable, patchRgbTable } from '../lighting';
+import { CUSTOM_GROUP, CUSTOM_MODE_INDEX, parseProfile, patchProfile, parseRgbTable, patchRgbTable } from '../lighting';
 import { wiredToWireless, wirelessToWired } from './codes';
 import { WirelessLink } from './link';
 import { MockWirelessIO } from './mockWireless';
@@ -87,6 +87,18 @@ describe('Mk75Wireless adapter against the simulator', () => {
     expect(io.led[0x3b + 2]).toBe(0x37);
     expect([io.led[0x7e], io.led[0x7f]]).toEqual([0x5a, 0xa5]);
     expect(io.led[0x18]).toBe(4); // untouched sleep preserved
+  });
+
+  it('self-define activates custom group 0x20 even if previously 0', async () => {
+    const { io, dev } = make();
+    io.led[0x0b] = 0;
+    const p = await dev.readProfile();
+    const st = parseProfile(p);
+    st.activeIndex = CUSTOM_MODE_INDEX;
+    await dev.writeProfile(patchProfile(p, st));
+    expect(io.led[0x09]).toBe(1);
+    expect(io.led[0x0a]).toBe(21);
+    expect(io.led[0x0b]).toBe(CUSTOM_GROUP);
   });
 
   it('sleep off / on', async () => {

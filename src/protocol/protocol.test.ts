@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Mk75, DATA_FRAME_LEN } from './mk75';
 import { decodeAction, encodeAction, getKeyCode, setKeyCode, resolveSlot } from './keycodes';
-import { buildLedMatrix, CUSTOM_MODE_INDEX, LED_MODES, parseProfile, parseRgbTable, patchProfile, patchRgbTable, PER_MODE_SLOTS } from './lighting';
+import { buildLedMatrix, CUSTOM_GROUP, CUSTOM_MODE_INDEX, LED_MODES, parseProfile, parseRgbTable, patchProfile, patchRgbTable, PER_MODE_SLOTS } from './lighting';
 import { MockMk75 } from './mock';
 import type { FeatureTransport } from './transport';
 
@@ -125,6 +125,7 @@ describe('lighting', () => {
     const p = patchProfile(new Uint8Array(254), { activeIndex: CUSTOM_MODE_INDEX, perMode: parseProfile(new Uint8Array(254)).perMode });
     expect(p[4]).toBe(1);
     expect(p[5]).toBe(21);
+    expect(p[6]).toBe(CUSTOM_GROUP);
     expect(parseProfile(p).activeIndex).toBe(CUSTOM_MODE_INDEX);
   });
   it('rgb table stride 0x15 starting at mode+1', () => {
