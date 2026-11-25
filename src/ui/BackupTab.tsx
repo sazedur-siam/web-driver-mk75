@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { PAGE_LEN, PROFILE_LEN } from '../protocol/mk75';
 import { macroStore } from './macroStore';
+import { profileStore, validateProfile, type Profile } from './profileStore';
 import { withMacroCodes } from './saveKeys';
 import type { DeviceApi } from './useDevice';
 
@@ -16,6 +17,8 @@ interface BackupFile {
   rgbTable: string;
   /** Macro library + assignments (kept in the browser; the keyboard can't send them back). */
   macros?: ReturnType<typeof macroStore.get>;
+  /** Saved profiles (browser only). */
+  profiles?: Profile[];
 }
 
 export function BackupTab({ api }: { api: DeviceApi }) {
@@ -34,6 +37,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
       keyMatrix: toHex(snap.matrix),
       rgbTable: toHex(snap.rgbTable),
       macros: macroStore.get(),
+      profiles: profileStore.get().profiles,
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
@@ -60,6 +64,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
     pending &&
     api.run('Restoring backup', async () => {
       if (pending.macros?.macros) macroStore.replaceAll(pending.macros);
+      if (Array.isArray(pending.profiles) && pending.profiles.length) profileStore.replaceAll(pending.profiles.map(validateProfile));
       await dev.writeRgbTable(fromHexStr(pending.rgbTable));
       // Macro pages first (ids are re-planned deterministically in key order), then the matrix.
       const { matrix, plan } = withMacroCodes(fromHexStr(pending.keyMatrix));
@@ -78,7 +83,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
           <h2>Backup &amp; restore</h2>
         </header>
         <p className="muted">
-          Save the keyboard's lighting profile, key matrix and colour palette, plus your macros, before experimenting. Per-key
+          Save the keyboard's lighting profile, key matrix and colour palette, plus your macros and saved profiles, before experimenting. Per-key
           Self-define colours aren't included, because they can't be read back from the keyboard.
         </p>
         <div className="actions">

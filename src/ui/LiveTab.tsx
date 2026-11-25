@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { MK75_KEYS } from '../device/mk75Layout';
 import { HID_KEYS, HID_MODIFIERS } from '../protocol/keycodes';
-import { fromHex, hex, type RGB } from '../protocol/lighting';
+import { fromHex, hex } from '../protocol/lighting';
 import { compose, frameToFill, MUSIC_MODES, MusicVisualizer, RT_MODES, RtEffect, type ColorSource, type MusicMode, type RtMode } from '../protocol/live';
 import { vkToHid } from '../protocol/mock';
 import { Keyboard } from './Keyboard';
+import { loadPerKey, perKeyMap } from './perKeyStore';
 import { startTicker } from './ticker';
 import type { DeviceApi } from './useDevice';
 
@@ -16,15 +17,6 @@ const LED_BY_USAGE = new Map<number, number>();
 for (const k of MK75_KEYS) {
   const u = vkToHid(k.vk);
   if (u !== undefined) LED_BY_USAGE.set(u, k.index);
-}
-
-function loadPerKey(): Map<number, RGB> {
-  try {
-    const o = JSON.parse(localStorage.getItem('mk75.perkey.v1') || '{}') as Record<string, RGB>;
-    return new Map(Object.entries(o).map(([k, v]) => [Number(k), v]));
-  } catch {
-    return new Map();
-  }
 }
 
 type Source = 'solid' | 'rainbow' | 'perkey';
@@ -75,7 +67,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
     let lastPreview = 0;
     let lastFps = performance.now();
     const t0 = performance.now();
-    const perkey = loadPerKey();
+    const perkey = perKeyMap(loadPerKey());
     const bins = new Uint8Array(128);
     const ticker = startTicker(FRAME_MS, async () => {
       if (busy) return; // never queue frames behind a slow USB write

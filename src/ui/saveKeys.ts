@@ -3,6 +3,24 @@ import { planMacros } from '../protocol/macro';
 import { assignmentMap, macroStore } from './macroStore';
 import type { DeviceApi } from './useDevice';
 
+/** Macro pages can't be read back; remember what this browser last wrote to skip identical rewrites. */
+const LAST_PAGES = 'mk75.macropages.last';
+const pagesKey = (pages: { sub: number; data: Uint8Array }[]) => pages.map((p) => p.sub.toString(16) + ':' + Array.from(p.data, (b) => b.toString(16)).join('')).join('|');
+export function macroPagesUnchanged(pages: { sub: number; data: Uint8Array }[]): boolean {
+  try {
+    return localStorage.getItem(LAST_PAGES) === pagesKey(pages);
+  } catch {
+    return false;
+  }
+}
+export function rememberMacroPages(pages: { sub: number; data: Uint8Array }[]) {
+  try {
+    localStorage.setItem(LAST_PAGES, pagesKey(pages));
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Apply current macro assignments onto a matrix (ids assigned in key order, like the vendor). */
 export function withMacroCodes(matrix: Uint8Array): { matrix: Uint8Array; plan: ReturnType<typeof planMacros> } {
   const s = macroStore.get();
@@ -19,7 +37,10 @@ export async function saveKeysAndMacros(api: DeviceApi, matrix: Uint8Array) {
   const { dev, snap } = api;
   if (!dev || !snap) return;
   const { matrix: m, plan } = withMacroCodes(matrix);
-  if (plan.pages.length) await dev.writeMacroPages(plan.pages);
+  if (plan.pages.length) {
+    await dev.writeMacroPages(plan.pages);
+    rememberMacroPages(plan.pages);
+  }
   await dev.writeKeyMatrix(m);
   const back = await dev.readKeyMatrix();
   api.setSnap({ ...snap, matrix: back });
