@@ -14,7 +14,6 @@ import type { DeviceCaps, Mk75Device } from '../device';
 import { PROFILE_LEN } from '../mk75';
 import { LED_GROUP_LEN } from '../lighting';
 import { wiredToWireless, wirelessToWired } from './codes';
-import type { WirelessLink } from './link';
 import { WCmd } from './packet';
 
 const LED_LEN = 128;
@@ -32,8 +31,37 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class UnsupportedOverWireless extends Error {}
 
+/** What the adapter needs from its link: WirelessLink (2.4 GHz / BT) or G5WiredLink (USB, IC2481 boards). */
+export interface LayoutBLink {
+  readonly io: { readonly name: string };
+  read(cmd: number, sub: number, len: number): Promise<Uint8Array>;
+  write(cmd: number, sub: number, data: Uint8Array): Promise<void>;
+  close(): Promise<void>;
+}
+
+/** Layout B opcodes. The same CDevG5KB blocks use different command bytes over USB (see g5Wired.ts). */
+export interface LayoutBOps {
+  getLed: number;
+  setLed: number;
+  getMatrix: number;
+  setMatrix: number;
+  getPalette: number;
+  setPalette: number;
+  setColors: number;
+}
+
+const WIRELESS_OPS: LayoutBOps = {
+  getLed: WCmd.GetLed,
+  setLed: WCmd.SetLed,
+  getMatrix: WCmd.GetMatrix,
+  setMatrix: WCmd.SetMatrix,
+  getPalette: WCmd.GetPalette,
+  setPalette: WCmd.SetPalette,
+  setColors: WCmd.SetColors,
+};
+
 export class Mk75Wireless implements Mk75Device {
-  readonly kind = 'wireless' as const;
+  readonly kind: 'wired' | 'wireless';
   readonly caps: DeviceCaps;
   readonly canStream = true;
   readonly transport: { name: string; close(): Promise<void> };
@@ -45,11 +73,13 @@ export class Mk75Wireless implements Mk75Device {
   private paletteRaw: Uint8Array | null = null;
 
   constructor(
-    private link: WirelessLink,
-    /** 'combo' = report ID 0x15 receiver; '3632' = report ID 0x13 (has battery + reset). */
-    readonly flavour: 'combo' | '3632',
+    protected link: LayoutBLink,
+    /** 'combo' = report ID 0x15 receiver; '3632' = report ID 0x13 (has battery + reset); 'g5wired' = USB cable. */
+    readonly flavour: 'combo' | '3632' | 'g5wired',
+    private ops: LayoutBOps = WIRELESS_OPS,
   ) {
-    this.caps = { macros: false, paletteIndex: false, battery: flavour === '3632' };
+    this.kind = flavour === 'g5wired' ? 'wired' : 'wireless';
+    this.caps = { macros: false, paletteIndex: flavour === 'g5wired', battery: flavour === '3632' };
     this.simulated = link.io.name.startsWith('Simulated');
     this.transport = { name: `${link.io.name}`, close: () => link.close() };
   }
@@ -63,7 +93,7 @@ export class Mk75Wireless implements Mk75Device {
   // ---------------------------------------------------------------- LED profile
   private async readLedRaw(): Promise<Uint8Array> {
     for (let i = 0; i < 5; i++) {
-      const r = await this.link.read(WCmd.GetLed, 0, LED_LEN);
+      const r = await this.link.read(this.ops.getLed, 0, LED_LEN);
       if (r[0x7e] === 0x5a && r[0x7f] === 0xa5) return r;
       await sleep(100);
     }
@@ -81,11 +111,17 @@ export class Mk75Wireless implements Mk75Device {
     for (let i = 0; i < WL_MODES; i++) {
       const bright = raw[0x3a + 2 * i] & 0x0f;
       const b = raw[0x3b + 2 * i];
-      p[0x16 + 2 * i] = (b & 0x0f) === 7 ? 7 : 0;
+      p[0x16 + 2 * i] = this.colour(b & 0x0f);
       p[0x17 + 2 * i] = (b & 0xf0) | bright;
     }
     this.ledView = p;
     return new Uint8Array(p);
+  }
+
+  /** Colour nibble: palette index 0..6 or 7 = colourful; wireless only honours colourful or colour 0. */
+  private colour(c: number): number {
+    if (this.caps.paletteIndex) return Math.min(c, 7);
+    return c === 7 ? 7 : 0;
   }
 
   async writeProfile(p: Uint8Array): Promise<void> {
@@ -109,18 +145,18 @@ export class Mk75Wireless implements Mk75Device {
     for (let i = 0; i < WL_MODES; i++) {
       if (!changed(0x16 + 2 * i) && !changed(0x17 + 2 * i)) continue;
       raw[0x3a + 2 * i] = p[0x17 + 2 * i] & 0x0f;
-      raw[0x3b + 2 * i] = (p[0x17 + 2 * i] & 0xf0) | ((p[0x16 + 2 * i] & 0x0f) === 7 ? 7 : 0);
+      raw[0x3b + 2 * i] = (p[0x17 + 2 * i] & 0xf0) | this.colour(p[0x16 + 2 * i] & 0x0f);
     }
     raw[0x7e] = 0x5a;
     raw[0x7f] = 0xa5;
     await sleep(60);
-    await this.link.write(WCmd.SetLed, 0, raw);
+    await this.link.write(this.ops.setLed, 0, raw);
     this.ledView = new Uint8Array(p);
   }
 
   // ---------------------------------------------------------------- key matrix (base layer)
   async readKeyMatrix(): Promise<Uint8Array> {
-    const raw = await this.link.read(WCmd.GetMatrix, 0, LAYER_LEN);
+    const raw = await this.link.read(this.ops.getMatrix, 0, LAYER_LEN);
     const view = new Uint8Array(1024);
     for (let i = 0; i < LAYER_SLOTS - 1; i++) {
       const c = u32(raw, i);
@@ -138,18 +174,24 @@ export class Mk75Wireless implements Mk75Device {
       const next = u32(m, i);
       if (next === u32(this.matrixView!, i)) continue; // untouched: keep the keyboard's own code
       const wl = wiredToWireless(next);
-      if (wl === null) throw new UnsupportedOverWireless('That key function is not supported over 2.4 GHz / Bluetooth. Connect the cable.');
+      if (wl === null) {
+        throw new UnsupportedOverWireless(
+          this.kind === 'wired'
+            ? 'That key function is not supported on this keyboard revision yet.'
+            : 'That key function is not supported over 2.4 GHz / Bluetooth. Connect the cable.',
+        );
+      }
       setU32(raw, i, wl);
     }
     setU32(raw, LAYER_SLOTS - 1, LAYER_TRAILER);
-    await this.link.write(WCmd.SetMatrix, 0, raw);
+    await this.link.write(this.ops.setMatrix, 0, raw);
     this.layerRaw = raw;
     await sleep(50);
   }
 
   // ---------------------------------------------------------------- palette / per-key
   async readRgbTable(): Promise<Uint8Array> {
-    const raw = await this.link.read(WCmd.GetPalette, 0, PALETTE_LEN);
+    const raw = await this.link.read(this.ops.getPalette, 0, PALETTE_LEN);
     this.paletteRaw = raw;
     const t = new Uint8Array(1024);
     t.set(raw.subarray(0, PALETTE_DATA));
@@ -162,16 +204,18 @@ export class Mk75Wireless implements Mk75Device {
     buf[0x1fa] = 0x5a;
     buf[0x1fb] = 0xa5;
     await sleep(120);
-    await this.link.write(WCmd.SetPalette, 0, buf);
+    await this.link.write(this.ops.setPalette, 0, buf);
     this.paletteRaw = buf;
   }
 
   async writeLedMatrix(buf: Uint8Array): Promise<void> {
-    await this.link.write(WCmd.SetColors, 0, buf.subarray(0, LED_GROUP_LEN));
+    await this.link.write(this.ops.setColors, 0, buf.subarray(0, LED_GROUP_LEN));
   }
 
   async writeMacroPages(): Promise<void> {
-    throw new UnsupportedOverWireless('Macros can only be written over the USB cable for now.');
+    throw new UnsupportedOverWireless(
+      this.kind === 'wired' ? 'Macros are not supported on this keyboard revision yet.' : 'Macros can only be written over the USB cable for now.',
+    );
   }
 
   async checkModel(): Promise<Uint8Array | null> {

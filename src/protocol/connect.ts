@@ -4,6 +4,7 @@
  */
 import { MK75_KEYS } from '../device/mk75Layout';
 import type { Mk75Device } from './device';
+import { G5_FRAME_LEN, G5_REPORT, Mk75G5Wired } from './g5Wired';
 import { Mk75, type Mk75Options } from './mk75';
 import { MK75_USB, WebHidTransport } from './transport';
 import { WirelessLink } from './wireless/link';
@@ -25,7 +26,11 @@ export interface ConnectOptions extends Mk75Options {
 }
 
 export async function openMk75(picked: HIDDevice[], opts: ConnectOptions = {}): Promise<Mk75Device> {
-  if (picked.some(hasWired)) return new Mk75(await WebHidTransport.openDevices(picked), opts);
+  if (picked.some(hasWired)) {
+    const t = await WebHidTransport.openDevices(picked);
+    // Same VID/PID, two firmware families: tell them apart by the size of report 0x06.
+    return t.featureSize(G5_REPORT) === G5_FRAME_LEN ? new Mk75G5Wired(t, opts) : new Mk75(t, opts);
+  }
   const all = [...new Set([...picked, ...(await navigator.hid.getDevices())])];
   const wl = findWirelessInterface(picked) ?? findWirelessInterface(all);
   if (!wl) {

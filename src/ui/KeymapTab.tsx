@@ -265,7 +265,9 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
               <div className="field">
                 <span className="field-l">Macro</span>
                 {!dev.caps.macros ? (
-                  <p className="hint">Macros can only be written over the USB cable for now.</p>
+                  <p className="hint">
+                    {dev.kind === 'wired' ? 'Macros are not supported on this keyboard revision yet.' : 'Macros can only be written over the USB cable for now.'}
+                  </p>
                 ) : macros.macros.length === 0 ? (
                   <p className="hint">Create macros on the Macros tab first.</p>
                 ) : (
