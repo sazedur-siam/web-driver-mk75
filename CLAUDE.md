@@ -221,7 +221,7 @@ public/                  manifest, sw.js (cache name `mk75-vN`), icons, manual/*
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173 (simulators: "Simulator (USB)" / "Simulator (2.4 GHz)")
+npm run dev      # http://localhost:5173 (simulator buttons appear only in dev; hidden in production builds)
 npm test         # vitest, 105+ tests
 npm run build    # tsc -b && vite build → dist/
 ```
