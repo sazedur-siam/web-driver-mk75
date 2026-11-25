@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
 import { LED_MODES, parseProfile } from '../protocol/lighting';
+import { GALLERY } from '../presets/gallery';
+import { factoryKeyCode, presetFromBlocks, presetSummary } from '../protocol/preset';
 import { applyProfile, captureProfile, profileMatrix } from './applyProfile';
+import { presetStore, shareLink } from './presetStore';
 import { fromHex, profileStore, useProfiles, validateProfile, type Profile } from './profileStore';
 import type { DeviceApi } from './useDevice';
 
@@ -24,6 +27,7 @@ export function ProfilesTab({ api }: { api: DeviceApi }) {
   const [renameText, setRenameText] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
+  const [copied, setCopied] = useState<string | null>(null);
 
   if (!snap || !dev) return null;
 
@@ -57,6 +61,19 @@ export function ProfilesTab({ api }: { api: DeviceApi }) {
         }`,
       });
     });
+
+  const share = async (p: Profile) => {
+    const preset = presetFromBlocks(p.name, { profile: fromHex(p.profile), rgbTable: fromHex(p.rgbTable), matrix: fromHex(p.keyMatrix) }, factoryKeyCode, p.perKey);
+    const url = await shareLink(preset);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(p.id);
+      setTimeout(() => setCopied(null), 2500);
+    } catch {
+      window.prompt('Copy this link', url);
+    }
+    api.push({ dir: 'info', text: `Share link for "${p.name}" (${url.length} chars)${p.macros.macros.length ? '; macros are not included in links' : ''}` });
+  };
 
   const update = (p: Profile) => {
     profileStore.upsert(captureProfile(p.name, snap, p.id, p.created));
@@ -138,6 +155,7 @@ export function ProfilesTab({ api }: { api: DeviceApi }) {
                   </button>
                   <button onClick={() => { setRenaming(p.id); setRenameText(p.name); }}>Rename</button>
                   <button onClick={() => duplicate(p)}>Duplicate</button>
+                  <button onClick={() => share(p)}>{copied === p.id ? 'Link copied ✓' : 'Share link'}</button>
                   <button onClick={() => download(`mk75-profile-${slug(p.name)}.json`, p)}>Export</button>
                   {confirmDelete === p.id ? (
                     <>
@@ -173,6 +191,15 @@ export function ProfilesTab({ api }: { api: DeviceApi }) {
           <button className="primary" onClick={saveNew}>
             Save as profile
           </button>
+        </div>
+        <h2>Preset gallery</h2>
+        <div className="gallery">
+          {GALLERY.map((g) => (
+            <button key={g.name} className="gallery-item" onClick={() => presetStore.preview(g)}>
+              <b>{g.name}</b>
+              <span className="muted small">{presetSummary(g)}</span>
+            </button>
+          ))}
         </div>
         <h2>Import / export</h2>
         <div className="row">

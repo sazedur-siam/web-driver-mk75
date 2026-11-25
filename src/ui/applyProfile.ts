@@ -11,6 +11,7 @@ import { assignmentMap, macroStore } from './macroStore';
 import { loadPerKey, perKeyMap, savePerKey } from './perKeyStore';
 import { macroPagesUnchanged, rememberMacroPages } from './saveKeys';
 import { fromHex, toHex, type Profile } from './profileStore';
+import { applyPresetToBlocks, type Preset } from '../protocol/preset';
 import type { DeviceSnapshot } from './useDevice';
 
 const eq = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((v, i) => v === b[i]);
@@ -112,4 +113,23 @@ export async function applyProfile(dev: Mk75Device, snap: DeviceSnapshot, p: Pro
   step?.('Reading back');
   const back: DeviceSnapshot = { profile: await dev.readProfile(), matrix: await dev.readKeyMatrix(), rgbTable: await dev.readRgbTable() };
   return { snap: back, wrote, skipped };
+}
+
+/** Turn a shared preset into a full profile on top of the keyboard's current setup. */
+export function profileFromPreset(p: Preset, snap: DeviceSnapshot): Profile {
+  const b = applyPresetToBlocks(p, snap);
+  const macros = structuredClone(macroStore.get());
+  for (const idx of Object.keys(p.keys ?? {})) delete macros.assignments[Number(idx)]; // preset remaps win
+  const now = new Date().toISOString();
+  return {
+    id: Math.random().toString(36).slice(2, 10),
+    name: p.name,
+    created: now,
+    updated: now,
+    profile: toHex(b.profile),
+    rgbTable: toHex(b.rgbTable),
+    keyMatrix: toHex(b.matrix),
+    perKey: p.perKey ?? loadPerKey(),
+    macros,
+  };
 }

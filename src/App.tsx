@@ -11,6 +11,8 @@ import { ProfilesTab } from './ui/ProfilesTab';
 import { TesterTab } from './ui/TesterTab';
 import { Keyboard } from './ui/Keyboard';
 import { usePwa } from './ui/pwa';
+import { loadPresetFromHash } from './ui/presetStore';
+import { SharedPresetBanner } from './ui/SharedPresetBanner';
 import { useDevice } from './ui/useDevice';
 
 /** One theme per official MK75 colourway (product page): case / keycap colours for the swatch. */
@@ -65,6 +67,12 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('Lighting');
   const [testerOnly, setTesterOnly] = useState(false);
   const pwa = usePwa();
+  useEffect(() => {
+    void loadPresetFromHash();
+    const onHash = () => void loadPresetFromHash();
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   const [canReconnect, setCanReconnect] = useState(false);
   useEffect(() => {
     if (api.dev) return;
@@ -136,6 +144,7 @@ export default function App() {
         </div>
       )}
       {api.busy && <div className="banner busy">{api.busy}…</div>}
+      <SharedPresetBanner api={api} />
       {api.error && (
         <div className="banner err" role="alert">
           {api.error}
