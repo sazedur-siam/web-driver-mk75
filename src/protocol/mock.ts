@@ -3,7 +3,7 @@
  * Lets you try the UI without hardware and backs the unit tests.
  */
 import { MK75_KEYS } from '../device/mk75Layout';
-import { DATA_FRAME_LEN, DATA_HEADER_LEN, PAGE_LEN, PROFILE_LEN, REPORT_CMD, REPORT_DATA } from './mk75';
+import { DATA_FRAME_LEN, DATA_HEADER_LEN, PAGE_LEN, PROFILE_LEN, REPORT_CMD, REPORT_DATA, REPORT_STREAM, STREAM_LEN } from './mk75';
 import { encodeAction } from './keycodes';
 import { LED_MATRIX_LEN, LED_MODES, RGB_TABLE_STRIDE } from './lighting';
 import type { FeatureTransport } from './transport';
@@ -29,12 +29,18 @@ export class MockMk75 implements FeatureTransport {
   matrix = new Uint8Array(PAGE_LEN);
   rgbTable = new Uint8Array(PAGE_LEN);
   ledMatrix = new Uint8Array(LED_MATRIX_LEN + 0x400);
+  macroPages = new Map<number, Uint8Array>();
+  /** Last live-stream frame (report 0x08 payload after the 0A 7A 01 header). */
+  liveFrame: Uint8Array | null = null;
+  liveFrames = 0;
   writes: { op: number; sub: number; flag: number; payload: Uint8Array }[] = [];
   private pending: Uint8Array | null = null;
+  private pendingCmd: Uint8Array | null = null;
 
   constructor() {
     // Plausible factory defaults: Fixed on, full brightness, red.
     this.profile[0x05] = 1;
+    this.profile[0x11] = 4; // sleep after 120 s (vendor SleepTime default)
     this.profile[0x14] = this.profile[0x15] = 0xff;
     LED_MODES.forEach((_, i) => {
       if (i < 17) {
@@ -56,11 +62,21 @@ export class MockMk75 implements FeatureTransport {
   }
 
   featureSize(reportId: number) {
-    return reportId === REPORT_CMD ? 6 : reportId === REPORT_DATA ? DATA_FRAME_LEN : undefined;
+    return reportId === REPORT_CMD ? 6 : reportId === REPORT_DATA ? DATA_FRAME_LEN : reportId === REPORT_STREAM ? 3 + STREAM_LEN : undefined;
   }
 
   async sendFeature(reportId: number, data: Uint8Array) {
     await new Promise((r) => setTimeout(r, 2));
+    if (reportId === REPORT_STREAM) {
+      if (data[0] !== 0x0a || data[1] !== 0x7a || data[2] !== 0x01) throw new Error('mock: bad stream header');
+      this.liveFrame = data.slice(3, 3 + STREAM_LEN);
+      this.liveFrames++;
+      return;
+    }
+    if (reportId === REPORT_CMD && data[0] === 0x05 && data[1] === 0x81) {
+      this.pendingCmd = Uint8Array.of(0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0xc6); // MK75 Psd
+      return;
+    }
     if (reportId === REPORT_CMD) {
       const [op, sub] = data;
       const reply = new Uint8Array(DATA_FRAME_LEN);
@@ -81,6 +97,7 @@ export class MockMk75 implements FeatureTransport {
       if (op === 0x03 && sub === 0xb6) this.profile = payload.slice(0, PROFILE_LEN);
       else if (op === 0x04 && sub === 0xd4) this.matrix = payload.slice(0, PAGE_LEN);
       else if (op === 0x08 && sub === 0xb8) this.rgbTable = payload.slice(0, PAGE_LEN);
+      else if (op === 0x05 && [0xdc, 0xe0, 0xe4, 0xe8].includes(sub)) this.macroPages.set(sub, payload.slice(0, PAGE_LEN));
       else if (op === 0x09 && (sub === 0xbc || sub === 0xc0)) this.ledMatrix.set(payload.slice(0, PAGE_LEN), sub === 0xbc ? 0 : PAGE_LEN);
       return;
     }
@@ -89,6 +106,11 @@ export class MockMk75 implements FeatureTransport {
 
   async receiveFeature(reportId: number) {
     await new Promise((r) => setTimeout(r, 2));
+    if (reportId === REPORT_CMD) {
+      const r = this.pendingCmd ?? new Uint8Array(6);
+      this.pendingCmd = null;
+      return r;
+    }
     if (reportId !== REPORT_DATA || !this.pending) return new Uint8Array(DATA_FRAME_LEN);
     const r = this.pending;
     this.pending = null;

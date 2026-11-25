@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import { PAGE_LEN, PROFILE_LEN } from '../protocol/mk75';
+import { macroStore } from './macroStore';
+import { withMacroCodes } from './saveKeys';
 import type { DeviceApi } from './useDevice';
 
 const toHex = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
@@ -12,6 +14,8 @@ interface BackupFile {
   profile: string;
   keyMatrix: string;
   rgbTable: string;
+  /** Macro library + assignments (kept in the browser; the keyboard can't send them back). */
+  macros?: ReturnType<typeof macroStore.get>;
 }
 
 export function BackupTab({ api }: { api: DeviceApi }) {
@@ -29,6 +33,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
       profile: toHex(snap.profile),
       keyMatrix: toHex(snap.matrix),
       rgbTable: toHex(snap.rgbTable),
+      macros: macroStore.get(),
     };
     const url = URL.createObjectURL(new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' }));
     const a = document.createElement('a');
@@ -54,8 +59,12 @@ export function BackupTab({ api }: { api: DeviceApi }) {
   const restore = () =>
     pending &&
     api.run('Restoring backup', async () => {
+      if (pending.macros?.macros) macroStore.replaceAll(pending.macros);
       await dev.writeRgbTable(fromHexStr(pending.rgbTable));
-      await dev.writeKeyMatrix(fromHexStr(pending.keyMatrix));
+      // Macro pages first (ids are re-planned deterministically in key order), then the matrix.
+      const { matrix, plan } = withMacroCodes(fromHexStr(pending.keyMatrix));
+      if (plan.pages.length) await dev.writeMacroPages(plan.pages);
+      await dev.writeKeyMatrix(matrix);
       await dev.writeProfile(fromHexStr(pending.profile));
       api.setSnap({ profile: await dev.readProfile(), matrix: await dev.readKeyMatrix(), rgbTable: await dev.readRgbTable() });
       api.push({ dir: 'info', text: `Restored backup from ${pending.created}` });
@@ -69,8 +78,8 @@ export function BackupTab({ api }: { api: DeviceApi }) {
           <h2>Backup &amp; restore</h2>
         </header>
         <p className="muted">
-          Save the keyboard's current profile, key matrix and colour palette before experimenting. Per-key Self-define colours are not
-          included, because they can't be read back from the keyboard.
+          Save the keyboard's lighting profile, key matrix and colour palette, plus your macros, before experimenting. Per-key
+          Self-define colours aren't included, because they can't be read back from the keyboard.
         </p>
         <div className="actions">
           <button className="primary" onClick={exportBackup}>

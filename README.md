@@ -8,16 +8,23 @@ Chrome, Edge or Opera on Windows, macOS, Linux and ChromeOS, with nothing to ins
 
 ## Features
 
+Matches the official LINGBAO Keyboard Driver (v2.0) for the MK75:
+
 | | Status |
 |---|---|
-| Lighting effect, brightness, speed, colour / colourful | ✅ |
+| Lighting effects (the 16 the official app shows), brightness, speed, colour / colourful | ✅ |
 | Editing each effect's 7-colour palette | ✅ |
 | Per-key custom colours ("Self-define") | ✅ |
-| Base-layer key remapping: keys and combos, media, mouse buttons, shortcuts, disable | ✅ |
-| Backup / restore of profile, key matrix and palette | ✅ |
-| Raw HID traffic log | ✅ |
+| Real-time effects streamed live: Static, Stars, Snow, Breathing, Shrink, Aspect, Follow, Rotating, Rainbow wave | ✅ |
+| Music visualiser (shared system/tab audio or microphone): spectrum bars, pulse rings, stream, beat flash | ✅ |
+| Key remapping: keys and combos, media, mouse buttons, shortcuts, macros, disable | ✅ |
+| Macro recorder/editor (32 macros, keys + modifiers + mouse L/R/M, delays, 3 repeat modes) | ✅ |
+| Sleep timer, model check, built-in Fn shortcut reference | ✅ |
+| Backup / restore (profile, key matrix, palette, macros), raw HID log | ✅ |
 | Built-in simulator (no keyboard needed) | ✅ |
-| Macros, Fn layer, knob, firmware update, 2.4 GHz/Bluetooth | ❌ not yet |
+| 2.4 GHz receiver and Bluetooth | 🚧 in progress |
+| Fn-layer / knob remapping | ❌ not offered by the official driver either |
+| Firmware update | ❌ |
 
 ## Run
 
@@ -32,7 +39,7 @@ WebHID needs a secure context: `localhost` or HTTPS.
 
 ## Using it
 
-1. Connect the MK75 with the **USB cable** and press **Fn+W** (Windows mode).
+1. Set the mode switch next to the knob to the **middle (wired)** position, connect the USB cable and press **Fn+W** (Windows mode).
 2. Click **Connect keyboard** and choose the keyboard (`258A:010C`).
 3. **Backup & log → Download backup.**
 4. Make changes. Every *Save* does a read-modify-write and reads the result back from the keyboard.

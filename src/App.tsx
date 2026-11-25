@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { WebHidTransport } from './protocol/transport';
 import { BackupTab } from './ui/BackupTab';
+import { DeviceTab } from './ui/DeviceTab';
+import { LiveTab } from './ui/LiveTab';
+import { MacrosTab } from './ui/MacrosTab';
 import { KeymapTab } from './ui/KeymapTab';
 import { LightingTab } from './ui/LightingTab';
 import { PerKeyTab } from './ui/PerKeyTab';
@@ -41,7 +44,7 @@ function ThemeSwitch() {
   );
 }
 
-const TABS = ['Lighting', 'Per-key RGB', 'Key mapping', 'Backup & log'] as const;
+const TABS = ['Lighting', 'Per-key RGB', 'Live effects', 'Key mapping', 'Macros', 'Device', 'Backup & log'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function App() {
@@ -110,8 +113,10 @@ export default function App() {
           <section className="card">
             <h2>Connect your MK75</h2>
             <ol>
-              <li>Plug the keyboard in with the USB cable. The 2.4 GHz dongle and Bluetooth aren't supported.</li>
-              <li>Switch it to Windows mode with <kbd>Fn</kbd>+<kbd>W</kbd>, as the vendor tool requires.</li>
+              <li>
+                Set the mode switch (top right, next to the knob) to the <b>middle, wired</b> position and plug in the USB cable.
+              </li>
+              <li>Put it in Windows mode with <kbd>Fn</kbd>+<kbd>W</kbd>, as the official driver requires.</li>
               <li>
                 Click <b>Connect keyboard</b> and pick the keyboard (USB ID <span className="mono">258A:010C</span>) in the browser dialog. If several
                 entries appear, pick any one; the app opens the vendor interfaces it needs.
@@ -140,7 +145,10 @@ export default function App() {
           <main>
             {tab === 'Lighting' && <LightingTab api={api} />}
             {tab === 'Per-key RGB' && <PerKeyTab api={api} />}
+            {tab === 'Live effects' && <LiveTab api={api} />}
             {tab === 'Key mapping' && <KeymapTab api={api} />}
+            {tab === 'Macros' && <MacrosTab api={api} />}
+            {tab === 'Device' && <DeviceTab api={api} />}
             {tab === 'Backup & log' && <BackupTab api={api} />}
           </main>
         </>

@@ -17,6 +17,9 @@ import {
 } from '../protocol/keycodes';
 import { vkToHid } from '../protocol/mock';
 import { Keyboard } from './Keyboard';
+import { REPEAT_LABELS } from './MacrosTab';
+import { macroStore, useMacros } from './macroStore';
+import { saveKeysAndMacros, withMacroCodes } from './saveKeys';
 import type { DeviceApi } from './useDevice';
 
 function defaultAction(index: number): KeyAction | null {
@@ -35,6 +38,11 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
   const [capture, setCapture] = useState(false);
   const [mods, setMods] = useState(0);
   const [keySel, setKeySel] = useState('');
+  const macros = useMacros();
+  const [macroSel, setMacroSel] = useState('');
+  const [macroMode, setMacroMode] = useState<number>(1);
+  // Assignments as they were when the tab opened, so "Revert all" can restore them too.
+  const [savedAssignments] = useState(() => macroStore.get().assignments);
 
   useEffect(() => setMatrix(snap?.matrix ?? null), [snap]);
 
@@ -82,17 +90,29 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
 
   function assign(a: KeyAction) {
     if (index === undefined || isFn || !matrix) return;
-    setMatrix(setKeyCode(matrix, index, encodeAction(a)));
+    if (macros.assignments[index]) macroStore.assign(index, null);
+    setMatrix(withMacroCodes(setKeyCode(matrix, index, encodeAction(a))).matrix);
   }
   assignRef.current = assign;
 
-  const save = () =>
-    api.run('Saving key mapping', async () => {
-      await dev.writeKeyMatrix(matrix);
-      const back = await dev.readKeyMatrix();
-      api.setSnap({ ...snap, matrix: back });
-      api.push({ dir: 'info', text: `Key mapping saved (${changed.size} keys changed)` });
-    });
+  function assignMacro() {
+    if (index === undefined || isFn || !matrix || !macroSel) return;
+    macroStore.assign(index, { macroId: macroSel, mode: macroMode as 1 | 2 | 4 });
+    setMatrix(withMacroCodes(matrix).matrix);
+  }
+
+  const macroName = (keyIndex: number) => {
+    const a = macros.assignments[keyIndex];
+    return a ? macros.macros.find((m) => m.id === a.macroId)?.name : undefined;
+  };
+  const describe = (keyIndex: number) => {
+    const a = decodeAction(getKeyCode(matrix, keyIndex));
+    if (a.kind === 'macro') return macroName(keyIndex) ?? `Macro (set elsewhere)`;
+    return describeAction(a);
+  };
+  const foreignMacros = MK75_KEYS.filter((k) => decodeAction(getKeyCode(matrix, k.index)).kind === 'macro' && !macros.assignments[k.index]);
+
+  const save = () => api.run('Saving key mapping', () => saveKeysAndMacros(api, matrix));
 
   return (
     <div className="stack">
@@ -109,24 +129,36 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
             if (k.index === FN_INDEX) return undefined;
             const a = decodeAction(getKeyCode(matrix, k.index));
             const d = defaultAction(k.index);
-            return d && encodeAction(d) === encodeAction(a) ? undefined : describeAction(a);
+            return d && encodeAction(d) === encodeAction(a) ? undefined : describe(k.index);
           }}
         />
         <div className="actions">
           <button className="primary" disabled={!changed.size || !!api.busy} onClick={save}>
             Save to keyboard
           </button>
-          <button disabled={!changed.size} onClick={() => setMatrix(snap.matrix)}>
+          <button
+            disabled={!changed.size}
+            onClick={() => {
+              macroStore.replaceAll({ ...macroStore.get(), assignments: savedAssignments });
+              setMatrix(snap.matrix);
+            }}
+          >
             Revert all
           </button>
         </div>
+        {foreignMacros.length > 0 && (
+          <p className="hint warn">
+            {foreignMacros.map((k) => k.label).join(', ')} {foreignMacros.length > 1 ? 'have' : 'has'} a macro that wasn't made in this browser.
+            Saving macros from here overwrites the keyboard's macro storage, so reassign or reset those keys.
+          </p>
+        )}
       </section>
 
       {key && (
         <section className="card">
           <header className="card-h">
             <h2>
-              {key.label} <span className="muted">→ {current ? describeAction(current) : '—'}</span>
+              {key.label} <span className="muted">→ {current ? describe(key.index) : '—'}</span>
             </h2>
             <span className="muted mono">matrix #{key.index}</span>
           </header>
@@ -174,6 +206,33 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
               </div>
               <Picker label="Media" items={CONSUMER_KEYS.map((c) => ({ label: c.label, a: { kind: 'consumer', usage: c.usage } as KeyAction }))} onPick={assign} />
               <Picker label="Mouse" items={MOUSE_BUTTONS.map((l, i) => ({ label: l, a: { kind: 'mouse', button: i } as KeyAction }))} onPick={assign} />
+              <div className="field">
+                <span className="field-l">Macro</span>
+                {macros.macros.length === 0 ? (
+                  <p className="hint">Create macros on the Macros tab first.</p>
+                ) : (
+                  <div className="row">
+                    <select value={macroSel} onChange={(e) => setMacroSel(e.target.value)} aria-label="Macro">
+                      <option value="">Choose macro…</option>
+                      {macros.macros.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                    <select value={macroMode} onChange={(e) => setMacroMode(Number(e.target.value))} aria-label="Repeat mode">
+                      {REPEAT_LABELS.map((r) => (
+                        <option key={r.mode} value={r.mode}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button disabled={!macroSel} onClick={assignMacro}>
+                      Assign macro
+                    </button>
+                  </div>
+                )}
+              </div>
               <Picker label="Shortcuts" items={SHORTCUTS.map((s) => ({ label: s.label, a: { kind: 'key', usage: s.usage, mods: s.mods } as KeyAction }))} onPick={assign} />
               <div className="row">
                 <button onClick={() => assign({ kind: 'disabled' })}>Disable key</button>

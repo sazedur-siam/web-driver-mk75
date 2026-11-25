@@ -12,6 +12,9 @@ import type { FeatureTransport } from './transport';
 
 export const REPORT_CMD = 0x05;
 export const REPORT_DATA = 0x06;
+/** Live LED stream (vendor "hMusic" collection, 0x17E bytes incl. ID). */
+export const REPORT_STREAM = 0x08;
+export const STREAM_LEN = 0x17a; // 126 LEDs x RGB
 export const DATA_FRAME_LEN = 0x407; // 1031 bytes, excluding report ID
 export const DATA_HEADER_LEN = 7;
 export const PAGE_LEN = 0x400; // 1024-byte payload pages
@@ -56,7 +59,7 @@ export class Mk75 {
     readonly transport: FeatureTransport,
     private opts: Mk75Options = {},
   ) {
-    this.readDelay = opts.readDelayMs ?? 30;
+    this.readDelay = opts.readDelayMs ?? 25; // vendor ctor: obj+0x2A0 = 0x19
     this.writeDelay = opts.writeDelayMs ?? 50;
   }
 
@@ -144,6 +147,51 @@ export class Mk75 {
   writeRgbTable(data: Uint8Array) {
     if (data.length > PAGE_LEN) throw new ProtocolError('rgb table too large');
     return this.exclusive(() => this.writeBlock(Op.RgbTable.op, Op.RgbTable.sub, Op.RgbTable.flag, data));
+  }
+
+  /** Write macro pages (op 0x05, sub 0xDC/0xE0/0xE4/0xE8), 50 ms apart like the vendor. */
+  writeMacroPages(pages: { sub: number; data: Uint8Array }[]) {
+    return this.exclusive(async () => {
+      for (const p of pages) {
+        const page = new Uint8Array(PAGE_LEN);
+        page.set(p.data.subarray(0, PAGE_LEN));
+        await this.writeBlock(OP_MACRO, p.sub, 0x40, page);
+      }
+    });
+  }
+
+  /**
+   * Model check used by the vendor on open (Psd): report 05 [05 81 ...] → report 05 reply
+   * [01, 03, 00, 00, 00, 00, C6] for the MK75. Returns the 6 id bytes, or null if unsupported.
+   */
+  checkModel() {
+    return this.exclusive(async () => {
+      try {
+        await this.transport.sendFeature(REPORT_CMD, Uint8Array.of(0x05, 0x81, 0, 0, 0, 0, 0, 0));
+        await sleep(this.readDelay);
+        const r = await this.transport.receiveFeature(REPORT_CMD);
+        this.opts.onFrame?.('in', REPORT_CMD, r);
+        return r[0] === 0x01 ? r.slice(1, 7) : null;
+      } catch {
+        return null;
+      }
+    });
+  }
+
+  /** True if the keyboard exposes the live-stream report (0x08). */
+  get canStream(): boolean {
+    return (this.transport.featureSize(REPORT_STREAM) ?? 0) > 0;
+  }
+
+  /**
+   * Send one live frame (music / real-time effects): report 0x08 = [0A 7A 01] + 378 bytes of
+   * R,G,B triplets indexed by LED index (126 LEDs). Not queued behind config I/O, not logged.
+   */
+  async sendLiveFrame(rgb: Uint8Array) {
+    const frame = new Uint8Array(3 + STREAM_LEN);
+    frame.set([0x0a, 0x7a, 0x01]);
+    frame.set(rgb.subarray(0, STREAM_LEN), 3);
+    await this.transport.sendFeature(REPORT_STREAM, frame);
   }
 
   /** Write the per-key "Self-define" colour buffer (split into two 1 KiB pages, as the vendor does). */

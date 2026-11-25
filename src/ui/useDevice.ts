@@ -22,6 +22,7 @@ const fmt = (d: Uint8Array) => {
 
 export function useDevice() {
   const [dev, setDev] = useState<Mk75 | null>(null);
+  const [modelId, setModelId] = useState<Uint8Array | null>(null);
   const [snap, setSnap] = useState<DeviceSnapshot | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +56,9 @@ export function useDevice() {
     async (t: FeatureTransport) => {
       const d = new Mk75(t, { onFrame: (dir, id, data) => push({ dir, text: `#${id.toString(16).padStart(2, '0')} ${fmt(data)}` }) });
       push({ dir: 'info', text: `Connected: ${t.name}` });
+      const id = await d.checkModel();
+      setModelId(id);
+      if (id && !(id[0] === 0x03 && id[5] === 0xc6)) push({ dir: 'error', text: 'Model id differs from the MK75 (03 00 00 00 00 C6)' });
       const profile = await d.readProfile();
       const matrix = await d.readKeyMatrix();
       const rgbTable = await d.readRgbTable();
@@ -83,7 +87,7 @@ export function useDevice() {
     [dev, run],
   );
 
-  return { dev, snap, setSnap, busy, error, setError, log, push, run, connect, connectDemo, disconnect, refresh, isDemo: dev?.transport instanceof MockMk75 };
+  return { dev, modelId, snap, setSnap, busy, error, setError, log, push, run, connect, connectDemo, disconnect, refresh, isDemo: dev?.transport instanceof MockMk75 };
 }
 
 export type DeviceApi = ReturnType<typeof useDevice>;
