@@ -119,6 +119,8 @@ No keyboard handy? Use **Simulator (USB)** or **Simulator (2.4 GHz)** on the sta
 ### App
 - **Themes for all four MK75 colourways:** Dark green-orange, Iced milk tea, Arthur and Summer Wilderness. The
   keyboard drawing (with knob, mode switch and indicator LEDs) recolours to match.
+- **Report an Issue:** a short form (title, what happened, steps, expected, optional diagnostics) that opens a
+  pre-filled GitHub issue. Screenshots are pasted on GitHub. Needs a free GitHub account.
 - **Installable (PWA):** an *Install app* button, works offline, shows an update notice after a new version is
   deployed, and reconnects to previously allowed keyboards in one click.
 

@@ -122,9 +122,12 @@ export function BackupTab({ api }: { api: DeviceApi }) {
       <section className="card">
         <header className="card-h">
           <h2>HID log</h2>
-          <button onClick={api.refresh} disabled={!!api.busy}>
-            Re-read device
-          </button>
+          <div className="row">
+            <button onClick={() => window.dispatchEvent(new Event('mk75:report'))}>Report an Issue</button>
+            <button onClick={api.refresh} disabled={!!api.busy}>
+              Re-read device
+            </button>
+          </div>
         </header>
         <div className="log mono small" role="log">
           {log.length === 0 && <div className="muted">No traffic yet.</div>}
