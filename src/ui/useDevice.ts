@@ -71,6 +71,8 @@ export function useDevice() {
       const rgbTable = await d.readRgbTable();
       setDev(d);
       setSnap({ profile, matrix, rgbTable });
+      // Dev-only test hook (stripped from production builds).
+      if (import.meta.env.DEV) (window as unknown as { __mk75?: unknown }).__mk75 = { dev: d };
     },
     [push],
   );
