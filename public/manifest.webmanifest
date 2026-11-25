@@ -1,0 +1,16 @@
+{
+  "name": "Lingbao MK75 Driver",
+  "short_name": "MK75",
+  "description": "Configure the Lingbao MK75 keyboard: lighting, per-key RGB, live effects, key mapping, macros and profiles.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#050e0a",
+  "theme_color": "#050e0a",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

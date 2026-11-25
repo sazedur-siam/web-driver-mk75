@@ -10,6 +10,7 @@ import { PerKeyTab } from './ui/PerKeyTab';
 import { ProfilesTab } from './ui/ProfilesTab';
 import { TesterTab } from './ui/TesterTab';
 import { Keyboard } from './ui/Keyboard';
+import { usePwa } from './ui/pwa';
 import { useDevice } from './ui/useDevice';
 
 /** One theme per official MK75 colourway (product page): case / keycap colours for the swatch. */
@@ -63,6 +64,12 @@ export default function App() {
   const api = useDevice();
   const [tab, setTab] = useState<Tab>('Lighting');
   const [testerOnly, setTesterOnly] = useState(false);
+  const pwa = usePwa();
+  const [canReconnect, setCanReconnect] = useState(false);
+  useEffect(() => {
+    if (api.dev) return;
+    api.grantedDevices().then((d) => setCanReconnect(d.length > 0)).catch(() => setCanReconnect(false));
+  }, [api.dev, api.grantedDevices]);
   const supported = WebHidTransport.isSupported();
 
   useEffect(() => {
@@ -90,6 +97,11 @@ export default function App() {
         </div>
         <div className="conn">
           <ThemeSwitch />
+          {pwa.canInstall && (
+            <button onClick={pwa.install} title="Install as an app (opens in its own window, works offline)">
+              Install app
+            </button>
+          )}
           {api.dev ? (
             <>
               <span className={`pill ${api.isDemo ? 'demo' : 'ok'}`}>
@@ -99,7 +111,12 @@ export default function App() {
             </>
           ) : (
             <>
-              <button className="primary" onClick={api.connect} disabled={!supported || !!api.busy}>
+              {canReconnect && (
+                <button className="primary" onClick={api.reconnect} disabled={!!api.busy}>
+                  Reconnect MK75
+                </button>
+              )}
+              <button className={canReconnect ? '' : 'primary'} onClick={api.connect} disabled={!supported || !!api.busy}>
                 Connect keyboard
               </button>
               <button onClick={() => api.connectDemo('wired')} disabled={!!api.busy}>
@@ -110,6 +127,14 @@ export default function App() {
         </div>
       </header>
 
+      {pwa.updateReady && (
+        <div className="banner busy">
+          A new version is available.{' '}
+          <button className="primary" onClick={pwa.applyUpdate} style={{ marginLeft: 8 }}>
+            Reload
+          </button>
+        </div>
+      )}
       {api.busy && <div className="banner busy">{api.busy}…</div>}
       {api.error && (
         <div className="banner err" role="alert">

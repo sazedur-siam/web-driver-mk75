@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { MK75_KEYS } from '../device/mk75Layout';
-import { requestMk75 } from '../protocol/connect';
+import { MK75_FILTERS, openMk75, requestMk75 } from '../protocol/connect';
 import type { Mk75Device } from '../protocol/device';
 import { MockMk75 } from '../protocol/mock';
 import { Mk75 } from '../protocol/mk75';
@@ -82,6 +82,30 @@ export function useDevice() {
     [run, attach, wiredLog, wirelessLog],
   );
 
+  /** Previously granted MK75 devices (no permission prompt needed to reopen). */
+  const grantedDevices = useCallback(async (): Promise<HIDDevice[]> => {
+    if (typeof navigator === 'undefined' || !('hid' in navigator)) return [];
+    const all = await navigator.hid.getDevices();
+    return all.filter((d) =>
+      MK75_FILTERS.some(
+        (f) =>
+          (f.vendorId === undefined || f.vendorId === d.vendorId) &&
+          (f.productId === undefined || f.productId === d.productId) &&
+          (f.usagePage === undefined || d.collections.some((c) => c.usagePage === f.usagePage && (f.usage === undefined || c.usage === f.usage))),
+      ),
+    );
+  }, []);
+
+  const reconnect = useCallback(
+    () =>
+      run('Reconnecting', async () => {
+        const granted = await grantedDevices();
+        if (!granted.length) throw new Error('No previously connected MK75 found. Use Connect keyboard.');
+        return attach(await openMk75(granted, { onFrame: wiredLog, onWireless: wirelessLog }));
+      }),
+    [run, attach, grantedDevices, wiredLog, wirelessLog],
+  );
+
   const connectDemo = useCallback(
     (mode: 'wired' | 'wireless' = 'wired') =>
       run('Starting simulator', async () => {
@@ -109,7 +133,7 @@ export function useDevice() {
     [dev, run],
   );
 
-  return { dev, modelId, snap, setSnap, busy, error, setError, log, push, run, connect, connectDemo, disconnect, refresh, isDemo: !!dev?.simulated };
+  return { dev, modelId, snap, setSnap, busy, error, setError, log, push, run, connect, connectDemo, reconnect, grantedDevices, disconnect, refresh, isDemo: !!dev?.simulated };
 }
 
 export type DeviceApi = ReturnType<typeof useDevice>;
