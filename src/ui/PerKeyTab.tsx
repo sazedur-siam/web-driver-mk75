@@ -3,6 +3,7 @@ import { MK75_KEYS } from '../device/mk75Layout';
 import { buildLedMatrix, CUSTOM_MODE_INDEX, fromHex, hex, parseProfile, patchProfile, type RGB } from '../protocol/lighting';
 import { Keyboard } from './Keyboard';
 import { loadPerKey, savePerKey } from './perKeyStore';
+import { shareLink } from './presetStore';
 import type { DeviceApi } from './useDevice';
 
 const load = loadPerKey;
@@ -64,6 +65,20 @@ export function PerKeyTab({ api }: { api: DeviceApi }) {
           <button onClick={() => setSel(new Set(MK75_KEYS.map((k) => k.index)))}>Select all</button>
           <button onClick={() => paint(brush, MK75_KEYS.map((k) => k.index))}>Fill all</button>
           <button onClick={() => update({})}>Clear</button>
+          <button
+            disabled={!Object.keys(colors).length}
+            onClick={async () => {
+              const url = await shareLink({ v: 1, name: 'Per-key layout', lighting: { mode: CUSTOM_MODE_INDEX, speed: 0, brightness: 4, colorful: false, colorIndex: 0 }, perKey: colors });
+              try {
+                await navigator.clipboard.writeText(url);
+                api.push({ dir: 'info', text: 'Per-key share link copied' });
+              } catch {
+                window.prompt('Copy this link', url);
+              }
+            }}
+          >
+            Share link
+          </button>
         </div>
         <div className="actions">
           <button className="primary" disabled={!!api.busy} onClick={apply}>
