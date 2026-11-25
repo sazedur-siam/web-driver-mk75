@@ -9,7 +9,7 @@
  *    event (delay <= 127 ms): [down?0x80:0 | max(delay,3), usage]
  *    event (delay  > 127 ms): [down?0x80:0 | max(delay%100,3), usage, 0x00, 0x03, hi, lo]  (BE count of 100 ms)
  *  - Key-matrix reference: [0x10, 0x00, mode, id-1]; mode 1 = cycle, 2 = until released, 4 = until any key.
- *  - Wired supports keyboard usages, modifiers (0xE0-0xE7) and mouse L/R/M (0xF0/0xF1/0xF2) only.
+ *  - Wired supports keyboard usages, modifiers (0xE0-0xE7) and mouse buttons 0xF0 left / 0xF1 middle / 0xF2 right only.
  */
 
 export const MAX_MACROS = 32;
@@ -34,7 +34,8 @@ export interface Macro {
 export const RepeatMode = { Once: 1, UntilReleased: 2, UntilAnyKey: 4 } as const;
 export type RepeatModeValue = (typeof RepeatMode)[keyof typeof RepeatMode];
 
-export const MOUSE_USAGE = { left: 0xf0, right: 0xf1, middle: 0xf2 } as const;
+/** Same firmware mouse code space as the key matrix: F0 left, F1 middle, F2 right. */
+export const MOUSE_USAGE = { left: 0xf0, middle: 0xf1, right: 0xf2 } as const;
 
 export function isEncodable(usage: number): boolean {
   return (usage >= 0x04 && usage <= 0xa4) || (usage >= 0xe0 && usage <= 0xe7) || (usage >= 0xf0 && usage <= 0xf2);

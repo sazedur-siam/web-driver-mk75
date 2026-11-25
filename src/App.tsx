@@ -10,22 +10,32 @@ import { PerKeyTab } from './ui/PerKeyTab';
 import { Keyboard } from './ui/Keyboard';
 import { useDevice } from './ui/useDevice';
 
-type Theme = 'dark' | 'light';
+/** One theme per official MK75 colourway (product page): case / keycap colours for the swatch. */
+const THEMES = [
+  { id: 'green-orange', name: 'Dark green-orange', swatch: 'conic-gradient(#93d6c6 0 50%, #f39a2b 0 75%, #0a0e0c 0)' },
+  { id: 'milk-tea', name: 'Iced milk tea', swatch: 'conic-gradient(#fbf6ee 0 50%, #c8a07a 0 75%, #e6d5bf 0)' },
+  { id: 'arthur', name: 'Arthur', swatch: 'conic-gradient(#1d1f25 0 50%, #5b8cff 0 75%, #b36bff 0)' },
+  { id: 'summer', name: 'Summer Wilderness', swatch: 'conic-gradient(#f6f9fa 0 50%, #b8d4de 0 75%, #7fb0c0 0)' },
+] as const;
+type Theme = (typeof THEMES)[number]['id'];
 const THEME_KEY = 'mk75.theme';
 
 function readTheme(): Theme {
   try {
-    return localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark';
+    const v = localStorage.getItem(THEME_KEY);
+    if (v === 'light') return 'milk-tea'; // earlier "Cream" theme
+    return THEMES.some((t) => t.id === v) ? (v as Theme) : 'green-orange';
   } catch {
-    return 'dark';
+    return 'green-orange';
   }
 }
 
-/** MK75 colourways: "Dark green-orange" (default) and a cream/pink light variant. */
 function ThemeSwitch() {
   const [theme, setTheme] = useState<Theme>(readTheme);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
     try {
       localStorage.setItem(THEME_KEY, theme);
     } catch {
@@ -33,13 +43,13 @@ function ThemeSwitch() {
     }
   }, [theme]);
   return (
-    <div className="theme-switch" role="radiogroup" aria-label="Colour theme">
-      <button role="radio" aria-checked={theme === 'dark'} className={theme === 'dark' ? 'on' : ''} onClick={() => setTheme('dark')}>
-        Green-orange
-      </button>
-      <button role="radio" aria-checked={theme === 'light'} className={theme === 'light' ? 'on' : ''} onClick={() => setTheme('light')}>
-        Cream
-      </button>
+    <div className="theme-switch" role="radiogroup" aria-label="MK75 colourway">
+      {THEMES.map((t) => (
+        <button key={t.id} role="radio" aria-checked={theme === t.id} className={theme === t.id ? 'on' : ''} onClick={() => setTheme(t.id)} title={t.name}>
+          <span className="theme-dot" style={{ background: t.swatch }} aria-hidden />
+          <span className="theme-name">{t.name}</span>
+        </button>
+      ))}
     </div>
   );
 }
@@ -79,7 +89,9 @@ export default function App() {
           <ThemeSwitch />
           {api.dev ? (
             <>
-              <span className={`pill ${api.isDemo ? 'demo' : 'ok'}`}>{api.isDemo ? 'Simulator' : api.dev.transport.name}</span>
+              <span className={`pill ${api.isDemo ? 'demo' : 'ok'}`}>
+                {api.dev.transport.name} · {api.dev.kind === 'wired' ? 'USB' : '2.4G / BT'}
+              </span>
               <button onClick={api.disconnect}>Disconnect</button>
             </>
           ) : (
@@ -87,7 +99,7 @@ export default function App() {
               <button className="primary" onClick={api.connect} disabled={!supported || !!api.busy}>
                 Connect keyboard
               </button>
-              <button onClick={api.connectDemo} disabled={!!api.busy}>
+              <button onClick={() => api.connectDemo('wired')} disabled={!!api.busy}>
                 Try simulator
               </button>
             </>
@@ -114,15 +126,28 @@ export default function App() {
             <h2>Connect your MK75</h2>
             <ol>
               <li>
-                Set the mode switch (top right, next to the knob) to the <b>middle, wired</b> position and plug in the USB cable.
+                Pick a connection with the switch next to the knob: <b>middle</b> = USB cable, <b>2.4G</b> = receiver (pair with{' '}
+                <kbd>Fn</kbd>+<kbd>`</kbd> held 3 s), <b>BT</b> = Bluetooth "MK75-5.0" (pair with <kbd>Fn</kbd>+<kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>).
               </li>
               <li>Put it in Windows mode with <kbd>Fn</kbd>+<kbd>W</kbd>, as the official driver requires.</li>
               <li>
-                Click <b>Connect keyboard</b> and pick the keyboard (USB ID <span className="mono">258A:010C</span>) in the browser dialog. If several
-                entries appear, pick any one; the app opens the vendor interfaces it needs.
+                Click <b>Connect keyboard</b> and pick the MK75 (or its receiver) in the browser dialog. If several entries appear, pick any one.
               </li>
               <li>Download a backup from the <b>Backup &amp; log</b> tab before changing anything.</li>
             </ol>
+            <p className="muted small">
+              Everything works over the cable. Over 2.4 GHz / Bluetooth: lighting, per-key colours, live effects and key mapping work;
+              macros need the cable for now.
+            </p>
+            <div className="row">
+              <span className="muted small">No keyboard handy?</span>
+              <button onClick={() => api.connectDemo('wired')} disabled={!!api.busy}>
+                Simulator (USB)
+              </button>
+              <button onClick={() => api.connectDemo('wireless')} disabled={!!api.busy}>
+                Simulator (2.4 GHz)
+              </button>
+            </div>
             {!supported && (
               <p className="banner err">
                 This browser doesn't support WebHID. Use Chrome, Edge or Opera on desktop, over HTTPS or on localhost.

@@ -1,4 +1,8 @@
-# AULA AU75 wired protocol (reverse-engineered)
+# Lingbao MK75 protocol (reverse-engineered)
+
+The MK75 uses the same vendor framework and firmware family as the AULA AU75; the wired frames of the
+official LINGBAO Keyboard Driver v2.0 (2025-07-16) were emulated and are byte-identical to the AU75 build
+(functions shifted by +0xA130). Sections below were first derived from the AU75 build and re-verified on the MK75 one.
 
 Source: `AULA AU75 3 IN 1 Setup v2.0 20250805.exe` (Inno Setup) → `OemDrv.exe` (32-bit MFC, unpacked)
 plus `Dev/kb/AU75/KB.ini`. The device class inside the driver is `CDev916KB` (vtable `0x6133CC`).
@@ -107,9 +111,55 @@ real code there. Fn single and Fn combo tables follow.
 | `02` | Fn-slot redirect | |
 | `00000000` | disabled | |
 
+## Macros (wired)
+
+32 macros × 128-byte slots, 8 per 1 KiB page, written with `05 DC/E0/E4/E8 00 40` (only `ceil(n/8)` pages; no read-back).
+Slot = `00 01` + events: `[down?0x80:0 | max(delay,3), usage]`, or for delays > 127 ms
+`[flag | max(delay%100,3), usage, 00, 03, hi, lo]` (BE count of 100 ms). Mouse: F0 left, F1 middle, F2 right.
+Key reference in the matrix: `[10, 00, mode, id-1]`, mode 1 = once, 2 = while held, 4 = until any key. Ids are assigned in key order.
+
+## Live lighting (music / real-time effects)
+
+Wired: feature report `0x08` = `0A 7A 01` + 126 × RGB triplets indexed by LED index, ~50 fps, no enable/disable command.
+Wireless: cmd `0x88` sub 1 = groups `[R, G, B, count, led…]`, ≤ 200 bytes.
+
+## Misc
+
+* Model check: report 05 `05 81 …` → `01 03 00 00 00 00 C6` (KB.ini `Psd`).
+* Sleep: profile byte `0x11` = `FF` (off) or seconds/30 (30 s … 20 min). Read delay 25 ms.
+* Firmware version = USB `bcdDevice` only. No factory-reset command on the wired class.
+
+## 2.4 GHz receiver / Bluetooth
+
+Usage page `0xFF02` usage `0x02`, 20-byte output/input reports. Output report ID `0x15` (receiver, `CDevComboFilm`)
+or `0x13` (`CDev3632`); pick by the descriptor.
+
+```
+[id][cmd][total][index][(sub<<4)|len][14 data][sum(bytes 0..18) & 0xFF]
+```
+
+Replies echo `cmd`; bit 7 of `total` = busy. Writes: 14-byte chunks, 15 ms apart, per-packet ack, ≤ 5 retries.
+Reads: one request, then `total` reply packets.
+
+| Write / read | Content |
+|---|---|
+| `01` / `41` (sub = layer 0-3) | key matrix layer: 128 × u32, last = `A55A0000` |
+| `02` / `42` (sub = group) | per-key colours, R/G/B planes of 126 |
+| `03` / `43` | macro blob (format not fully decoded; cable only in this app) |
+| `04` / `44` | LED profile, 128 B, signature `5A A5` at 0x7E |
+| `09` / `49` | palette 0x200 B (wired offsets `0x15*hw`), `5A A5` at 0x1FA |
+| `07` | online (byte0 = keyboard connected) |
+| `88` / `8E` | live stream (no ack) |
+| `4A` | on-board profile; battery on `0x13` receivers |
+| `06` | factory reset (`0x13` receivers only) |
+
+LED profile (MK75 "layout B"): `0x09` custom flag, `0x0A` hw effect, `0x0B` colour group, `0x16`/`0x18` sleep,
+`0x38-39 = FF`, per effect `0x3A+2i` brightness and `0x3B+2i` = `speed<<4 | (colourful ? 7 : 0)`.
+Key codes are `[type][mods][x][hid]`: key `hid<<24 | mods<<8`, consumer `…|0x02`, mouse `clicks<<16 | button<<8 | 0x01`
+(1 left, 2 middle, 3 right, 4 back, 5 forward).
+
 ## Not yet decoded / not ported
 
-* Macro page format (`StMacro_To_HdMacro`, `0x48C1BB`)
-* Fn-layer editing, knob (matrix 90) functions, debounce, sleep timer
-* Firmware update and factory reset commands
-* 2.4 GHz / Bluetooth protocol
+* Wireless macro event format
+* Fn-layer and knob remapping (the official driver doesn't offer them for the MK75 either)
+* Debounce (shown by the vendor UI but never sent on wired), firmware update

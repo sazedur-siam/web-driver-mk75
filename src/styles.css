@@ -1,6 +1,6 @@
 /* Lingbao MK75 colour language (sampled from the official MK75 product poster):
    deep green-black base, lime-green highlight, mint keycaps, charcoal modifiers, orange accents.
-   "light" mirrors the cream / pink MK75 colourway. */
+   One theme per official MK75 colourway: dark green-orange (default), iced milk tea, Arthur, summer wilderness. */
 :root {
   --bg: #050e0a;
   --bg-glow: rgba(63, 220, 95, 0.16);
@@ -29,31 +29,89 @@
   --focus: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent);
   color-scheme: dark;
 }
-:root[data-theme='light'] {
-  --bg: #f5f1e9;
-  --bg-glow: rgba(22, 163, 74, 0.1);
-  --surface: #ffffff;
-  --surface-2: #f2ede3;
-  --border: #e2d9c8;
-  --text: #1c2a23;
-  --muted: #687a70;
-  --accent: #16a34a;
+/* Iced milk tea: cream case, cream keycaps, milk-tea modifiers, caramel accents. */
+:root[data-theme='milk-tea'] {
+  --bg: #f4eee4;
+  --bg-glow: rgba(176, 128, 82, 0.12);
+  --surface: #fffdf9;
+  --surface-2: #f3ebdf;
+  --border: #e4d6c3;
+  --text: #2b2119;
+  --muted: #7a6a5a;
+  --accent: #a8703f;
   --accent-ink: #ffffff;
-  --accent-2: #e8892a;
-  --mint: #3fae95;
-  --danger: #d6343a;
-  --ok: #16a34a;
+  --accent-2: #c98b4e;
+  --mint: #a8703f;
+  --danger: #c8443c;
+  --ok: #3f9a5c;
   --warn: #b7791f;
-  --case: #f8f6f1;
-  --plate: #ebe5da;
-  --cap-alpha: #faf3e6;
-  --cap-alpha-ink: #3b302a;
-  --cap-mod: #f3d3cf;
-  --cap-mod-ink: #5a3a38;
-  --cap-accent: #e9aaa3;
-  --cap-accent-ink: #4a2522;
-  --cap-edge: rgba(80, 60, 40, 0.25);
-  --knob: #e9e4da;
+  --case: #f6f1e8;
+  --plate: #e9dfd0;
+  --cap-alpha: #fbf6ee;
+  --cap-alpha-ink: #3b2e24;
+  --cap-mod: #e6d5bf;
+  --cap-mod-ink: #4a3828;
+  --cap-accent: #c8a07a;
+  --cap-accent-ink: #2b1d12;
+  --cap-edge: rgba(90, 60, 30, 0.22);
+  --knob: #ece3d6;
+  color-scheme: light;
+}
+/* Arthur: all-black board with RGB glow. */
+:root[data-theme='arthur'] {
+  --bg: #07080a;
+  --bg-glow: rgba(91, 140, 255, 0.16);
+  --surface: #111216;
+  --surface-2: #181a20;
+  --border: #262932;
+  --text: #e9ebf0;
+  --muted: #9298a6;
+  --accent: #5b8cff;
+  --accent-ink: #050814;
+  --accent-2: #b36bff;
+  --mint: #5b8cff;
+  --danger: #ff6b6b;
+  --ok: #3fdc8f;
+  --warn: #f5a524;
+  --case: #0b0c0f;
+  --plate: #111318;
+  --cap-alpha: #1d1f25;
+  --cap-alpha-ink: #dfe3ea;
+  --cap-mod: #16181d;
+  --cap-mod-ink: #b7bdc9;
+  --cap-accent: #262933;
+  --cap-accent-ink: #e9ebf0;
+  --cap-edge: rgba(0, 0, 0, 0.6);
+  --knob: #1a1c22;
+  color-scheme: dark;
+}
+:root[data-theme='arthur'] .kb { filter: drop-shadow(0 0 16px rgba(91, 140, 255, 0.22)) drop-shadow(0 0 30px rgba(179, 107, 255, 0.12)); }
+/* Summer Wilderness: white case, white + light-blue keycaps, teal accents. */
+:root[data-theme='summer'] {
+  --bg: #eef4f6;
+  --bg-glow: rgba(47, 143, 168, 0.14);
+  --surface: #ffffff;
+  --surface-2: #e9f1f4;
+  --border: #d3e2e8;
+  --text: #18292f;
+  --muted: #5f7780;
+  --accent: #2a8aa5;
+  --accent-ink: #ffffff;
+  --accent-2: #5fae9a;
+  --mint: #2a8aa5;
+  --danger: #d6343a;
+  --ok: #2e9a6a;
+  --warn: #b7791f;
+  --case: #f7f9fa;
+  --plate: #e4edf0;
+  --cap-alpha: #f6f9fa;
+  --cap-alpha-ink: #2a3a40;
+  --cap-mod: #b8d4de;
+  --cap-mod-ink: #1f3a44;
+  --cap-accent: #7fb0c0;
+  --cap-accent-ink: #0f2730;
+  --cap-edge: rgba(30, 60, 70, 0.2);
+  --knob: #e7eef1;
   color-scheme: light;
 }
 
@@ -115,8 +173,11 @@ select {
   padding: 6px 8px;
 }
 .theme-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 2px; background: var(--surface); }
-.theme-switch button { border: none; border-radius: 999px; padding: 4px 10px; font-size: 12px; background: none; color: var(--muted); }
-.theme-switch button.on { background: var(--surface-2); color: var(--text); }
+.theme-switch button { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 999px; padding: 4px 10px 4px 5px; font-size: 12px; background: none; color: var(--muted); white-space: nowrap; }
+.theme-switch button.on { background: var(--surface-2); color: var(--text); box-shadow: 0 0 0 1px var(--border); }
+.theme-dot { width: 16px; height: 16px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25); }
+@media (max-width: 1280px) { .theme-switch button:not(.on) .theme-name { display: none; } .theme-switch button:not(.on) { padding: 4px; } }
+@media (max-width: 620px) { .theme-switch .theme-name { display: none; } .theme-switch button { padding: 4px; } }
 
 .pill { padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
 .pill.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 50%, transparent); }

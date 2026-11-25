@@ -51,6 +51,11 @@ export function DeviceTab({ api }: { api: DeviceApi }) {
   const current = snap?.profile[P_SLEEP] ?? 0xff;
   const [sleep, setSleep] = useState(current);
   useEffect(() => setSleep(current), [current]);
+  const [battery, setBattery] = useState<{ level: number; charging: boolean } | null>(null);
+  useEffect(() => {
+    if (!dev?.caps.battery || !dev.readBattery) return;
+    dev.readBattery().then(setBattery).catch(() => setBattery(null));
+  }, [dev]);
   if (!snap || !dev) return null;
 
   const known = SLEEP_OPTIONS.some((o) => o.code === current);
@@ -74,12 +79,24 @@ export function DeviceTab({ api }: { api: DeviceApi }) {
           <dl className="shortcuts">
             <div>
               <dt>Connection</dt>
-              <dd>{api.isDemo ? 'Simulator' : `${dev.transport.name} · USB cable`}</dd>
+              <dd>
+                {dev.transport.name} · {dev.kind === 'wired' ? 'USB cable' : '2.4 GHz receiver / Bluetooth'}
+              </dd>
             </div>
-            <div>
-              <dt>Model check</dt>
-              <dd>{idHex ? `${idHex}${isMk75 ? ' (MK75 ✓)' : ' (unexpected)'}` : 'no answer'}</dd>
-            </div>
+            {dev.kind === 'wired' && (
+              <div>
+                <dt>Model check</dt>
+                <dd>{idHex ? `${idHex}${isMk75 ? ' (MK75 ✓)' : ' (unexpected)'}` : 'no answer'}</dd>
+              </div>
+            )}
+            {battery && (
+              <div>
+                <dt>Battery</dt>
+                <dd>
+                  {battery.level}%{battery.charging ? ' · charging' : ''}
+                </dd>
+              </div>
+            )}
             <div>
               <dt>Polling</dt>
               <dd>1000 Hz wired / 2.4 GHz · 125 Hz Bluetooth</dd>
@@ -88,7 +105,10 @@ export function DeviceTab({ api }: { api: DeviceApi }) {
           {idHex && !isMk75 && (
             <p className="hint warn">This keyboard didn't report the MK75 model id. Settings may not apply as expected.</p>
           )}
-          <p className="hint">The firmware version is only in the USB descriptor, which browsers don't expose.</p>
+          <p className="hint">
+            The firmware version is only in the USB descriptor, which browsers don't expose.
+            {dev.kind === 'wireless' && !dev.caps.battery && ' This receiver type doesn\'t report battery level; press Fn+B on the keyboard.'}
+          </p>
         </section>
 
         <section className="card">

@@ -94,7 +94,7 @@ export function LightingTab({ api }: { api: DeviceApi }) {
             <span className="field-l">Colour</span>
             <div className="swatches">
               {mode.color &&
-                pal[mode.index].map((c, k) => (
+                pal[mode.index].slice(0, dev.caps.paletteIndex ? undefined : 1).map((c, k) => (
                   <label key={k} className={`swatch${!s.colorful && s.colorIndex === k ? ' on' : ''}`} title="Click to select, double-click to edit">
                     <input
                       type="radio"
@@ -121,7 +121,10 @@ export function LightingTab({ api }: { api: DeviceApi }) {
                 </button>
               )}
             </div>
-            {mode.color && <p className="hint">Pick a swatch; use the small picker under it to change that palette colour.</p>}
+            {mode.color && dev.caps.paletteIndex && <p className="hint">Pick a swatch; use the small picker under it to change that palette colour.</p>}
+            {mode.color && !dev.caps.paletteIndex && (
+              <p className="hint">Over 2.4 GHz / Bluetooth the keyboard uses the first palette colour; use its picker to choose any colour.</p>
+            )}
           </div>
         )}
         <div className="actions">

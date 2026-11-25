@@ -64,7 +64,7 @@ export class WebHidTransport implements FeatureTransport {
       filters: [{ vendorId: MK75_USB.vendorId, productId: MK75_USB.productId, usagePage: MK75_USB.usagePage }],
     });
     if (picked.length === 0) throw new Error('No device selected.');
-    return WebHidTransport.open(picked);
+    return WebHidTransport.openDevices(picked);
   }
 
   /** Re-open previously granted devices without prompting (returns null if none). */
@@ -73,10 +73,10 @@ export class WebHidTransport implements FeatureTransport {
     const granted = (await navigator.hid.getDevices()).filter(
       (d) => d.vendorId === MK75_USB.vendorId && d.productId === MK75_USB.productId,
     );
-    return granted.length ? WebHidTransport.open(granted) : null;
+    return granted.length ? WebHidTransport.openDevices(granted) : null;
   }
 
-  private static async open(candidates: HIDDevice[]): Promise<WebHidTransport> {
+  static async openDevices(candidates: HIDDevice[]): Promise<WebHidTransport> {
     // Chrome may only return the interface the user clicked; pull in sibling interfaces we already have permission for.
     const all = await navigator.hid.getDevices();
     const set = new Set<HIDDevice>(candidates);

@@ -124,10 +124,13 @@ export function MacrosTab({ api }: { api: DeviceApi }) {
           <button onClick={newMacro} disabled={recording || store.macros.length >= MAX_MACROS}>
             New macro
           </button>
-          <button className="primary" onClick={writeAll} disabled={!!api.busy || recording || assignedCount === 0}>
+          <button className="primary" onClick={writeAll} disabled={!!api.busy || recording || assignedCount === 0 || !api.dev?.caps.macros}>
             Write macros to keyboard
           </button>
         </div>
+        {api.dev && !api.dev.caps.macros && (
+          <p className="hint warn">You can edit macros here, but writing them needs the USB cable (the wireless macro format isn't supported yet).</p>
+        )}
         <p className="hint">
           Assign macros to keys on the <b>Key mapping</b> tab. The keyboard can't send macros back, so they're kept in this browser
           (include them in a backup).

@@ -8,6 +8,7 @@
  * A read sends `op | 0x80` on the command channel, waits, then fetches report 0x06; the reply
  * echoes the op byte and carries the payload from offset 7. A write sends the whole frame on 0x06.
  */
+import type { DeviceCaps, Mk75Device } from './device';
 import type { FeatureTransport } from './transport';
 
 export const REPORT_CMD = 0x05;
@@ -50,7 +51,10 @@ export interface Mk75Options {
   onFrame?: (dir: 'out' | 'in', reportId: number, data: Uint8Array) => void;
 }
 
-export class Mk75 {
+export class Mk75 implements Mk75Device {
+  readonly kind = 'wired' as const;
+  readonly caps: DeviceCaps = { macros: true, paletteIndex: true, battery: false };
+  readonly simulated: boolean;
   private queue: Promise<unknown> = Promise.resolve();
   private readDelay: number;
   private writeDelay: number;
@@ -60,6 +64,7 @@ export class Mk75 {
     private opts: Mk75Options = {},
   ) {
     this.readDelay = opts.readDelayMs ?? 25; // vendor ctor: obj+0x2A0 = 0x19
+    this.simulated = transport.name.startsWith('Simulated');
     this.writeDelay = opts.writeDelayMs ?? 50;
   }
 

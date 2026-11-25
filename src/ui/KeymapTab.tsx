@@ -208,7 +208,9 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
               <Picker label="Mouse" items={MOUSE_BUTTONS.map((l, i) => ({ label: l, a: { kind: 'mouse', button: i } as KeyAction }))} onPick={assign} />
               <div className="field">
                 <span className="field-l">Macro</span>
-                {macros.macros.length === 0 ? (
+                {!dev.caps.macros ? (
+                  <p className="hint">Macros can only be written over the USB cable for now.</p>
+                ) : macros.macros.length === 0 ? (
                   <p className="hint">Create macros on the Macros tab first.</p>
                 ) : (
                   <div className="row">

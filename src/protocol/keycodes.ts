@@ -172,7 +172,12 @@ export const CONSUMER_KEYS: { usage: number; label: string }[] = [
   { usage: 0x0183, label: 'Media player' },
 ];
 
-export const MOUSE_BUTTONS = ['Left click', 'Right click', 'Middle click', 'Mouse button 4', 'Mouse button 5'];
+/**
+ * Firmware mouse codes F0..F4 (button index 0..4). Order confirmed by emulating the vendor encoders:
+ * wired keyinfo maps left/right/middle/forward/back → F0/F2/F1/F3/F4, and the wireless encoder agrees
+ * (left 1, middle 2, right 3, back 4, forward 5).
+ */
+export const MOUSE_BUTTONS = ['Left click', 'Middle click', 'Right click', 'Forward', 'Back'];
 
 /** Shortcut presets the vendor exposes as "Commands" (exact codes from its table). */
 export const SHORTCUTS: { label: string; usage: number; mods: number }[] = [
