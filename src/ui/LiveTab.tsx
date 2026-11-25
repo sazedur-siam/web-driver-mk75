@@ -2,18 +2,26 @@ import { useEffect, useRef, useState } from 'react';
 import { fromHex, hex } from '../protocol/lighting';
 import { compose, frameToFill, MUSIC_MODES, MusicVisualizer, RT_MODES, RtEffect, type ColorSource, type MusicMode, type RtMode } from '../protocol/live';
 import { keyIndexForCode } from '../device/codeMap';
+import { SCREEN_MODES, ScreenSync, type ScreenMode } from '../protocol/screenSync';
 import { Keyboard } from './Keyboard';
 import { loadPerKey, perKeyMap } from './perKeyStore';
 import { startTicker } from './ticker';
 import type { DeviceApi } from './useDevice';
 
 const FRAME_MS = 30; // ~33 fps (vendor streams ~50 fps)
+/** Screen sync samples a tiny downscaled frame: cheap, and plenty for 82 keys. */
+const SCREEN_W = 32;
+const SCREEN_H = 12;
 
 type Source = 'solid' | 'rainbow' | 'perkey';
 
 export function LiveTab({ api }: { api: DeviceApi }) {
   const { dev, snap } = api;
-  const [kind, setKind] = useState<'effects' | 'music'>('effects');
+  const [kind, setKind] = useState<'effects' | 'music' | 'screen'>('effects');
+  const [screenMode, setScreenMode] = useState<ScreenMode>('zones');
+  const [screenSmooth, setScreenSmooth] = useState(0.5);
+  const [saturation, setSaturation] = useState(1.3);
+  const [screenLabel, setScreenLabel] = useState<string | null>(null);
   const [rtMode, setRtMode] = useState<RtMode>('Rainbow wave');
   const [musicMode, setMusicMode] = useState<MusicMode>('Spectrum bars');
   const [source, setSource] = useState<Source>('rainbow');
@@ -30,6 +38,9 @@ export function LiveTab({ api }: { api: DeviceApi }) {
 
   const audio = useRef<{ ctx: AudioContext; analyser: AnalyserNode; stream: MediaStream } | null>(null);
   const effect = useRef(new RtEffect(rtMode, speed));
+  const screen = useRef<{ stream: MediaStream; video: HTMLVideoElement; ctx: CanvasRenderingContext2D } | null>(null);
+  const sync = useRef(new ScreenSync());
+  Object.assign(sync.current, { mode: screenMode, smooth: screenSmooth, saturation });
   const music = useRef(new MusicVisualizer(musicMode, gain, smooth, autoGain));
   const cfg = useRef({ kind, source, color, brightness });
   cfg.current = { kind, source, color, brightness };
@@ -66,13 +77,22 @@ export function LiveTab({ api }: { api: DeviceApi }) {
         const c = cfg.current;
         const src: ColorSource =
           c.source === 'solid' ? { kind: 'solid', color: fromHex(c.color) } : c.source === 'perkey' ? { kind: 'perkey', colors: perkey, fallback: fromHex(c.color) } : { kind: 'rainbow' };
-        let intensity: Map<number, number>;
-        if (c.kind === 'music') {
-          if (audio.current) audio.current.analyser.getByteFrequencyData(bins);
-          else bins.fill(0);
-          intensity = music.current.intensities(bins, t);
-        } else intensity = effect.current.intensities(t);
-        const frame = compose(intensity, src, t, c.brightness);
+        let frame: Uint8Array;
+        if (c.kind === 'screen') {
+          const sc = screen.current;
+          if (sc && sc.video.readyState >= 2) {
+            sc.ctx.drawImage(sc.video, 0, 0, SCREEN_W, SCREEN_H);
+            frame = sync.current.frame(sc.ctx.getImageData(0, 0, SCREEN_W, SCREEN_H), c.brightness);
+          } else frame = new Uint8Array(378);
+        } else {
+          let intensity: Map<number, number>;
+          if (c.kind === 'music') {
+            if (audio.current) audio.current.analyser.getByteFrequencyData(bins);
+            else bins.fill(0);
+            intensity = music.current.intensities(bins, t);
+          } else intensity = effect.current.intensities(t);
+          frame = compose(intensity, src, t, c.brightness);
+        }
         await dev.sendLiveFrame(frame);
         frames++;
         const now = performance.now();
@@ -101,6 +121,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
   useEffect(
     () => () => {
       stopAudio();
+      stopScreen();
       if (runningRef.current && dev && snap) void dev.writeProfile(snap.profile).catch(() => undefined);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -112,6 +133,35 @@ export function LiveTab({ api }: { api: DeviceApi }) {
     void audio.current?.ctx.close();
     audio.current = null;
     setAudioLabel(null);
+  }
+
+  function stopScreen() {
+    screen.current?.stream.getTracks().forEach((t) => t.stop());
+    screen.current = null;
+    setScreenLabel(null);
+  }
+
+  async function startScreen() {
+    stopScreen();
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+      const video = document.createElement('video');
+      video.muted = true;
+      video.playsInline = true;
+      video.srcObject = stream;
+      await video.play();
+      const canvas = document.createElement('canvas');
+      canvas.width = SCREEN_W;
+      canvas.height = SCREEN_H;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) throw new Error('Canvas is not available');
+      screen.current = { stream, video, ctx };
+      const track = stream.getVideoTracks()[0];
+      setScreenLabel(track.label && track.label.length <= 40 ? track.label : 'Shared screen');
+      track.addEventListener('ended', stopScreen);
+    } catch (e) {
+      if ((e as Error)?.name !== 'NotAllowedError') api.setError(e instanceof Error ? e.message : String(e));
+    }
   }
 
   async function startAudio(from: 'system' | 'mic') {
@@ -167,7 +217,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
               ■ Stop
             </button>
           ) : (
-            <button className="primary" onClick={() => setRunning(true)} disabled={!!api.busy || (kind === 'music' && !audioLabel)}>
+            <button className="primary" onClick={() => setRunning(true)} disabled={!!api.busy || (kind === 'music' && !audioLabel) || (kind === 'screen' && !screenLabel)}>
               ▶ Start
             </button>
           )}
@@ -186,8 +236,28 @@ export function LiveTab({ api }: { api: DeviceApi }) {
             <button role="tab" aria-selected={kind === 'music'} className={kind === 'music' ? 'on' : ''} onClick={() => setKind('music')}>
               Music
             </button>
+            <button role="tab" aria-selected={kind === 'screen'} className={kind === 'screen' ? 'on' : ''} onClick={() => setKind('screen')}>
+              Screen sync
+            </button>
           </div>
-          {kind === 'effects' ? (
+          {kind === 'screen' ? (
+            <>
+              <div className="row">
+                <button onClick={startScreen}>Share screen / window / tab…</button>
+                {screenLabel && <span className="pill ok">{screenLabel}</span>}
+              </div>
+              <p className="hint">The keyboard follows the colours of what you share, like ambient TV lighting. Nothing leaves this computer.</p>
+              <div className="modes">
+                {SCREEN_MODES.map((m) => (
+                  <button key={m.id} className={`mode${screenMode === m.id ? ' on' : ''}`} onClick={() => setScreenMode(m.id)} aria-pressed={screenMode === m.id}>
+                    {m.name}
+                  </button>
+                ))}
+              </div>
+              <Slider label="Smooth" min={0} max={0.9} step={0.05} value={screenSmooth} onChange={setScreenSmooth} fmt={(v) => `${Math.round(v * 100)}%`} />
+              <Slider label="Saturation" min={0.5} max={2.5} step={0.05} value={saturation} onChange={setSaturation} fmt={(v) => `${v.toFixed(2)}×`} />
+            </>
+          ) : kind === 'effects' ? (
             <>
               <div className="modes">
                 {RT_MODES.map((m) => (
@@ -227,6 +297,10 @@ export function LiveTab({ api }: { api: DeviceApi }) {
 
         <section className="card">
           <h2>Colour</h2>
+          {kind === 'screen' ? (
+            <p className="muted small">Colours come from the shared screen.</p>
+          ) : (
+            <>
           <div className="seg">
             {(['rainbow', 'solid', 'perkey'] as Source[]).map((s) => (
               <button key={s} className={source === s ? 'on' : ''} onClick={() => setSource(s)}>
@@ -241,6 +315,8 @@ export function LiveTab({ api }: { api: DeviceApi }) {
             </div>
           )}
           {source === 'perkey' && <p className="hint">Uses the layout from the Per-key RGB tab.</p>}
+            </>
+          )}
           <Slider label="Brightness" min={0.1} max={1} step={0.05} value={brightness} onChange={setBrightness} fmt={(v) => `${Math.round(v * 100)}%`} />
         </section>
       </div>
