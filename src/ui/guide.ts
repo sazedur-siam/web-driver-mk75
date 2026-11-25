@@ -29,6 +29,12 @@ export function resolveHref(href: string): { href: string; external: boolean } {
   return { href: `${REPO_URL}/blob/main/${href.replace(/^\.\//, '')}`, external: true };
 }
 
+/** Images live in public/ (so GitHub renders them); the app serves public/ at its root. */
+export function resolveImage(src: string): string {
+  if (/^[a-z]+:/i.test(src)) return src;
+  return src.replace(/^\.?\/?public\//, '');
+}
+
 export function renderGuide(markdown: string): { html: string; toc: TocEntry[] } {
   const toc: TocEntry[] = [];
   const used = new Map<string, number>();
@@ -42,6 +48,10 @@ export function renderGuide(markdown: string): { html: string; toc: TocEntry[] }
         const id = n ? `${base}-${n}` : base;
         if (depth >= 2 && depth <= 3) toc.push({ depth, text: text.replace(/[*_`]/g, ''), id });
         return `<h${depth} id="${id}">${this.parser.parseInline(tokens)}</h${depth}>\n`;
+      },
+      image({ href, title, text }: Tokens.Image) {
+        const t = title ? ` title="${title}"` : '';
+        return `<img src="${resolveImage(href)}" alt="${text.replace(/"/g, '&quot;')}"${t} decoding="async">`;
       },
       link(this: { parser: { parseInline(t: Tokens.Generic[]): string } }, { href, title, tokens }: Tokens.Link) {
         const r = resolveHref(href);
