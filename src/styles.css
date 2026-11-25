@@ -308,3 +308,12 @@ button.rec { background: var(--danger); border-color: var(--danger); color: #fff
 input[type='range'] { accent-color: var(--accent); width: 100%; }
 .hint.warn { color: var(--warn); }
 .likely { font-size: 11px; color: var(--warn); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); border-radius: 999px; padding: 0 6px; margin-left: 6px; }
+
+/* --- profiles --- */
+.profile-list { display: flex; flex-direction: column; gap: 8px; }
+.profile-item { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
+.profile-item.on { border-color: var(--accent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent); }
+.profile-main { display: flex; flex-direction: column; gap: 2px; }
+.profile-main b { display: inline-flex; align-items: center; gap: 8px; }
+.small-pill { font-size: 11px; padding: 1px 8px; font-weight: 500; }
+.text-input { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; min-width: 0; flex: 1; }

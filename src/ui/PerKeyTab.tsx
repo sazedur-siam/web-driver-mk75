@@ -2,24 +2,11 @@ import { useState } from 'react';
 import { MK75_KEYS } from '../device/mk75Layout';
 import { buildLedMatrix, CUSTOM_MODE_INDEX, fromHex, hex, parseProfile, patchProfile, type RGB } from '../protocol/lighting';
 import { Keyboard } from './Keyboard';
+import { loadPerKey, savePerKey } from './perKeyStore';
 import type { DeviceApi } from './useDevice';
 
-const STORE = 'mk75.perkey.v1';
-
-function load(): Record<number, RGB> {
-  try {
-    return JSON.parse(localStorage.getItem(STORE) || '{}');
-  } catch {
-    return {};
-  }
-}
-function save(v: Record<number, RGB>) {
-  try {
-    localStorage.setItem(STORE, JSON.stringify(v));
-  } catch {
-    /* storage unavailable */
-  }
-}
+const load = loadPerKey;
+const save = savePerKey;
 
 const PRESETS = ['#ff0000', '#ff8000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff', '#ffffff', '#000000'];
 
