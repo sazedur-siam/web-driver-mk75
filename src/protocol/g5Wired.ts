@@ -93,6 +93,9 @@ export class G5WiredLink implements LayoutBLink {
         await sleep(cmd === OP_LIVE ? 7 : this.delayMs);
         await this.send(f);
       }
+      // On one IC2481 board an immediate palette read after a profile write
+      // stopped the lighting; waiting here keeps later queued reads behind it.
+      if (cmd === G5_OPS.setLed) await sleep(130);
     });
   }
 
@@ -107,13 +110,19 @@ export class G5WiredLink implements LayoutBLink {
           await sleep(this.delayMs);
           await this.send(this.frame(cmd, sub, total, i, n));
           await sleep(this.delayMs + attempt * 30);
-          const r = await this.t.receiveFeature(G5_REPORT);
+          let r = await this.t.receiveFeature(G5_REPORT);
           this.log?.('in', G5_REPORT, r);
-          if (r[0] === cmd) {
+          // Linux may return the report ID on short responses even when the transport
+          // has already normalized full-sized reports. G5 read opcodes are >= 0x80,
+          // so matching both the ID and expected command avoids stripping payload.
+          if (r[0] === G5_REPORT && r[1] === cmd) r = r.subarray(1);
+          // Short HID reports are valid only when they still contain the complete requested payload.
+          // Never turn a truncated reply into a zero-padded block that may later be written to flash.
+          if (r[0] === cmd && r.length >= HEADER + n) {
             out.set(r.subarray(HEADER, HEADER + n), i * CHUNK);
             break;
           }
-          if (attempt === 2) throw new Error(`Device did not answer read 0x${cmd.toString(16)}`);
+          if (attempt === 2) throw new Error(`Device did not answer read 0x${cmd.toString(16)} with a complete payload`);
         }
       }
       return out;
