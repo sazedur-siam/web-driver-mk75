@@ -93,6 +93,11 @@ export const STORE_BLOCKS = 8;
 const STORE_NAME_CHARS = 16; // the keyboard skips the name; keep it short to save space
 const STORE_MOUSE_MASK: Record<number, number> = { [MOUSE_USAGE.left]: 1, [MOUSE_USAGE.middle]: 4, [MOUSE_USAGE.right]: 2 };
 
+export const STORE_BYTES = STORE_BLOCK * STORE_BLOCKS;
+/** Bytes these macros take in the layout-B store (directory entry + name + 4-byte events). */
+export const macroStoreBytes = (macros: Macro[]) =>
+  macros.reduce((n, m) => n + 5 + 2 * Math.min(m.name.length, STORE_NAME_CHARS) + 4 * m.events.filter((e) => isEncodable(e.usage)).length, 0);
+
 /** Encode macros (id = position + 1) into a layout-B macro store, unpadded. */
 export function encodeMacroStore(macros: Macro[]): Uint8Array {
   const bodies = macros.map((m) => {
@@ -107,14 +112,13 @@ export function encodeMacroStore(macros: Macro[]): Uint8Array {
     events.forEach((e, i) => {
       const u = e.usage;
       const [type, code] = u >= 0xf0 ? [2, STORE_MOUSE_MASK[u]] : u >= 0xe0 ? [1, u] : [0, u];
-      const d = Math.min(0xfffff, Math.max(0, Math.round(e.delay)));
+      const d = Math.min(0xfffff, Math.max(3, Math.round(e.delay))); // ≥ 3 ms like the wired slots
       b.set([(e.down ? 0 : 0x80) | (type << 4) | (d >> 16), (d >> 8) & 0xff, d & 0xff, code], 1 + 2 * name.length + 4 * i);
     });
     return b;
   });
   const size = 4 * macros.length + bodies.reduce((n, b) => n + b.length, 0);
-  const max = STORE_BLOCK * STORE_BLOCKS;
-  if (size > max) throw new Error(`Macros are too long: ${size} bytes, the MK75 stores at most ${max}. Shorten or remove some.`);
+  if (size > STORE_BYTES) throw new Error(`Macros are too long: ${size} bytes, the MK75 stores at most ${STORE_BYTES}. Shorten or remove some.`);
   const out = new Uint8Array(size);
   const dv = new DataView(out.buffer);
   let off = 4 * macros.length;

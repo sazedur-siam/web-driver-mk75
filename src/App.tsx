@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { WebHidTransport } from './protocol/transport';
 import { BackupTab } from './ui/BackupTab';
 import { DeviceTab } from './ui/DeviceTab';
@@ -135,10 +135,13 @@ export default function App() {
     api.grantedDevices().then((d) => setCanReconnect(d.length > 0)).catch(() => setCanReconnect(false));
   }, [api.dev, api.grantedDevices]);
   const supported = WebHidTransport.isSupported();
+  const apiRef = useRef(api);
+  apiRef.current = api;
 
   useEffect(() => {
     if (!supported) return;
     const onDisconnect = () => {
+      const api = apiRef.current;
       if (api.dev && !api.isDemo) void api.disconnect();
     };
     // Plugging an already-allowed MK75 back in reconnects; its interfaces arrive one by one, so wait for all.
@@ -146,6 +149,7 @@ export default function App() {
     const onConnect = () => {
       clearTimeout(timer);
       timer = setTimeout(() => {
+        const api = apiRef.current;
         if (!api.dev && !api.busy) void api.grantedDevices().then((d) => (d.length ? api.reconnect() : undefined));
       }, 800);
     };
@@ -156,7 +160,7 @@ export default function App() {
       navigator.hid.removeEventListener('disconnect', onDisconnect);
       navigator.hid.removeEventListener('connect', onConnect);
     };
-  }, [api, supported]);
+  }, [supported]);
 
   return (
     <div className="app">
