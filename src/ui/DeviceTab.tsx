@@ -217,7 +217,7 @@ export function DeviceTab({ api, battery }: { api: DeviceApi; battery: Battery |
             </div>
           ))}
         </dl>
-        <p className="hint">Fn-layer functions belong to the firmware; the official driver doesn't remap them either.</p>
+        <p className="hint">On current MK75 boards you can remap Fn + key combinations on the Key mapping tab (Fn layer).</p>
       </section>
     </div>
   );

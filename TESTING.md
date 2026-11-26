@@ -57,6 +57,9 @@ Use a text editor and a keyboard/mouse tester website.
 - [ ] **K7** (P0) After K1–K5, Fn+F10 (mute), Fn+F12 (volume +) and the Fn key itself still work.
 - [ ] **K8** (P1) Make changes, then **Revert all** before saving. Nothing changes on the keyboard, and no write appears in the log.
 - [ ] **K9** (P0) Keys you didn't touch still type normally.
+- [ ] **K10** (P1) **Fn layer**: the F12 key shows "Volume +" and Q/W/E show Android/Windows/macOS mode. Note anything that looks wrong: ______
+- [ ] **K11** (P1) Fn layer: set Fn+F12 to Play/Pause and save. Fn+F12 plays/pauses; F12 alone is still F12; Fn+Q/W/E and Fn+B still work.
+- [ ] **K12** (P0) **Restore Fn layer** and save. Fn+F12 is Volume + again.
 
 ## 5. Macros (cable; repeat W8 over 2.4G)
 

@@ -162,7 +162,6 @@ the keyboard can't run them by itself.
 
 ## Not supported
 
-- **Fn-layer remapping:** the official driver doesn't offer it for the MK75 either.
 - **Knob functions beyond volume / lighting:** the firmware has only these two modes.
 - **Firmware updates:** too risky from a browser.
 - **Firmware version display:** only reported in the USB descriptor, which browsers can't read.
@@ -175,7 +174,6 @@ Not built yet. Most need testing on a real MK75 first. Details are in [features/
 
 | Feature | What it will do | Status |
 |---|---|---|
-| **Fn-layer remapping** | Change what Fn + key does, with one-click "restore Fn defaults" | Needs hardware reads to confirm the layer layout (likely over 2.4 GHz first) |
 | **Desktop tray app** | Run live effects and music sync with no browser open, using system audio directly | Planned as a separate Electron app sharing this codebase |
 
 ---

@@ -5,7 +5,7 @@
  *  LED profile (cmd 0x44 / 0x04), 128 B, "layout B", signature 5A A5 at 0x7E:
  *    0x03 debounce 0..4 · 0x09 custom flag · 0x0A hw effect · 0x0B colour group · 0x16 tap/hold threshold · 0x18 sleep (0 = never) · 0x1A knob 0 media / 1 lighting
  *    0x38/0x39 = FF · 0x3A+2i brightness · 0x3B+2i speed<<4 | (colourful ? 7 : 0)   (i < 19)
- *  Key matrix (cmd 0x41 / 0x01, sub = layer 0..3), 512 B = 128 u32, last u32 = 0xA55A0000.
+ *  Key matrix (cmd 0x41 / 0x01, sub = layer: 0 base, 1 Fn, 2 unused, 3 tap/hold), 512 B = 128 u32, last u32 = 0xA55A0000.
  *  Palette (cmd 0x49 / 0x09), 0x200 B: same offsets as wired (0x15*hw), 5A A5 at 0x1FA.
  *  Per-key colours (cmd 0x02, sub = group), 0x17A B: R/G/B planes of 126.
  *  Live stream (cmd 0x88, no ack): groups [R,G,B,count,led...], <= 200 bytes.
@@ -26,6 +26,9 @@ const PALETTE_DATA = 0x1a4;
 const WL_MODES = 19;
 const LIVE_MAX = 200;
 const OP_USB_MACRO = 0x05;
+/** Layout-B cell types: 07 device function, 0D Fn key (never changed); 03 macro, 08 lighting (kept raw). */
+const PROTECTED_TYPES = [0x07, 0x0d];
+const RAW_TYPES = [0x03, 0x08];
 
 const u32 = (b: Uint8Array, i: number) => new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(i * 4, true);
 const setU32 = (b: Uint8Array, i: number, v: number) => new DataView(b.buffer, b.byteOffset, b.byteLength).setUint32(i * 4, v >>> 0, true);
@@ -70,8 +73,8 @@ export class Mk75Wireless implements Mk75Device {
   readonly simulated: boolean;
 
   private ledView: Uint8Array | null = null;
-  private layerRaw: Uint8Array | null = null;
-  private matrixView: Uint8Array | null = null;
+  /** Last read/written layer bytes (layout B) and their wired view, by layer. */
+  private layers = new Map<number, { raw: Uint8Array; view: Uint8Array }>();
   private paletteRaw: Uint8Array | null = null;
 
   constructor(
@@ -176,26 +179,29 @@ export class Mk75Wireless implements Mk75Device {
     await this.link.write(this.ops.setLed, 0, raw);
   }
 
-  // ---------------------------------------------------------------- key matrix (base layer)
-  async readKeyMatrix(): Promise<Uint8Array> {
-    const raw = await this.link.read(this.ops.getMatrix, 0, LAYER_LEN);
+  // ---------------------------------------------------------------- key layers (0 base, 1 Fn)
+  private async readLayer(layer: number): Promise<Uint8Array> {
+    const raw = await this.link.read(this.ops.getMatrix, layer, LAYER_LEN);
     const view = new Uint8Array(1024);
     for (let i = 0; i < LAYER_SLOTS - 1; i++) {
       const c = u32(raw, i);
       setU32(view, i, wirelessToWired(c) ?? c);
     }
-    this.layerRaw = raw;
-    this.matrixView = view;
+    this.layers.set(layer, { raw, view });
     return new Uint8Array(view);
   }
 
-  async writeKeyMatrix(m: Uint8Array): Promise<void> {
-    if (!this.layerRaw || !this.matrixView) await this.readKeyMatrix();
-    const raw = new Uint8Array(this.layerRaw!);
+  private async writeLayer(layer: number, m: Uint8Array): Promise<void> {
+    if (!this.layers.has(layer)) await this.readLayer(layer);
+    const prev = this.layers.get(layer)!;
+    const raw = new Uint8Array(prev.raw);
     for (let i = 0; i < LAYER_SLOTS - 1; i++) {
       const next = u32(m, i);
-      if (next === u32(this.matrixView!, i)) continue; // untouched: keep the keyboard's own code
-      const wl = wiredToWireless(next);
+      if (next === u32(prev.view, i)) continue; // untouched: keep the keyboard's own code
+      // Firmware functions (mode switch, pairing, battery, Win lock) and the Fn key are never overwritten.
+      if (PROTECTED_TYPES.includes(raw[4 * i])) throw new Error('That key holds a keyboard function (Fn, mode or pairing) and cannot be remapped.');
+      // A layout-B code with no wired form (e.g. a lighting function) is written back as it is.
+      const wl = wiredToWireless(next) ?? (wirelessToWired(next) === null && RAW_TYPES.includes(next & 0xff) ? next : null);
       if (wl === null) {
         throw new UnsupportedOverWireless(
           this.kind === 'wired'
@@ -206,9 +212,23 @@ export class Mk75Wireless implements Mk75Device {
       setU32(raw, i, wl);
     }
     setU32(raw, LAYER_SLOTS - 1, LAYER_TRAILER);
-    await this.link.write(this.ops.setMatrix, 0, raw);
-    this.layerRaw = raw;
+    await this.link.write(this.ops.setMatrix, layer, raw);
+    this.layers.set(layer, { raw, view: new Uint8Array(m) });
     await sleep(50);
+  }
+
+  readKeyMatrix(): Promise<Uint8Array> {
+    return this.readLayer(0);
+  }
+  writeKeyMatrix(m: Uint8Array): Promise<void> {
+    return this.writeLayer(0, m);
+  }
+  /** Keymap layer 1: what each key does while Fn is held (hw-re-docs, real MK75). */
+  readFnLayer(): Promise<Uint8Array> {
+    return this.readLayer(1);
+  }
+  writeFnLayer(m: Uint8Array): Promise<void> {
+    return this.writeLayer(1, m);
   }
 
   // ---------------------------------------------------------------- palette / per-key

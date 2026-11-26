@@ -172,7 +172,8 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
 - **Deliberate choice:** we write per-effect slots for i < 17 (`PER_MODE_SLOTS`). The MK75 vendor build writes 16
   because of its `LedMask=0x22120`, but the AU75 build writes 17 on the same firmware generation, so effect 16
   (Blossoming) settings are saved too.
-- **Hardware checklist:** `TESTING.md`. Pending features that need hardware: `features/15`.
+- **Hardware checklist:** `TESTING.md`. Every protocol feature is now built; the layout-B ones (debounce,
+  knob, IC2481 battery, macro store, Fn layer) follow hw-re-docs and still need a pass on our own hardware.
 
 ---
 
@@ -218,6 +219,8 @@ public/                  manifest, sw.js (cache name `mk75-vN`), icons, manual/*
 2. **Vendor order:** palette → macro pages → key matrix → per-key pages → profile. Skip blocks that are
    unchanged (see `applyProfile.ts`).
 3. **Never** write the Fn key slot, the knob slot, redirect words, FnCombo, or per-mode slots ≥ `PER_MODE_SLOTS`.
+   On layout B, the adapter refuses to change cells of type `07` (device functions) or `0D` (Fn) on any layer, and
+   never writes keymap layers above 1 or macro blocks above 7.
 4. **New protocol code needs tests** against `MockMk75` / `MockWirelessIO`, and byte-exact vendor captures when
    possible (emulate the vendor function first).
 5. UI talks to `Mk75Device` only, never to WebHID directly. Respect `dev.caps` (for example `caps.macros` picks

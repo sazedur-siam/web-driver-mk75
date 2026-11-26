@@ -165,5 +165,5 @@ Key codes are `[type][mods][x][hid]`: key `hid<<24 | mods<<8`, consumer `…|0x0
 
 ## Not yet decoded / not ported
 
-* Fn-layer remapping (the official driver doesn't offer it for the MK75 either). The knob has two firmware modes, layout B byte `0x1A`: 0 media (volume), 1 lighting
+* Fn-layer remapping on CDev916KB boards (FnCombo is firmware-owned there). On layout B the Fn layer is keymap layer 1 and is editable; cells `07` (device function) and `0D` (Fn) are locked. The knob has two firmware modes, layout B byte `0x1A`: 0 media (volume), 1 lighting
 * Debounce on CDev916KB boards (the vendor never sends it there; layout B has it at byte `0x03`, 0–4), firmware update
