@@ -17,6 +17,8 @@ export class MockWirelessIO implements ReportIO {
   liveFrames = 0;
   badChecksums = 0;
   online = true;
+  /** LED-profile reads still to answer like a sleeping keyboard: zeros, only 5A A5 kept. */
+  asleepReads = 0;
   private subs = new Set<(id: number, body: Uint8Array) => void>();
   private incoming = new Map<number, Uint8Array[]>();
 
@@ -59,7 +61,14 @@ export class MockWirelessIO implements ReportIO {
     }
     const p = parsePacket(body);
     const sources: Record<number, () => Uint8Array> = {
-      [WCmd.GetLed]: () => this.led,
+      [WCmd.GetLed]: () => {
+        if (this.asleepReads <= 0) return this.led;
+        this.asleepReads--;
+        const z = new Uint8Array(128);
+        z[0x7e] = 0x5a;
+        z[0x7f] = 0xa5;
+        return z;
+      },
       [WCmd.GetMatrix]: () => this.layers[p.sub] ?? new Uint8Array(512),
       [WCmd.GetPalette]: () => this.palette,
       [WCmd.GetColors]: () => this.colors,

@@ -92,12 +92,19 @@ export class Mk75Wireless implements Mk75Device {
 
   // ---------------------------------------------------------------- LED profile
   private async readLedRaw(): Promise<Uint8Array> {
+    let signed = false;
     for (let i = 0; i < 5; i++) {
       const r = await this.link.read(this.ops.getLed, 0, LED_LEN);
-      if (r[0x7e] === 0x5a && r[0x7f] === 0xa5) return r;
+      signed = r[0x7e] === 0x5a && r[0x7f] === 0xa5;
+      // A sleeping keyboard keeps 5A A5 but zeroes the rest (no FF FF at 0x38); writing that back wipes the config.
+      if (signed && r[0x38] === 0xff && r[0x39] === 0xff) return r;
       await sleep(100);
     }
-    throw new Error('Keyboard returned an invalid lighting block (no 5A A5 signature)');
+    throw new Error(
+      signed
+        ? 'The keyboard is asleep. Press any key on it, then try again.'
+        : 'Keyboard returned an invalid lighting block (no 5A A5 signature)',
+    );
   }
 
   async readProfile(): Promise<Uint8Array> {
