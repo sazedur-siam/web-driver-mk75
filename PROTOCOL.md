@@ -150,7 +150,7 @@ Reads: one request, then `total` reply packets.
 | `09` / `49` | palette 0x200 B (wired offsets `0x15*hw`), `5A A5` at 0x1FA |
 | `07` | online (byte0 = keyboard connected) |
 | `88` / `8E` | live stream (no ack) |
-| `4A` | on-board profile; battery on `0x13` receivers |
+| `4A` | on-board profile; battery on `0x13` receivers: `[percent, flags]`, flags `01` battery, `10` charging, `11` charged |
 | `06` | factory reset (`0x13` receivers only) |
 
 LED profile (MK75 "layout B"): `0x09` custom flag, `0x0A` hw effect, `0x0B` colour group, `0x03` debounce 0–4, `0x16` tap/hold threshold, `0x18` sleep (`0` = never),

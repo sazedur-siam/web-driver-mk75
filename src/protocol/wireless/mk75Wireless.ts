@@ -79,7 +79,7 @@ export class Mk75Wireless implements Mk75Device {
     private ops: LayoutBOps = WIRELESS_OPS,
   ) {
     this.kind = flavour === 'g5wired' ? 'wired' : 'wireless';
-    this.caps = { macros: false, paletteIndex: flavour === 'g5wired', battery: flavour === '3632' };
+    this.caps = { macros: false, paletteIndex: flavour === 'g5wired', battery: flavour !== 'combo' };
     this.simulated = link.io.name.startsWith('Simulated');
     this.transport = { name: `${link.io.name}`, close: () => link.close() };
   }
@@ -283,9 +283,10 @@ export class Mk75Wireless implements Mk75Device {
     await this.link.write(WCmd.Live, 1, payload);
   }
 
+  /** [percent, flags]; flags 0x01 on battery, 0x10 charging (keys go dark), 0x11 charged (hw-re-docs). */
   async readBattery(): Promise<{ level: number; charging: boolean } | null> {
-    if (this.flavour !== '3632') return null;
-    const r = await this.link.read(WCmd.GetOnBoard, 0, 2);
+    if (this.flavour === 'combo') return null;
+    const r = this.flavour === 'g5wired' ? await this.link.read(0x87, 2, 2) : await this.link.read(WCmd.GetOnBoard, 0, 2);
     if (r[0] > 100) return null; // not a percentage: unknown reply
     return { level: r[0], charging: (r[1] & 0xf0) !== 0 && (r[1] & 0x0f) === 0 };
   }

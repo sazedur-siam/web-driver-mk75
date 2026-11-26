@@ -119,7 +119,7 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
 - Reads send `cmd|0x80`, wait 20 ms, then get report 0x06; the payload starts at offset 7. Writes wait 20 ms
   (7 ms for live) before each 512-byte chunk.
 - Opcodes (read/write): matrix `83/03` (sub = layer), LED `84/04`, per-key `86/06`, palette `8A/0A`, live `08`,
-  model id `82` sub 1 len 6, macros `85/05` (format unverified, so `caps.macros` is false).
+  model id `82` sub 1 len 6, battery `87` sub 2 len 2, macros `85/05` (format unverified, so `caps.macros` is false).
 - The blocks are wireless "layout B", so `Mk75G5Wired` reuses `Mk75Wireless` with USB opcodes. Unlike wireless,
   the colour nibble keeps palette index 0..6.
 
@@ -164,7 +164,6 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
   command bytes, the wired↔wireless key-code encoders, mouse code order.
 - **Inferred:**
   - Whether speed level 0 is the slowest or the fastest.
-  - Which receiver type the MK75 ships with.
   - Whether Bluetooth exposes the vendor collection at all.
   - Wireless live-stream sub=1 (taken from an F99 capture in OpenRGB issue #5166).
   - Fn-function names marked "likely".
@@ -172,7 +171,7 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
 - **Deliberate choice:** we write per-effect slots for i < 17 (`PER_MODE_SLOTS`). The MK75 vendor build writes 16
   because of its `LedMask=0x22120`, but the AU75 build writes 17 on the same firmware generation, so effect 16
   (Blossoming) settings are saved too.
-- **Hardware checklist:** `TESTING.md`. Pending features that need hardware: `features/` (14, 15, 18).
+- **Hardware checklist:** `TESTING.md`. Pending features that need hardware: `features/` (14, 15).
 
 ---
 

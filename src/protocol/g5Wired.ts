@@ -16,6 +16,7 @@
  *   live        –     08     0      0x17A   (126 × R,G,B by LED index)
  *   palette     8A    0A     0      0x200
  *   model id    82    –      1      6       (GetPassword 0x49A020 → 03 00 00 00 00 C6)
+ *   battery     87    –      2      2       [percent, flags] (hw-re-docs, real MK75; not in the vendor app)
  */
 import type { Mk75Options } from './mk75';
 import { STREAM_LEN } from './mk75';
