@@ -89,6 +89,30 @@ describe('Mk75Wireless adapter against the simulator', () => {
     expect(io.led[0x18]).toBe(4); // untouched sleep preserved
   });
 
+  it('never writes back the zeroed block a sleeping keyboard returns', async () => {
+    const { io, dev } = make();
+    const p = await dev.readProfile();
+    const before = new Uint8Array(io.led);
+    io.asleepReads = Infinity;
+    const st = parseProfile(p);
+    st.activeIndex = 1;
+    await expect(dev.writeProfile(patchProfile(p, st))).rejects.toThrow(/asleep/);
+    await expect(dev.readProfile()).rejects.toThrow(/asleep/);
+    expect(io.led).toEqual(before);
+  });
+
+  it('retries past one sleeping read, then saves', async () => {
+    const { io, dev } = make();
+    const p = await dev.readProfile();
+    io.asleepReads = 1;
+    const st = parseProfile(p);
+    st.activeIndex = 1;
+    await dev.writeProfile(patchProfile(p, st));
+    expect(io.led[0x0a]).toBe(2);
+    expect([io.led[0x38], io.led[0x39]]).toEqual([0xff, 0xff]);
+    expect(io.led[0x18]).toBe(4); // real config kept, not the zeroed one
+  });
+
   it('self-define activates custom group 0x20 even if previously 0', async () => {
     const { io, dev } = make();
     io.led[0x0b] = 0;
