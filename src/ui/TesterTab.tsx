@@ -56,11 +56,11 @@ export function TesterTab({ api }: { api?: DeviceApi }) {
   const tested = TESTABLE.filter((k) => (d.keys.get(k.index)?.presses ?? 0) > 0).length;
   const chatter = d.chattering;
   const fill = (idx: number) => {
-    if (d.down.has(idx)) return 'var(--accent)';
+    if (d.down.has(idx)) return 'var(--key-held, var(--accent))';
     const s = d.keys.get(idx);
     if (!s) return undefined;
     if (s.chatter.length) return '#e5484d';
-    return 'color-mix(in srgb, var(--ok) 55%, var(--cap-alpha))';
+    return 'var(--key-tested, color-mix(in srgb, var(--ok) 55%, var(--cap-alpha)))';
   };
 
   return (

@@ -22,7 +22,7 @@ import { BatteryIcon } from './ui/BatteryIcon';
 
 /** One theme per official MK75 colourway (product page): case / keycap colours for the swatch. */
 const THEMES = [
-  { id: 'green-orange', name: 'Dark green-orange', swatch: 'conic-gradient(#93d6c6 0 50%, #f39a2b 0 75%, #0a0e0c 0)' },
+  { id: 'green-orange', name: 'Dark green-orange', swatch: 'conic-gradient(#a9c4ba 0 50%, #cf8a4a 0 75%, #121513 0)' },
   { id: 'milk-tea', name: 'Iced milk tea', swatch: 'conic-gradient(#fbf6ee 0 50%, #c8a07a 0 75%, #e6d5bf 0)' },
   { id: 'arthur', name: 'Arthur', swatch: 'conic-gradient(#1d1f25 0 50%, #5b8cff 0 75%, #b36bff 0)' },
   { id: 'summer', name: 'Summer Wilderness', swatch: 'conic-gradient(#f6f9fa 0 50%, #b8d4de 0 75%, #7fb0c0 0)' },
