@@ -204,6 +204,18 @@ export function modsLabel(mods: number): string {
   return parts.join('+');
 }
 
+/** Layout-B firmware cells that have no wired form (hw-re-docs cell format). */
+const DEVICE_FN: Record<number, string> = { 0x0e: 'Windows mode', 0x0f: 'macOS mode', 0x16: 'Android mode', 0x11: 'Battery level', 0x05: 'BT 1', 0x06: 'BT 2', 0x07: 'BT 3', 0x01: 'Win lock' };
+const LIGHT_WHAT = ['Effect', '', 'Colour', 'Brightness', 'Speed'];
+const LIGHT_DIR = [' cycle', ' +', ' −'];
+function firmwareLabel(code: number): string | undefined {
+  const [t, b1, b2, b3] = [code & 0xff, (code >>> 8) & 0xff, (code >>> 16) & 0xff, code >>> 24];
+  if (t === 0x0d) return 'Fn';
+  if (t === 0x07 && (code & 0xffff00) === 0) return DEVICE_FN[b3] ?? 'Keyboard function';
+  if (t === 0x08 && LIGHT_WHAT[b1]) return `${b3 ? 'Side ' : ''}${LIGHT_WHAT[b1]}${LIGHT_DIR[b2] ?? ''}`;
+  return undefined;
+}
+
 export function describeAction(a: KeyAction): string {
   switch (a.kind) {
     case 'disabled':
@@ -221,7 +233,7 @@ export function describeAction(a: KeyAction): string {
     case 'macro':
       return `Macro #${a.slot + 1}`;
     case 'raw':
-      return `0x${a.code.toString(16).padStart(8, '0')}`;
+      return firmwareLabel(a.code) ?? `0x${a.code.toString(16).padStart(8, '0')}`;
   }
 }
 

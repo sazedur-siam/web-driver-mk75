@@ -11,3 +11,5 @@ tsconfig.tsbuildinfo
 
 # local-only bug plans
 bug-fix/
+desktop/node_modules
+desktop/release

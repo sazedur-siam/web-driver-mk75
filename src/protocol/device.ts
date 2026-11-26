@@ -1,11 +1,13 @@
+import type { MacroFormat } from './macro';
+
 /**
  * What the UI talks to. Both the wired protocol (Mk75) and the 2.4 GHz / Bluetooth protocol
  * (Mk75Wireless) expose the *wired* data formats (254-byte profile, 1024-byte key matrix,
  * RGB table, per-key planes); the wireless class translates to and from its own layouts.
  */
 export interface DeviceCaps {
-  /** Macro storage supported (wired only; the wireless macro format isn't decoded yet). */
-  macros: boolean;
+  /** Macro storage format: 'slots' = CDev916KB 128-byte slots, 'store' = layout B store, false = none. */
+  macros: false | MacroFormat;
   /** Effects can use any of the 7 palette colours (wireless always uses colour 1 or colourful). */
   paletteIndex: boolean;
   /** Battery level can be read. */
@@ -39,5 +41,8 @@ export interface Mk75Device {
   sendLiveFrame(rgb: Uint8Array): Promise<void>;
   readBattery?(): Promise<{ level: number; charging: boolean } | null>;
   readSettings?(): Promise<KeyboardSettings>;
+  /** Keymap layer 1 (Fn held), wired view like readKeyMatrix. Layout B boards only. */
+  readFnLayer?(): Promise<Uint8Array>;
+  writeFnLayer?(m: Uint8Array): Promise<void>;
   writeSettings?(s: Partial<KeyboardSettings>): Promise<void>;
 }

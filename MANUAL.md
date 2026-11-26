@@ -44,7 +44,7 @@ features. No technical knowledge needed.
    until the light blinks.
 4. Open the website, click **Connect keyboard**, choose the **receiver** in the list, and click **Connect**.
 
-Over 2.4 GHz almost everything works. Only **saving macros** needs the USB cable.
+Over 2.4 GHz everything works, including saving macros.
 
 ### With Bluetooth (experimental)
 
@@ -110,6 +110,10 @@ Live effects run from your computer, so **keep the website open** while you use 
 
 To change the whole layout (Colemak, Dvorak, Mac-style keys), use the **Layout** box on the same tab.
 
+To change what a key does **while Fn is held** (for example Fn + F12), click **Fn layer** first (experimental,
+current MK75 boards). The mode, pairing and battery keys are locked so you can't lose them, and **Restore Fn layer**
+puts back the Fn layer as the app first read it.
+
 ![Key mapping tab](public/manual/key-mapping.webp)
 *Key mapping: click a key (here Caps Lock), choose its new job below, then Save to keyboard.*
 
@@ -121,7 +125,8 @@ To change the whole layout (Colemak, Dvorak, Mac-style keys), use the **Layout**
 4. Go to **Key mapping**, click a key, choose your macro under **Macro**, click **Assign macro**, then **Save
    to keyboard**.
 
-Macros need the **USB cable** to be saved.
+Macros save over the cable or the 2.4 GHz receiver. On current MK75 boards the repeat choices are **Play once**,
+**Repeat until any key** and **Toggle** (press the key again to stop).
 
 ![Macros tab](public/manual/macros.webp)
 *Macros: a macro made with New from text…. Each step and its delay can be edited.*
@@ -154,7 +159,8 @@ works offline.
 - **Your settings stay on the keyboard.** After you click Save, you can close the website, unplug the keyboard or
   use another computer. Your lighting, key changes and macros stay.
 - **Only live effects need the website open.** The keyboard can't play them by itself.
-- **Pick the colour theme** of the website at the top (it matches the MK75 colourways).
+- **Pick the colour theme** of the website at the top (it matches the MK75 colourways). On your first visit the site
+  asks which colourway you own.
 - **The keyboard's own shortcuts** (Fn + keys) are listed in the **Device** tab.
 
 ---
@@ -175,7 +181,8 @@ The keyboard is asleep or not paired. Press any key to wake it, or pair again (s
 **Fn + `** for 3 seconds).
 
 **Saving macros doesn't work.**
-Macros can only be saved with the **USB cable**. Switch to the middle position and connect the cable.
+If the app says the macros are too long, shorten or remove some: the keyboard holds 4 KB of macros (about 1,000
+key events). If it says the receiver type can't store them, connect the USB cable instead.
 
 **Live effects stopped.**
 They only run while the website is open. Start them again from **Live effects**.

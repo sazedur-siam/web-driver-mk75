@@ -6,6 +6,7 @@ import type { ReportIO } from './link';
 import { buildPacket, chunk, checksum, parsePacket, WCmd } from './packet';
 
 const REPLY_ID = 0x13;
+const FN_KEY = MK75_KEYS.find((k) => k.vk === 0xfa)!.index;
 
 export class MockWirelessIO implements ReportIO {
   readonly name = 'Simulated MK75 (2.4 GHz)';
@@ -13,6 +14,7 @@ export class MockWirelessIO implements ReportIO {
   layers = [0, 1, 2, 3].map(() => new Uint8Array(512));
   palette = new Uint8Array(0x200);
   colors = new Uint8Array(0x17a);
+  macroBlocks: Uint8Array[] = [];
   live: Uint8Array | null = null;
   liveFrames = 0;
   badChecksums = 0;
@@ -39,6 +41,11 @@ export class MockWirelessIO implements ReportIO {
       const hid = vkToHid(k.vk);
       if (hid !== undefined) v.setUint32(k.index * 4, (hid << 24) >>> 0, true);
     }
+    // Part of the factory Fn layer (cell format from hw-re-docs): F12 Volume+, Q/W/E Android/Windows/macOS,
+    // B battery display, Up brightness+, the Fn key itself.
+    const fn = new DataView(this.layers[1].buffer);
+    const FN_CELLS: [number, number][] = [[78, 0xe9000002], [8, 0x16000007], [14, 0x0e000007], [20, 0x0f000007], [34, 0x11000007], [88, 0x00010308], [FN_KEY, 0x0000000d]];
+    for (const [i, c] of FN_CELLS) fn.setUint32(i * 4, c, true);
     for (const l of this.layers) new DataView(l.buffer).setUint32(508, 0xa55a0000, true);
     const pal = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255], [255, 0, 255], [255, 255, 255]];
     for (let hw = 1; hw <= 19; hw++) pal.forEach((c, k) => this.palette.set(c, 0x15 * hw + 3 * k));
@@ -73,7 +80,7 @@ export class MockWirelessIO implements ReportIO {
       [WCmd.GetPalette]: () => this.palette,
       [WCmd.GetColors]: () => this.colors,
       [WCmd.Online]: () => Uint8Array.of(this.online ? 1 : 0, 0),
-      [WCmd.GetOnBoard]: () => Uint8Array.of(0),
+      [WCmd.GetOnBoard]: () => Uint8Array.of(80, 0x01), // 80 %, on battery
     };
     if (sources[p.cmd]) return this.reply(p.cmd, sources[p.cmd]());
 
@@ -93,6 +100,7 @@ export class MockWirelessIO implements ReportIO {
     else if (p.cmd === WCmd.SetMatrix) this.layers[p.sub] = all.slice(0, 512);
     else if (p.cmd === WCmd.SetPalette) this.palette = all.slice(0, 0x200);
     else if (p.cmd === WCmd.SetColors) this.colors = all.slice(0, 0x17a);
+    else if (p.cmd === WCmd.SetMacro) this.macroBlocks[p.sub] = all.slice(0, 512);
     else if (p.cmd === WCmd.Live) {
       this.live = all;
       this.liveFrames++;

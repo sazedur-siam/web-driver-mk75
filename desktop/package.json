@@ -1,0 +1,40 @@
+{
+  "name": "mk75-driver-desktop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "MK75 Driver as a tray app: live effects and music sync with no browser open",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "npm --prefix .. run build && electron .",
+    "smoke": "npm --prefix .. run build && electron . --smoke",
+    "dist": "npm --prefix .. run build && electron-builder"
+  },
+  "build": {
+    "appId": "io.github.sazedur-siam.mk75-driver",
+    "productName": "MK75 Driver",
+    "icon": "../public/icon-512.png",
+    "files": [
+      "main.cjs"
+    ],
+    "extraResources": [
+      {
+        "from": "../dist",
+        "to": "web"
+      }
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.utilities"
+    },
+    "directories": {
+      "output": "release"
+    }
+  },
+  "devDependencies": {
+    "electron": "45.5.0",
+    "electron-builder": "26.18.0"
+  }
+}

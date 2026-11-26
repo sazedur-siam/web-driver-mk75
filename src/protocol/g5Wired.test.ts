@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { G5_FRAME_LEN, G5WiredLink, Mk75G5Wired } from './g5Wired';
+import { setKeyCode } from './keycodes';
+import { planMacros } from './macro';
 import type { FeatureTransport } from './transport';
 
 const hx = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, '0')).join(' ');
@@ -25,6 +27,7 @@ class FakeG5 implements FeatureTransport {
   blocks = new Map<string, Uint8Array>([
     ['4/0', new Uint8Array(FACTORY_LED)],
     ['2/1', Uint8Array.of(0x03, 0, 0, 0, 0, 0xc6)],
+    ['7/2', Uint8Array.of(87, 0x10)],
   ]);
   staleReplies = 0;
   private reply = new Uint8Array(G5_FRAME_LEN);
@@ -62,6 +65,15 @@ describe('CDevG5KB wired frames match OemDrv.exe', () => {
     expect(hx(t.sent[0].subarray(0, 8))).toBe('82 01 00 01 00 06 00 00');
   });
 
+  it('battery reads 87/2, 2 bytes: percent and charging flag', async () => {
+    const t = new FakeG5();
+    const dev = new Mk75G5Wired(t);
+    expect(await dev.readBattery()).toEqual({ level: 87, charging: true });
+    expect(hx(t.sent[0].subarray(0, 7))).toBe('87 02 00 01 00 02 00');
+    t.blocks.set('7/2', Uint8Array.of(100, 0x11));
+    expect(await dev.readBattery()).toEqual({ level: 100, charging: false });
+  });
+
   it('LED read, matrix write and live frame headers', async () => {
     const t = new FakeG5();
     const dev = new Mk75G5Wired(t);
@@ -96,11 +108,27 @@ describe('CDevG5KB wired frames match OemDrv.exe', () => {
   });
 });
 
+describe('Mk75G5Wired macros', () => {
+  it('writes the store as one numbered transfer on op 05 and binds the key as 03 mode 01 id', async () => {
+    const t = new FakeG5();
+    const dev = new Mk75G5Wired(t);
+    const big = { id: 'b', name: 'Big', events: Array.from({ length: 140 }, (_, i) => ({ usage: 4, down: i % 2 === 0, delay: 5 })) };
+    const plan = planMacros(new Map([[9, { macroId: 'b', mode: 1 as const }]]), [big], 'store');
+    expect(plan.pages.map((p) => p.sub)).toEqual([0, 1]); // 4 + 7 + 560 bytes → 2 blocks
+    await dev.writeMacroPages(plan.pages);
+    expect(t.sent.map((f) => hx(f.subarray(0, 7)))).toEqual(['05 00 00 02 00 00 02', '05 00 00 02 01 00 02']);
+    const m = await dev.readKeyMatrix();
+    await dev.writeKeyMatrix(setKeyCode(m, 9, plan.codes.get(9)!));
+    expect(hx(t.blocks.get('3/0')!.subarray(36, 40))).toBe('03 01 01 00');
+    await expect(dev.writeMacroPages([{ sub: 8, data: new Uint8Array(512) }])).rejects.toThrow(/Invalid/);
+  });
+});
+
 describe('Mk75G5Wired profile', () => {
-  it('is a wired device with palette colours and no macros (yet)', () => {
+  it('is a wired device with palette colours and the layout-B macro store', () => {
     const dev = new Mk75G5Wired(new FakeG5());
     expect(dev.kind).toBe('wired');
-    expect(dev.caps).toEqual({ macros: false, paletteIndex: true, battery: false });
+    expect(dev.caps).toEqual({ macros: 'store', paletteIndex: true, battery: true });
     expect(dev.canStream).toBe(true);
   });
 

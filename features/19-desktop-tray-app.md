@@ -1,6 +1,20 @@
 # 19 · Desktop tray app (always-on live effects & music)
 
-**Priority:** P2 · **Effort:** M · **Depends on:** shared codebase · **Status:** planned
+**Priority:** P2 · **Effort:** M · **Depends on:** shared codebase · **Status:** first version built (`desktop/`)
+
+## Built (first version)
+- `desktop/main.cjs` (Electron 45): `dist/` on `app://mk75`, tray (Open / Start at login / Quit), close-to-tray,
+  single instance, `backgroundThrottling: false`, HID permission + automatic device pick, `getDisplayMedia` answered
+  with the main screen + Windows audio loopback. `npm run smoke` and a packaged `--dir` build pass on macOS.
+- Web app: reconnects when an allowed MK75 is plugged in (browser too).
+
+## Still to do
+1. Resume the last live effect after login and after unplug/replug (persist the Live tab settings, auto-start in
+   the desktop app).
+2. Tray menu controls: effect on/off, pick mode.
+3. macOS system audio (ScreenCaptureKit loopback or a virtual device).
+4. Signed installers and a GitHub release; a download link in README/MANUAL.
+5. Hardware run of "Done when" below on Windows.
 
 ## What it is
 A small Electron app that lives in the system tray, starts with Windows/macOS, and keeps live effects and music

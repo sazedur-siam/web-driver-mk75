@@ -116,7 +116,7 @@ export function DeviceTab({ api, battery }: { api: DeviceApi; battery: Battery |
                 <dt>Battery</dt>
                 <dd>
                   <BatteryIcon battery={battery} size={1.6} />
-                  {battery.charging ? ' charging' : ''}
+                  {battery.charging ? ' charging (the keys stay dark until it is unplugged)' : ''}
                   {notify === 'default' && (
                     <button className="small" style={{ marginLeft: 8 }} onClick={() => void Notification.requestPermission().then(setNotify)}>
                       Notify me when low
@@ -217,7 +217,7 @@ export function DeviceTab({ api, battery }: { api: DeviceApi; battery: Battery |
             </div>
           ))}
         </dl>
-        <p className="hint">Fn-layer functions belong to the firmware; the official driver doesn't remap them either.</p>
+        <p className="hint">On current MK75 boards you can remap Fn + key combinations on the Key mapping tab (Fn layer).</p>
       </section>
     </div>
   );

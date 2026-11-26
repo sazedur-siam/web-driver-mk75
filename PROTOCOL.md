@@ -145,21 +145,25 @@ Reads: one request, then `total` reply packets.
 |---|---|
 | `01` / `41` (sub = layer 0-3) | key matrix layer: 128 × u32, last = `A55A0000` |
 | `02` / `42` (sub = group) | per-key colours, R/G/B planes of 126 |
-| `03` / `43` | macro blob (format not fully decoded; cable only in this app) |
+| `03` / `43` | macro store block, block number 0–7 in the layer nibble (see below) |
 | `04` / `44` | LED profile, 128 B, signature `5A A5` at 0x7E |
 | `09` / `49` | palette 0x200 B (wired offsets `0x15*hw`), `5A A5` at 0x1FA |
 | `07` | online (byte0 = keyboard connected) |
 | `88` / `8E` | live stream (no ack) |
-| `4A` | on-board profile; battery on `0x13` receivers |
+| `4A` | on-board profile; battery on `0x13` receivers: `[percent, flags]`, flags `01` battery, `10` charging, `11` charged |
 | `06` | factory reset (`0x13` receivers only) |
 
 LED profile (MK75 "layout B"): `0x09` custom flag, `0x0A` hw effect, `0x0B` colour group, `0x03` debounce 0–4, `0x16` tap/hold threshold, `0x18` sleep (`0` = never),
 `0x38-39 = FF`, per effect `0x3A+2i` brightness and `0x3B+2i` = `speed<<4 | (colourful ? 7 : 0)`.
+Macro store (IC2481 cable op `05`/`85`, wireless `03`/`43`; hw-re-docs, tested on a real MK75): up to 8 blocks
+of 512 B (never block 8+, that's firmware). `[N × (offset u16, length u16)]` then bodies
+`[2 × nameChars][name UTF-16LE][4-byte events]`; event `[release<<7 | type<<4 | delay>>16, delay>>8, delay, code]`,
+type 0 key, 1 modifier, 2 mouse mask (1 L, 2 R, 4 M). Key cell `03 mode count id` (id 0-based; mode 1 once,
+2 loop until another key, 4 toggle).
 Key codes are `[type][mods][x][hid]`: key `hid<<24 | mods<<8`, consumer `…|0x02`, mouse `clicks<<16 | button<<8 | 0x01`
 (1 left, 2 middle, 3 right, 4 back, 5 forward).
 
 ## Not yet decoded / not ported
 
-* Wireless macro event format
-* Fn-layer remapping (the official driver doesn't offer it for the MK75 either). The knob has two firmware modes, layout B byte `0x1A`: 0 media (volume), 1 lighting
+* Fn-layer remapping on CDev916KB boards (FnCombo is firmware-owned there). On layout B the Fn layer is keymap layer 1 and is editable; cells `07` (device function) and `0D` (Fn) are locked. The knob has two firmware modes, layout B byte `0x1A`: 0 media (volume), 1 lighting
 * Debounce on CDev916KB boards (the vendor never sends it there; layout B has it at byte `0x03`, 0–4), firmware update
