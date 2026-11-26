@@ -27,6 +27,7 @@ export function startTicker(ms: number, onTick: () => void): Ticker {
     return {
       kind: 'worker',
       stop() {
+        w.onmessage = null; // drop ticks already queued, so no frame lands after a restore
         w.postMessage(0);
         w.terminate();
       },

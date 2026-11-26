@@ -10,6 +10,7 @@ import { Mk75Wireless } from '../protocol/wireless/mk75Wireless';
 import { applyProfile, captureProfile } from './applyProfile';
 import { macroStore } from './macroStore';
 import { validateProfile } from './profileStore';
+import { withMacroCodes } from './saveKeys';
 import type { DeviceSnapshot } from './useDevice';
 
 const read = async (d: { readProfile(): Promise<Uint8Array>; readKeyMatrix(): Promise<Uint8Array>; readRgbTable(): Promise<Uint8Array> }): Promise<DeviceSnapshot> => ({
@@ -78,5 +79,20 @@ describe('profiles', () => {
     const ok = validateProfile({ name: ' Gaming ', profile: '00'.repeat(254), rgbTable: '00'.repeat(1024), keyMatrix: '00'.repeat(1024) });
     expect(ok.name).toBe('Gaming');
     expect(ok.macros.macros).toEqual([]);
+    // Macros without an assignments map would crash the Macros/Key mapping tabs on every reload.
+    const bad = validateProfile({ name: 'x', profile: '00'.repeat(254), rgbTable: '00'.repeat(1024), keyMatrix: '00'.repeat(1024), macros: { macros: [] } as never });
+    expect(bad.macros).toEqual({ macros: [], assignments: {} });
+  });
+
+  it('a 0x15 receiver saves key maps without touching macros', async () => {
+    const io = new MockWirelessIO();
+    const dev = new Mk75Wireless(new WirelessLink(io, 0x15, undefined, { pace: 0, livePace: 0, ackMs: 200, readMs: 200 }), 'combo');
+    macroStore.replaceAll({ macros: [{ id: 'm', name: 'M', events: [{ usage: 4, down: true, delay: 5 }] }], assignments: { 9: { macroId: 'm', mode: 1 } } });
+    const snap = await read(dev);
+    const { matrix, plan } = withMacroCodes(setKeyCode(snap.matrix, 3, encodeAction({ kind: 'key', usage: 5, mods: 0 })), dev.caps.macros, snap.matrix);
+    expect(plan.pages).toEqual([]);
+    expect(getKeyCode(matrix, 9)).toBe(getKeyCode(snap.matrix, 9)); // macro key keeps the keyboard's code
+    await dev.writeKeyMatrix(matrix);
+    macroStore.replaceAll({ macros: [], assignments: {} });
   });
 });

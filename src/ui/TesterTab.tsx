@@ -20,7 +20,8 @@ export function TesterTab({ api }: { api?: DeviceApi }) {
 
   useEffect(() => {
     if (!active) return;
-    const inTyping = (e: KeyboardEvent) => !!(e.target as HTMLElement | null)?.closest?.('.typing-area');
+    // Typing area, form fields and dialogs (Report an Issue) keep their keys.
+    const inTyping = (e: KeyboardEvent) => !!(e.target as HTMLElement | null)?.closest?.('.typing-area, input, textarea, select, [contenteditable], [role=dialog], dialog');
     const down = (e: KeyboardEvent) => {
       if (inTyping(e)) return;
       const idx = keyIndexForCode(e.code);

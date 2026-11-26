@@ -196,7 +196,9 @@ export default function App() {
                   <BatteryIcon battery={battery} size={1.25} />
                 </span>
               )}
-              <button onClick={api.disconnect}>Disconnect</button>
+              <button onClick={api.disconnect} disabled={!!api.busy} title={api.busy ? 'Wait for the current write to finish' : undefined}>
+                Disconnect
+              </button>
             </>
           ) : (
             <>

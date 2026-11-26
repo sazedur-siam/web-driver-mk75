@@ -3,13 +3,12 @@
  * identical on the keyboard, so applying the active profile again writes nothing.
  */
 import type { DeviceCaps, Mk75Device } from '../protocol/device';
-import { getKeyCode, setKeyCode } from '../protocol/keycodes';
-import { MK75_KEYS } from '../device/mk75Layout';
+import { setKeyCode } from '../protocol/keycodes';
 import { buildLedMatrix, CUSTOM_MODE_INDEX, parseProfile } from '../protocol/lighting';
 import { planMacros } from '../protocol/macro';
 import { assignmentMap, macroStore } from './macroStore';
 import { loadPerKey, perKeyMap, savePerKey } from './perKeyStore';
-import { macroPagesUnchanged, rememberMacroPages } from './saveKeys';
+import { keepDeviceMacros, macroPagesUnchanged, rememberMacroPages } from './saveKeys';
 import { fromHex, toHex, type Profile } from './profileStore';
 import { applyPresetToBlocks, type Preset } from '../protocol/preset';
 import type { DeviceSnapshot } from './useDevice';
@@ -40,11 +39,7 @@ export function profileMatrix(p: Profile, macros: DeviceCaps['macros'], current:
   const plan = planMacros(assignmentMap(p.macros), p.macros.macros, macros || 'slots');
   if (macros) {
     for (const [key, code] of plan.codes) matrix = setKeyCode(matrix, key, code);
-  } else {
-    for (const k of MK75_KEYS) {
-      if ((getKeyCode(matrix, k.index) & 0xff) === 0x10) matrix = setKeyCode(matrix, k.index, getKeyCode(current, k.index));
-    }
-  }
+  } else matrix = keepDeviceMacros(matrix, current);
   return { matrix, plan };
 }
 
@@ -85,6 +80,7 @@ export async function applyProfile(dev: Mk75Device, snap: DeviceSnapshot, p: Pro
       /* same macros already written from this browser */
     } else {
       step?.('Macros');
+      await dev.checkKeyMatrix?.(matrix);
       await dev.writeMacroPages(target.plan.pages);
       rememberMacroPages(target.plan.pages);
       wrote.push('macros');

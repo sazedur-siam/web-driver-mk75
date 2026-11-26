@@ -59,6 +59,17 @@ export function Keyboard({ selected, onSelect, fill, sublabel, multi, highlight,
     onSelect(next);
   };
 
+  // Keyboard access: Tab to a key, Enter/Space selects it (Shift/Ctrl/Cmd toggles it into a multi selection).
+  const onKey = (e: React.KeyboardEvent, index: number) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    if (!multi || !(e.shiftKey || e.metaKey || e.ctrlKey)) return onSelect(new Set([index]));
+    const next = new Set(selected);
+    if (next.has(index)) next.delete(index);
+    else next.add(index);
+    onSelect(next);
+  };
+
   return (
     <svg
       ref={svg}
@@ -83,6 +94,8 @@ export function Keyboard({ selected, onSelect, fill, sublabel, multi, highlight,
       <g
         className={`knob${onKnob ? ' clickable' : ''}${knobSelected ? ' sel' : ''}`}
         onClick={onKnob}
+        onKeyDown={onKnob ? (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onKnob()) : undefined}
+        tabIndex={onKnob ? 0 : undefined}
         role={onKnob ? 'button' : undefined}
         aria-label={onKnob ? 'Knob' : undefined}
       >
@@ -97,7 +110,15 @@ export function Keyboard({ selected, onSelect, fill, sublabel, multi, highlight,
         const w = k.x2 - k.x1;
         const h = k.y2 - k.y1;
         return (
-          <g key={k.id} className={`key cap-${k.cap}${f ? ' lit' : ''}${sel ? ' sel' : ''}${highlight?.(k) ? ' hl' : ''}`}>
+          <g
+            key={k.id}
+            className={`key cap-${k.cap}${f ? ' lit' : ''}${sel ? ' sel' : ''}${highlight?.(k) ? ' hl' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-label={sub ? `${k.label}: ${sub}` : k.label}
+            aria-pressed={sel}
+            onKeyDown={(e) => onKey(e, k.index)}
+          >
             <rect x={k.x1} y={k.y1} width={w} height={h} rx={4} style={f ? { fill: f } : undefined} />
             <text x={k.x1 + w / 2} y={k.y1 + (sub ? h / 2 - 2 : h / 2 + 3)} textAnchor="middle" className="kl">
               {k.label.length > 6 ? k.label.slice(0, 5) : k.label}

@@ -153,6 +153,29 @@ describe('Mk75Wireless adapter against the simulator', () => {
     expect(io.led[0x03]).toBe(4);
   });
 
+  it('concurrent read-modify-writes of the LED block do not undo each other', async () => {
+    const { io, dev } = make();
+    const p = await dev.readProfile();
+    p[0x05] = 3;
+    await Promise.all([dev.writeSettings({ debounce: 4 }), dev.writeProfile(p)]);
+    expect(io.led[0x03]).toBe(4);
+    expect(io.led[0x0a]).toBe(3);
+  });
+
+  it('a short block reply is retried, never zero-padded', async () => {
+    const { io, dev } = make();
+    const full = io.layers[0];
+    let short = true; // first read of layer 0 answers with one 14-byte packet
+    io.layers = new Proxy(io.layers, {
+      get: (t, k) => (k === '0' && short ? ((short = false), full.subarray(0, 14)) : Reflect.get(t, k)),
+    });
+    const m = await dev.readKeyMatrix();
+    expect(short).toBe(false);
+    expect(getKeyCode(m, 0)).toBe(0x29000000);
+    expect(getKeyCode(m, 20)).toBe(getKeyCode(await dev.readKeyMatrix(), 20));
+    expect(getKeyCode(m, 20)).not.toBe(0);
+  });
+
   it('knob mode round-trips through byte 0x1A', async () => {
     const { io, dev } = make();
     await dev.writeSettings({ knob: 1 });
@@ -199,6 +222,30 @@ describe('Mk75Wireless adapter against the simulator', () => {
     await dev.writeKeyMatrix(setKeyCode(m, 9, plan.codes.get(9)!));
     expect(new DataView(io.layers[0].buffer).getUint32(36, true)).toBe(0x00010203); // 03 02 01 00
     expect(getKeyCode(await dev.readKeyMatrix(), 9)).toBe(plan.codes.get(9)); // reads back as the wired macro code
+  });
+
+  it('macro store is refused when the Fn or tap/hold layer holds an OEM macro cell (ids would shift)', async () => {
+    const io = new MockWirelessIO();
+    const dev = new Mk75Wireless(new WirelessLink(io, 0x13, undefined, fast), '3632');
+    const lib = [{ id: 'x', name: 'X', events: [{ usage: 4, down: true, delay: 20 }] }];
+    const plan = planMacros(new Map([[9, { macroId: 'x', mode: 1 as const }]]), lib, 'store');
+    new DataView(io.layers[3].buffer).setUint32(5 * 4, 0x00010103, true); // 03 01 01 00: macro 0, mode 1
+    await expect(dev.writeMacroPages(plan.pages)).rejects.toThrow(/tap\/hold layer has macro keys/);
+    expect(io.macroBlocks.length).toBe(0);
+    new DataView(io.layers[3].buffer).setUint32(5 * 4, 0x01000003, true); // stock do-nothing cell (mode 0) is fine
+    await dev.writeMacroPages(plan.pages);
+    expect(io.macroBlocks.length).toBe(1);
+  });
+
+  it('checkKeyMatrix rejects a protected-cell change without writing anything', async () => {
+    const io = new MockWirelessIO();
+    new DataView(io.layers[0].buffer).setUint32(4 * 4, 0x16000007, true); // firmware function on key 4
+    const dev = new Mk75Wireless(new WirelessLink(io, 0x13, undefined, fast), '3632');
+    const m = await dev.readKeyMatrix();
+    const before = new Uint8Array(io.layers[0]);
+    await expect(dev.checkKeyMatrix(setKeyCode(m, 4, encodeAction({ kind: 'key', usage: 5, mods: 0 })))).rejects.toThrow(/keyboard function/);
+    expect(io.layers[0]).toEqual(before);
+    await dev.checkKeyMatrix(m); // unchanged matrix passes
   });
 
   it('Fn layer: reads and writes layer 1 only, keeps firmware functions, round-trips lighting cells', async () => {

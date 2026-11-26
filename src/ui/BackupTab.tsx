@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { PAGE_LEN, PROFILE_LEN } from '../protocol/mk75';
-import { effectStore } from './effectStore';
-import { macroStore } from './macroStore';
+import { effectStore, isEffectList } from './effectStore';
+import { isMacroState, macroStore } from './macroStore';
 import { profileStore, validateProfile, type Profile } from './profileStore';
 import { withMacroCodes } from './saveKeys';
 import type { DeviceApi } from './useDevice';
@@ -58,6 +58,13 @@ export function BackupTab({ api }: { api: DeviceApi }) {
       if (b.format !== 'mk75-driver-backup') throw new Error('Not a Lingbao MK75 Driver backup file');
       if (fromHexStr(b.profile).length !== PROFILE_LEN || fromHexStr(b.keyMatrix).length !== PAGE_LEN || fromHexStr(b.rgbTable).length !== PAGE_LEN)
         throw new Error('Backup file is truncated or corrupted');
+      // Check the browser-side parts now, so a bad file fails before anything is written or replaced.
+      if (b.macros !== undefined && !isMacroState(b.macros)) throw new Error('Backup macros are damaged');
+      if (b.effects !== undefined && !isEffectList(b.effects)) throw new Error('Backup effects are damaged');
+      if (b.profiles !== undefined) {
+        if (!Array.isArray(b.profiles)) throw new Error('Backup profiles are damaged');
+        b.profiles = b.profiles.map(validateProfile);
+      }
       setPending(b);
     } catch (e) {
       api.setError(e instanceof Error ? e.message : String(e));
@@ -67,13 +74,16 @@ export function BackupTab({ api }: { api: DeviceApi }) {
   const restore = () =>
     pending &&
     api.run('Restoring backup', async () => {
-      if (pending.macros?.macros) macroStore.replaceAll(pending.macros);
-      if (Array.isArray(pending.effects) && pending.effects.length) effectStore.replaceAll(pending.effects);
-      if (Array.isArray(pending.profiles) && pending.profiles.length) profileStore.replaceAll(pending.profiles.map(validateProfile));
+      if (pending.macros) macroStore.replaceAll(pending.macros);
+      if (pending.effects?.length) effectStore.replaceAll(pending.effects);
+      if (pending.profiles?.length) profileStore.replaceAll(pending.profiles);
       await dev.writeRgbTable(fromHexStr(pending.rgbTable));
       // Macro pages first (ids are re-planned deterministically in key order), then the matrix.
-      const { matrix, plan } = withMacroCodes(fromHexStr(pending.keyMatrix), dev.caps.macros || 'slots');
-      if (plan.pages.length) await dev.writeMacroPages(plan.pages);
+      const { matrix, plan } = withMacroCodes(fromHexStr(pending.keyMatrix), dev.caps.macros, snap.matrix);
+      if (plan.pages.length) {
+        await dev.checkKeyMatrix?.(matrix);
+        await dev.writeMacroPages(plan.pages);
+      }
       await dev.writeKeyMatrix(matrix);
       await dev.writeProfile(fromHexStr(pending.profile));
       api.setSnap({ profile: await dev.readProfile(), matrix: await dev.readKeyMatrix(), rgbTable: await dev.readRgbTable() });

@@ -101,8 +101,11 @@ export function ImageToKeys({ api, onSaved }: { api: DeviceApi; onSaved?: (color
   // Restore the saved effect if we leave while streaming.
   const playingRef = useRef(playing);
   playingRef.current = playing;
+  const latest = useRef({ dev, snap }); // the unmount cleanup must restore the current profile, not the first render's
+  latest.current = { dev, snap };
   useEffect(
     () => () => {
+      const { dev, snap } = latest.current;
       if (playingRef.current === 'keyboard' && dev && snap) void dev.writeProfile(snap.profile).catch(() => undefined);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,7 +152,8 @@ export function ImageToKeys({ api, onSaved }: { api: DeviceApi; onSaved?: (color
             const f = e.target.files?.[0];
             if (!f) return;
             try {
-              setPlaying('off');
+              if (playingRef.current === 'keyboard') void stopKeyboard(); // don't leave the board on a frozen frame
+              else setPlaying('off');
               setFrameNo(0);
               setImg(await loadFile(f));
             } catch (err) {

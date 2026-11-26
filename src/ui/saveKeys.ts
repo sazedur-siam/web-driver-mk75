@@ -1,5 +1,7 @@
-import { setKeyCode } from '../protocol/keycodes';
-import { planMacros, type MacroFormat } from '../protocol/macro';
+import type { DeviceCaps } from '../protocol/device';
+import { getKeyCode, setKeyCode } from '../protocol/keycodes';
+import { MK75_KEYS } from '../device/mk75Layout';
+import { planMacros } from '../protocol/macro';
 import { assignmentMap, macroStore } from './macroStore';
 import type { DeviceApi } from './useDevice';
 
@@ -21,8 +23,23 @@ export function rememberMacroPages(pages: { sub: number; data: Uint8Array }[]) {
   }
 }
 
-/** Apply current macro assignments onto a matrix (ids assigned in key order, like the vendor). */
-export function withMacroCodes(matrix: Uint8Array, format: MacroFormat = 'slots'): { matrix: Uint8Array; plan: ReturnType<typeof planMacros> } {
+/** No macro support (0x15 receiver): macro keys keep whatever the keyboard has now. */
+export function keepDeviceMacros(matrix: Uint8Array, current: Uint8Array): Uint8Array {
+  let m = matrix;
+  for (const k of MK75_KEYS) if ((getKeyCode(m, k.index) & 0xff) === 0x10) m = setKeyCode(m, k.index, getKeyCode(current, k.index));
+  return m;
+}
+
+/**
+ * Apply current macro assignments onto a matrix (ids assigned in key order, like the vendor).
+ * With `format` false the device can't store macros: nothing is planned and `current`'s macro cells are kept.
+ */
+export function withMacroCodes(
+  matrix: Uint8Array,
+  format: DeviceCaps['macros'] = 'slots',
+  current: Uint8Array = matrix,
+): { matrix: Uint8Array; plan: ReturnType<typeof planMacros> } {
+  if (!format) return { matrix: keepDeviceMacros(matrix, current), plan: planMacros(new Map(), [], 'slots') };
   const s = macroStore.get();
   const plan = planMacros(assignmentMap(s), s.macros, format);
   let m = matrix;
@@ -36,8 +53,9 @@ export function withMacroCodes(matrix: Uint8Array, format: MacroFormat = 'slots'
 export async function saveKeysAndMacros(api: DeviceApi, matrix: Uint8Array) {
   const { dev, snap } = api;
   if (!dev || !snap) return;
-  const { matrix: m, plan } = withMacroCodes(matrix, dev.caps.macros || 'slots');
+  const { matrix: m, plan } = withMacroCodes(matrix, dev.caps.macros, snap.matrix);
   if (plan.pages.length) {
+    await dev.checkKeyMatrix?.(m);
     await dev.writeMacroPages(plan.pages);
     rememberMacroPages(plan.pages);
   }

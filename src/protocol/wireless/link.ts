@@ -4,7 +4,7 @@
  *    with the same cmd (1.5 s), retry each packet up to 5x on busy/timeout; no ack for 0x88/0x8E/0x06.
  *  - reads: one request packet, then collect `total` reply packets (1 s each), 3 attempts.
  */
-import { chunk, parsePacket, type Packet } from './packet';
+import { chunk, parsePacket, PKT_DATA, type Packet } from './packet';
 
 export interface ReportIO {
   /** Send an output report; `body` = 19 bytes after the report ID. */
@@ -73,6 +73,7 @@ export class WirelessLink {
         for (let attempt = 0; ; attempt++) {
           await sleep(live ? this.timing.livePace : this.timing.pace);
           const ack = noAck ? null : this.next(cmd, this.timing.ackMs, body[2]);
+          ack?.catch(() => undefined); // a failed send must not leave an unhandled rejection behind
           await this.sendBody(body);
           if (!ack) break;
           try {
@@ -123,6 +124,7 @@ export class WirelessLink {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           const replies = this.collect(cmd, this.timing.readMs);
+          replies.catch(() => undefined);
           await sleep(this.timing.pace);
           await this.sendBody(chunk(this.reportId, cmd, sub, new Uint8Array(0))[0]);
           const out = new Uint8Array(len);
@@ -131,6 +133,9 @@ export class WirelessLink {
             out.set(p.data.subarray(0, Math.max(0, len - filled)), filled);
             filled += p.data.length;
           }
+          // A short config block would be zero-padded and written back on the next save. Small status replies
+          // (online, battery) may legitimately carry fewer bytes than asked, so only blocks are checked.
+          if (len > PKT_DATA && filled < len) throw new LinkError(`short reply for 0x${cmd.toString(16)}: ${filled} of ${len} bytes`);
           return out;
         } catch (e) {
           lastErr = e;

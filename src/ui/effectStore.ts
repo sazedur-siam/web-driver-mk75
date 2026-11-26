@@ -4,10 +4,14 @@ import { EXAMPLE_EFFECT, type CustomEffect } from '../protocol/effectDesigner';
 
 const KEY = 'mk75.effects.v1';
 
+/** Shape check for stored or imported effects. */
+export const isEffectList = (v: unknown): v is CustomEffect[] =>
+  Array.isArray(v) && v.every((e) => e && typeof e.id === 'string' && typeof e.name === 'string' && Array.isArray(e.layers));
+
 function load(): CustomEffect[] {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || 'null');
-    return Array.isArray(v) && v.length ? v : [structuredClone(EXAMPLE_EFFECT)];
+    return isEffectList(v) && v.length ? v : [structuredClone(EXAMPLE_EFFECT)];
   } catch {
     return [structuredClone(EXAMPLE_EFFECT)];
   }

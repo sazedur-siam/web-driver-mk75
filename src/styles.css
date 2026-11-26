@@ -261,6 +261,8 @@ select {
 .key.cap-accent .kl { fill: var(--cap-accent-ink); }
 .key:hover rect { filter: brightness(1.12); }
 .key.sel rect { stroke: var(--accent); stroke-width: 2.5; }
+.key:focus { outline: none; }
+.key:focus-visible rect, .knob:focus-visible .knob-ring { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: 3 2; }
 .key.hl rect { stroke: var(--accent-2); stroke-width: 2; stroke-dasharray: 3 2; }
 .key.sel.hl rect { stroke: var(--accent); stroke-dasharray: none; }
 /* Sage on dusty-mint caps is too close in hue: the matte theme selects in near-white, and the Key tester uses

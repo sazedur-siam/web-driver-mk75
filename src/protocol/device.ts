@@ -31,6 +31,8 @@ export interface Mk75Device {
   writeProfile(p: Uint8Array): Promise<void>;
   readKeyMatrix(): Promise<Uint8Array>;
   writeKeyMatrix(m: Uint8Array): Promise<void>;
+  /** Throws if writeKeyMatrix(m) would; call it before writing macro pages (layout B boards only). */
+  checkKeyMatrix?(m: Uint8Array): Promise<void>;
   readRgbTable(): Promise<Uint8Array>;
   writeRgbTable(t: Uint8Array): Promise<void>;
   writeLedMatrix(buf: Uint8Array): Promise<void>;

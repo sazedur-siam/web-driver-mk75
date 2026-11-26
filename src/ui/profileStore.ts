@@ -6,6 +6,7 @@
 import { useSyncExternalStore } from 'react';
 import type { RGB } from '../protocol/lighting';
 import type { Macro, MacroAssignment } from '../protocol/macro';
+import { isMacroState } from './macroStore';
 
 export interface Profile {
   id: string;
@@ -95,6 +96,6 @@ export function validateProfile(p: unknown): Profile {
     rgbTable: o.rgbTable,
     keyMatrix: o.keyMatrix,
     perKey: o.perKey && typeof o.perKey === 'object' ? o.perKey : {},
-    macros: o.macros && Array.isArray(o.macros.macros) ? o.macros : { macros: [], assignments: {} },
+    macros: isMacroState(o.macros) ? o.macros : { macros: [], assignments: {} },
   };
 }
