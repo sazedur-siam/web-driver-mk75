@@ -159,7 +159,8 @@ works offline.
 - **Your settings stay on the keyboard.** After you click Save, you can close the website, unplug the keyboard or
   use another computer. Your lighting, key changes and macros stay.
 - **Only live effects need the website open.** The keyboard can't play them by itself.
-- **Pick the colour theme** of the website at the top (it matches the MK75 colourways).
+- **Pick the colour theme** of the website at the top (it matches the MK75 colourways). On your first visit the site
+  asks which colourway you own.
 - **The keyboard's own shortcuts** (Fn + keys) are listed in the **Device** tab.
 
 ---

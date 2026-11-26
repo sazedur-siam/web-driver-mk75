@@ -42,6 +42,20 @@ function readTheme(): Theme {
 
 function ThemeSwitch() {
   const [theme, setTheme] = useState<Theme>(readTheme);
+  // First visit = nothing saved yet; read before the effect below saves the default.
+  const [ask, setAsk] = useState(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) === null;
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (!ask) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setAsk(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [ask]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
@@ -53,14 +67,42 @@ function ThemeSwitch() {
     }
   }, [theme]);
   return (
-    <div className="theme-switch" role="radiogroup" aria-label="MK75 colourway">
-      {THEMES.map((t) => (
-        <button key={t.id} role="radio" aria-checked={theme === t.id} className={theme === t.id ? 'on' : ''} onClick={() => setTheme(t.id)} title={t.name}>
-          <span className="theme-dot" style={{ background: t.swatch }} aria-hidden />
-          <span className="theme-name">{t.name}</span>
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="theme-switch" role="radiogroup" aria-label="MK75 colourway">
+        {THEMES.map((t) => (
+          <button key={t.id} role="radio" aria-checked={theme === t.id} className={theme === t.id ? 'on' : ''} onClick={() => setTheme(t.id)} title={t.name}>
+            <span className="theme-dot" style={{ background: t.swatch }} aria-hidden />
+            <span className="theme-name">{t.name}</span>
+          </button>
+        ))}
+      </div>
+      {ask && (
+        <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && setAsk(false)}>
+          <div className="modal card theme-pick" role="dialog" aria-modal="true" aria-labelledby="theme-pick-title">
+            <header className="card-h">
+              <h2 id="theme-pick-title">Which MK75 colourway do you have?</h2>
+            </header>
+            <p className="muted">The site will match your keyboard. You can change it any time from the top bar.</p>
+            <div className="theme-pick-grid">
+              {THEMES.map((t) => (
+                <button
+                  key={t.id}
+                  className={theme === t.id ? 'on' : ''}
+                  onClick={() => {
+                    setTheme(t.id);
+                    setAsk(false);
+                  }}
+                  autoFocus={theme === t.id}
+                >
+                  <span className="theme-dot" style={{ background: t.swatch }} aria-hidden />
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -206,8 +248,7 @@ export default function App() {
               <li>Download a backup from the <b>Backup &amp; log</b> tab before changing anything.</li>
             </ol>
             <p className="muted small">
-              Everything works over the cable. Over 2.4 GHz / Bluetooth: lighting, per-key colours, live effects and key mapping work;
-              macros need the cable for now.
+              Everything works over the cable and the 2.4 GHz receiver. Bluetooth support is experimental.
             </p>
             {import.meta.env.DEV && (
               <div className="row">
