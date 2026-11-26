@@ -3,6 +3,7 @@ import { G5_FRAME_LEN, G5WiredLink, Mk75G5Wired } from './g5Wired';
 import { setKeyCode } from './keycodes';
 import { planMacros } from './macro';
 import type { FeatureTransport } from './transport';
+import { PALETTE_TAIL } from './wireless/mockWireless';
 
 const hx = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, '0')).join(' ');
 
@@ -146,5 +147,19 @@ describe('Mk75G5Wired profile', () => {
     expect(hx(raw.subarray(0x7e))).toBe('5a a5');
     // untouched bytes survive the read-modify-write
     expect(hx(raw.subarray(0, 0x3a))).toBe(hx(FACTORY_LED.subarray(0, 0x3a)));
+  });
+
+  it('palette save keeps the identity tail 483..511 (cable reads all 512 bytes)', async () => {
+    const t = new FakeG5();
+    const pal = new Uint8Array(0x200);
+    pal.set(PALETTE_TAIL, 483);
+    t.blocks.set('10/0', pal);
+    const dev = new Mk75G5Wired(t);
+    const table = await dev.readRgbTable();
+    table[0x15] = 9;
+    await dev.writeRgbTable(table);
+    const out = t.blocks.get('10/0')!;
+    expect(out[0x15]).toBe(9);
+    expect(hx(out.subarray(483))).toBe(hx(PALETTE_TAIL));
   });
 });

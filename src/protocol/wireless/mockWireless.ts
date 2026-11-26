@@ -7,6 +7,8 @@ import { buildPacket, chunk, checksum, parsePacket, WCmd } from './packet';
 
 const REPLY_ID = 0x13;
 const FN_KEY = MK75_KEYS.find((k) => k.vk === 0xfa)!.index;
+/** Palette bytes 483..511: identity copy (model id ... 5A A5) then 00 10 00 00 (hw-re-docs; middle bytes unknown, zero here). */
+export const PALETTE_TAIL = Uint8Array.from([3, 0, 0, 0, 0, 0xc6, ...new Array(17).fill(0), 0x5a, 0xa5, 0, 0x10, 0, 0]);
 
 export class MockWirelessIO implements ReportIO {
   readonly name = 'Simulated MK75 (2.4 GHz)';
@@ -49,8 +51,7 @@ export class MockWirelessIO implements ReportIO {
     for (const l of this.layers) new DataView(l.buffer).setUint32(508, 0xa55a0000, true);
     const pal = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 0], [0, 255, 255], [255, 0, 255], [255, 255, 255]];
     for (let hw = 1; hw <= 19; hw++) pal.forEach((c, k) => this.palette.set(c, 0x15 * hw + 3 * k));
-    this.palette[0x1fa] = 0x5a;
-    this.palette[0x1fb] = 0xa5;
+    this.palette.set(PALETTE_TAIL, 483);
   }
 
   private emit(body: Uint8Array) {
@@ -76,8 +77,9 @@ export class MockWirelessIO implements ReportIO {
         z[0x7f] = 0xa5;
         return z;
       },
-      [WCmd.GetMatrix]: () => this.layers[p.sub] ?? new Uint8Array(512),
-      [WCmd.GetPalette]: () => this.palette,
+      // Real receivers return short reads: matrix 504 of 512, palette 490 of 512 (hw-re-docs, Wireless → Reading).
+      [WCmd.GetMatrix]: () => (this.layers[p.sub] ?? new Uint8Array(512)).subarray(0, 504),
+      [WCmd.GetPalette]: () => this.palette.subarray(0, 490),
       [WCmd.GetColors]: () => this.colors,
       [WCmd.Online]: () => Uint8Array.of(this.online ? 1 : 0, 0),
       [WCmd.GetOnBoard]: () => Uint8Array.of(80, 0x01), // 80 %, on battery

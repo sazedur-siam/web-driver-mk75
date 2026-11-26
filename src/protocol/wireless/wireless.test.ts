@@ -5,7 +5,7 @@ import { CUSTOM_GROUP, CUSTOM_MODE_INDEX, parseProfile, patchProfile, parseRgbTa
 import { wiredToWireless, wirelessToWired } from './codes';
 import { WirelessLink } from './link';
 import { planMacros } from '../macro';
-import { MockWirelessIO } from './mockWireless';
+import { MockWirelessIO, PALETTE_TAIL } from './mockWireless';
 import { Mk75Wireless } from './mk75Wireless';
 import { buildPacket, chunk } from './packet';
 
@@ -242,6 +242,16 @@ describe('Mk75Wireless adapter against the simulator', () => {
     await dev.writeRgbTable(patchRgbTable(t, pal));
     expect([...io.palette.slice(0x15, 0x18)]).toEqual([1, 2, 3]);
     expect([io.palette[0x1fa], io.palette[0x1fb]]).toEqual([0x5a, 0xa5]);
+    // the 490-byte read still covers the start of the identity copy, so it survives
+    expect([...io.palette.slice(483, 490)]).toEqual([...PALETTE_TAIL.subarray(0, 7)]);
+  });
+
+  // Known bug: bytes 490..511 never reach us over 2.4 GHz and are written back as zeros (the vendor app does
+  // the same). Fixing it needs the real tail from a cable read on hardware. Remove `.fails` when the fix lands.
+  it.fails('palette save keeps identity tail bytes 490..511', async () => {
+    const { io, dev } = make();
+    await dev.writeRgbTable(await dev.readRgbTable());
+    expect([...io.palette.slice(483)]).toEqual([...PALETTE_TAIL]);
   });
 
   it('live frames are colour groups within 200 bytes', async () => {
