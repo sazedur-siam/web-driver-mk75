@@ -25,6 +25,7 @@ class FakeG5 implements FeatureTransport {
   blocks = new Map<string, Uint8Array>([
     ['4/0', new Uint8Array(FACTORY_LED)],
     ['2/1', Uint8Array.of(0x03, 0, 0, 0, 0, 0xc6)],
+    ['7/2', Uint8Array.of(87, 0x10)],
   ]);
   staleReplies = 0;
   private reply = new Uint8Array(G5_FRAME_LEN);
@@ -60,6 +61,15 @@ describe('CDevG5KB wired frames match OemDrv.exe', () => {
     const dev = new Mk75G5Wired(t);
     expect(hx((await dev.checkModel())!)).toBe('03 00 00 00 00 c6');
     expect(hx(t.sent[0].subarray(0, 8))).toBe('82 01 00 01 00 06 00 00');
+  });
+
+  it('battery reads 87/2, 2 bytes: percent and charging flag', async () => {
+    const t = new FakeG5();
+    const dev = new Mk75G5Wired(t);
+    expect(await dev.readBattery()).toEqual({ level: 87, charging: true });
+    expect(hx(t.sent[0].subarray(0, 7))).toBe('87 02 00 01 00 02 00');
+    t.blocks.set('7/2', Uint8Array.of(100, 0x11));
+    expect(await dev.readBattery()).toEqual({ level: 100, charging: false });
   });
 
   it('LED read, matrix write and live frame headers', async () => {
@@ -100,7 +110,7 @@ describe('Mk75G5Wired profile', () => {
   it('is a wired device with palette colours and no macros (yet)', () => {
     const dev = new Mk75G5Wired(new FakeG5());
     expect(dev.kind).toBe('wired');
-    expect(dev.caps).toEqual({ macros: false, paletteIndex: true, battery: false });
+    expect(dev.caps).toEqual({ macros: false, paletteIndex: true, battery: true });
     expect(dev.canStream).toBe(true);
   });
 

@@ -109,7 +109,8 @@ hardware. They are hidden on the live site and only appear when you run it local
   to the keyboard as per-key colours. Only typing inside the test box is counted, and counts stay in the browser.
 
 ### Device
-- Connection type, MK75 model check, battery level (on receivers that report it).
+- Connection type, MK75 model check, battery level with a header icon and a browser notification below 20 % and
+  10 % (2.4 GHz receivers with report ID 0x13 and current MK75 boards on the cable).
 - Sleep timer (Never, 30 s … 20 min).
 - Debounce level 1–5 and knob mode (volume or lighting), experimental: current MK75 boards over the cable or
   2.4 GHz. Raise debounce if a key types twice.
@@ -145,7 +146,7 @@ hardware. They are hidden on the live site and only appear when you run it local
 | Profiles and presets | ✅ | ✅ (macros skipped) |
 | Sleep timer | ✅ | ✅ |
 | Debounce, knob mode | ✅ IC2481 boards (all current MK75s) | ✅ |
-| Battery level | n/a | receivers with report ID 0x13 |
+| Battery level, low-battery alerts | ✅ IC2481 boards (all current MK75s) | receivers with report ID 0x13 (the MK75's) |
 
 Bluetooth support assumes the keyboard exposes the same configuration interface as the receiver. It's not yet
 confirmed on hardware.
@@ -176,7 +177,6 @@ Not built yet. Most need testing on a real MK75 first. Details are in [features/
 |---|---|---|
 | **Macros over 2.4 GHz / Bluetooth** | Write macros without the cable, and read them back from the keyboard | Needs the wireless macro format finished, then hardware testing |
 | **Fn-layer remapping** | Change what Fn + key does, with one-click "restore Fn defaults" | Needs hardware reads to confirm the layer layout (likely over 2.4 GHz first) |
-| **Low-battery alerts** | Battery icon in the header and a notification below 20 % / 10 % | Depends on which receiver type the MK75 ships with |
 | **Desktop tray app** | Run live effects and music sync with no browser open, using system audio directly | Planned as a separate Electron app sharing this codebase |
 
 ---
