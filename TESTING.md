@@ -58,11 +58,11 @@ Use a text editor and a keyboard/mouse tester website.
 - [ ] **K8** (P1) Make changes, then **Revert all** before saving. Nothing changes on the keyboard, and no write appears in the log.
 - [ ] **K9** (P0) Keys you didn't touch still type normally.
 
-## 5. Macros (cable)
+## 5. Macros (cable; repeat W8 over 2.4G)
 
 - [ ] **M1** (P0) Record "hello" and assign it to a key with **Play once**. One press types "hello" exactly once.
-- [ ] **M2** (P0) Same macro with **Repeat while held**. It repeats while the key is held and stops on release.
-- [ ] **M3** (P1) **Repeat until any key** repeats until another key is pressed.
+- [ ] **M2** (P0) Same macro with **Repeat until any key**. It repeats after release until another key is pressed.
+- [ ] **M3** (P1) **Toggle**: the first press starts repeating, the second press stops it.
 - [ ] **M4** (P1) Macro "A", wait 2000 ms, "B". The gap is about 2 s (±10%).
 - [ ] **M5** (P1) Record a left click in the mouse pad. Playing the macro clicks.
 - [ ] **M6** (P1) Assign 9 different macros to 9 keys. All 9 play their own content (the 9th tests the second storage page).
@@ -93,7 +93,7 @@ Use a text editor and a keyboard/mouse tester website.
 - [ ] **W5** (P0) Repeat K1 over 2.4G. Caps Lock works as Ctrl.
 - [ ] **W6** (P1) Connect by cable after W5. Note whether Caps Lock is still Ctrl (the cable and wireless key maps may be stored separately): ______
 - [ ] **W7** (P1) Rainbow wave over 2.4G. The keyboard animates (5 fps or more is fine) with roughly correct colours.
-- [ ] **W8** (P0) Try saving macros over 2.4G. A clear "needs the USB cable" message appears, and nothing breaks.
+- [ ] **W8** (P0) Repeat M1 and M7 over 2.4G. The macro plays, survives a power cycle, and still plays when you switch to the cable (shared storage).
 - [ ] **W9** (P2) **Device** tab: note whether a Battery row appears. This tells which receiver type you have: ______
 
 ## 9. Bluetooth

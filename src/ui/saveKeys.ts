@@ -1,5 +1,5 @@
 import { setKeyCode } from '../protocol/keycodes';
-import { planMacros } from '../protocol/macro';
+import { planMacros, type MacroFormat } from '../protocol/macro';
 import { assignmentMap, macroStore } from './macroStore';
 import type { DeviceApi } from './useDevice';
 
@@ -22,9 +22,9 @@ export function rememberMacroPages(pages: { sub: number; data: Uint8Array }[]) {
 }
 
 /** Apply current macro assignments onto a matrix (ids assigned in key order, like the vendor). */
-export function withMacroCodes(matrix: Uint8Array): { matrix: Uint8Array; plan: ReturnType<typeof planMacros> } {
+export function withMacroCodes(matrix: Uint8Array, format: MacroFormat = 'slots'): { matrix: Uint8Array; plan: ReturnType<typeof planMacros> } {
   const s = macroStore.get();
-  const plan = planMacros(assignmentMap(s), s.macros);
+  const plan = planMacros(assignmentMap(s), s.macros, format);
   let m = matrix;
   for (const [key, code] of plan.codes) m = setKeyCode(m, key, code);
   return { matrix: m, plan };
@@ -36,7 +36,7 @@ export function withMacroCodes(matrix: Uint8Array): { matrix: Uint8Array; plan: 
 export async function saveKeysAndMacros(api: DeviceApi, matrix: Uint8Array) {
   const { dev, snap } = api;
   if (!dev || !snap) return;
-  const { matrix: m, plan } = withMacroCodes(matrix);
+  const { matrix: m, plan } = withMacroCodes(matrix, dev.caps.macros || 'slots');
   if (plan.pages.length) {
     await dev.writeMacroPages(plan.pages);
     rememberMacroPages(plan.pages);
@@ -46,7 +46,7 @@ export async function saveKeysAndMacros(api: DeviceApi, matrix: Uint8Array) {
   api.setSnap({ ...snap, matrix: back });
   api.push({
     dir: 'info',
-    text: `Key mapping saved${plan.pages.length ? ` with ${plan.codes.size} macro key(s) in ${plan.pages.length} macro page(s)` : ''}`,
+    text: `Key mapping saved${plan.pages.length ? ` with ${plan.codes.size} macro key(s) in ${plan.pages.length} macro block(s)` : ''}`,
   });
   if (plan.truncated.length) api.push({ dir: 'error', text: `Macro too long, truncated: ${plan.truncated.join(', ')}` });
 }

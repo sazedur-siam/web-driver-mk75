@@ -44,7 +44,7 @@ features. No technical knowledge needed.
    until the light blinks.
 4. Open the website, click **Connect keyboard**, choose the **receiver** in the list, and click **Connect**.
 
-Over 2.4 GHz almost everything works. Only **saving macros** needs the USB cable.
+Over 2.4 GHz everything works, including saving macros.
 
 ### With Bluetooth (experimental)
 
@@ -121,7 +121,8 @@ To change the whole layout (Colemak, Dvorak, Mac-style keys), use the **Layout**
 4. Go to **Key mapping**, click a key, choose your macro under **Macro**, click **Assign macro**, then **Save
    to keyboard**.
 
-Macros need the **USB cable** to be saved.
+Macros save over the cable or the 2.4 GHz receiver. On current MK75 boards the repeat choices are **Play once**,
+**Repeat until any key** and **Toggle** (press the key again to stop).
 
 ![Macros tab](public/manual/macros.webp)
 *Macros: a macro made with New from text…. Each step and its delay can be edited.*
@@ -175,7 +176,8 @@ The keyboard is asleep or not paired. Press any key to wake it, or pair again (s
 **Fn + `** for 3 seconds).
 
 **Saving macros doesn't work.**
-Macros can only be saved with the **USB cable**. Switch to the middle position and connect the cable.
+If the app says the macros are too long, shorten or remove some: the keyboard holds 4 KB of macros (about 1,000
+key events). If it says the receiver type can't store them, connect the USB cable instead.
 
 **Live effects stopped.**
 They only run while the website is open. Start them again from **Live effects**.

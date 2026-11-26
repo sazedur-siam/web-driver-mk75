@@ -18,7 +18,7 @@ import {
 import { vkToHid } from '../protocol/mock';
 import { LAYOUTS, layoutActions, type LayoutTweaks } from '../protocol/layouts';
 import { Keyboard } from './Keyboard';
-import { REPEAT_LABELS } from './MacrosTab';
+import { REPEAT_LABELS, STORE_REPEAT_LABELS } from './MacrosTab';
 import { macroStore, useMacros } from './macroStore';
 import { saveKeysAndMacros, withMacroCodes } from './saveKeys';
 import type { DeviceApi } from './useDevice';
@@ -265,9 +265,7 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
               <div className="field">
                 <span className="field-l">Macro</span>
                 {!dev.caps.macros ? (
-                  <p className="hint">
-                    {dev.kind === 'wired' ? 'Macros are not supported on this keyboard revision yet.' : 'Macros can only be written over the USB cable for now.'}
-                  </p>
+                  <p className="hint">Macros are not supported on this receiver type. Connect the USB cable.</p>
                 ) : macros.macros.length === 0 ? (
                   <p className="hint">Create macros on the Macros tab first.</p>
                 ) : (
@@ -281,7 +279,7 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
                       ))}
                     </select>
                     <select value={macroMode} onChange={(e) => setMacroMode(Number(e.target.value))} aria-label="Repeat mode">
-                      {REPEAT_LABELS.map((r) => (
+                      {(dev.caps.macros === 'store' ? STORE_REPEAT_LABELS : REPEAT_LABELS).map((r) => (
                         <option key={r.mode} value={r.mode}>
                           {r.label}
                         </option>

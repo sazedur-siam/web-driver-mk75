@@ -136,7 +136,7 @@ export function useDevice() {
     (mode: 'wired' | 'wireless' = 'wired') =>
       run('Starting simulator', async () => {
         if (mode === 'wired') return attach(new Mk75(new MockMk75(), { onFrame: wiredLog }));
-        const w = new Mk75Wireless(new WirelessLink(new MockWirelessIO(), 0x15, wirelessLog, { pace: 2, livePace: 1, ackMs: 800, readMs: 800 }), 'combo');
+        const w = new Mk75Wireless(new WirelessLink(new MockWirelessIO(), 0x13, wirelessLog, { pace: 2, livePace: 1, ackMs: 800, readMs: 800 }), '3632');
         w.setLiveLeds(MK75_KEYS.map((k) => k.index));
         return attach(w);
       }),
