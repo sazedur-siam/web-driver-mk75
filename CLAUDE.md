@@ -172,7 +172,7 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
 - **Deliberate choice:** we write per-effect slots for i < 17 (`PER_MODE_SLOTS`). The MK75 vendor build writes 16
   because of its `LedMask=0x22120`, but the AU75 build writes 17 on the same firmware generation, so effect 16
   (Blossoming) settings are saved too.
-- **Hardware checklist:** `TESTING.md`. Pending features that need hardware: `features/` (14–16, 18).
+- **Hardware checklist:** `TESTING.md`. Pending features that need hardware: `features/` (14, 15, 18).
 
 ---
 
