@@ -1,4 +1,5 @@
 import type { MacroFormat } from './macro';
+import type { SideLightState } from './sideLight';
 
 /**
  * What the UI talks to. Both the wired protocol (Mk75) and the 2.4 GHz / Bluetooth protocol
@@ -27,6 +28,8 @@ export interface Mk75Device {
   readonly transport: { readonly name: string; close(): Promise<void> };
   readonly caps: DeviceCaps;
   readonly simulated?: boolean;
+  /** Experimental: wired IC2481 side-light mode and colour only. */
+  readonly sideLight?: { read(): Promise<SideLightState>; write(changes: Partial<SideLightState>): Promise<SideLightState> };
   readProfile(): Promise<Uint8Array>;
   writeProfile(p: Uint8Array): Promise<void>;
   readKeyMatrix(): Promise<Uint8Array>;

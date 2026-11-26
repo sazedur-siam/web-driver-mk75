@@ -13,6 +13,7 @@ import {
   type RGB,
 } from '../protocol/lighting';
 import type { DeviceApi } from './useDevice';
+import { SideLight } from './SideLight';
 
 export function LightingTab({ api }: { api: DeviceApi }) {
   const { snap, dev } = api;
@@ -136,6 +137,7 @@ export function LightingTab({ api }: { api: DeviceApi }) {
           </button>
         </div>
       </section>
+      <SideLight api={api} />
     </div>
   );
 }

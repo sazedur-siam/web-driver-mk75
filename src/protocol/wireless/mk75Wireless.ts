@@ -11,6 +11,7 @@
  *  Live stream (cmd 0x88, no ack): groups [R,G,B,count,led...], <= 200 bytes.
  */
 import type { DeviceCaps, KeyboardSettings, Mk75Device } from '../device';
+import { parseSideLight, patchSideLight, type SideLightState } from '../sideLight';
 import { PROFILE_LEN } from '../mk75';
 import { LED_GROUP_LEN, PER_MODE_SLOTS } from '../lighting';
 import { STORE_BLOCK, STORE_BLOCKS } from '../macro';
@@ -71,6 +72,7 @@ export class Mk75Wireless implements Mk75Device {
   readonly canStream = true;
   readonly transport: { name: string; close(): Promise<void> };
   readonly simulated: boolean;
+  readonly sideLight?: { read(): Promise<SideLightState>; write(changes: Partial<SideLightState>): Promise<SideLightState> };
 
   private ledView: Uint8Array | null = null;
   /** Last read/written layer bytes (layout B) and their wired view, by layer. */
@@ -95,6 +97,17 @@ export class Mk75Wireless implements Mk75Device {
     this.caps = { macros: flavour === 'combo' ? false : 'store', paletteIndex: flavour === 'g5wired', battery: flavour !== 'combo' };
     this.simulated = link.io.name.startsWith('Simulated');
     this.transport = { name: `${link.io.name}`, close: () => link.close() };
+    if (flavour === 'g5wired') {
+      this.sideLight = {
+        read: () => this.exclusive(async () => parseSideLight(await this.readLedRaw())),
+        write: (changes) => this.exclusive(async () => {
+          const raw = await this.readLedRaw();
+          const next = patchSideLight(raw, changes);
+          if (!next.every((value, index) => value === raw[index])) await this.link.write(this.ops.setLed, 0, next);
+          return parseSideLight(await this.readLedRaw());
+        }),
+      };
+    }
   }
 
   /** Online query (cmd 0x07). Combo: byte0 = keyboard connected to the receiver. */
