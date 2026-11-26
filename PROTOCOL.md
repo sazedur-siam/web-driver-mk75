@@ -161,5 +161,5 @@ Key codes are `[type][mods][x][hid]`: key `hid<<24 | mods<<8`, consumer `…|0x0
 ## Not yet decoded / not ported
 
 * Wireless macro event format
-* Fn-layer and knob remapping (the official driver doesn't offer them for the MK75 either)
+* Fn-layer remapping (the official driver doesn't offer it for the MK75 either). The knob has two firmware modes, layout B byte `0x1A`: 0 media (volume), 1 lighting
 * Debounce on CDev916KB boards (the vendor never sends it there; layout B has it at byte `0x03`, 0–4), firmware update

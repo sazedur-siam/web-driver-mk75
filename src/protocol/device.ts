@@ -16,6 +16,8 @@ export interface DeviceCaps {
 export interface KeyboardSettings {
   /** Debounce level 0..4 (layout B byte 0x03; the official app shows level + 1). */
   debounce: number;
+  /** Knob mode (byte 0x1A): 0 = media (volume), 1 = lighting (brightness / effect). */
+  knob: number;
 }
 
 export interface Mk75Device {

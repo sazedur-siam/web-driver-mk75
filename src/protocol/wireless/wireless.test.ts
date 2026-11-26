@@ -140,7 +140,7 @@ describe('Mk75Wireless adapter against the simulator', () => {
 
   it('debounce round-trips through byte 0x03 and keeps the rest of the block', async () => {
     const { io, dev } = make();
-    expect(await dev.readSettings()).toEqual({ debounce: 2 });
+    expect(await dev.readSettings()).toEqual({ debounce: 2, knob: 0 });
     const before = new Uint8Array(io.led);
     await dev.writeSettings({ debounce: 4 });
     expect(io.led[0x03]).toBe(4);
@@ -150,6 +150,15 @@ describe('Mk75Wireless adapter against the simulator', () => {
     io.asleepReads = Infinity;
     await expect(dev.writeSettings({ debounce: 1 })).rejects.toThrow(/asleep/);
     expect(io.led[0x03]).toBe(4);
+  });
+
+  it('knob mode round-trips through byte 0x1A', async () => {
+    const { io, dev } = make();
+    await dev.writeSettings({ knob: 1 });
+    expect(io.led[0x1a]).toBe(1);
+    expect(io.led[0x03]).toBe(2); // debounce untouched
+    expect((await dev.readSettings()).knob).toBe(1);
+    await expect(dev.writeSettings({ knob: 2 })).rejects.toThrow(RangeError);
   });
 
   it('reads sleep from byte 0x18 even when 0x16 (tap/hold) is 0', async () => {

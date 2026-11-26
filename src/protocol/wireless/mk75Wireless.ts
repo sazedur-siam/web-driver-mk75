@@ -3,7 +3,7 @@
  * Presents the wired data formats to the UI and converts to the wireless layouts:
  *
  *  LED profile (cmd 0x44 / 0x04), 128 B, "layout B", signature 5A A5 at 0x7E:
- *    0x03 debounce 0..4 · 0x09 custom flag · 0x0A hw effect · 0x0B colour group · 0x16 tap/hold threshold · 0x18 sleep (0 = never)
+ *    0x03 debounce 0..4 · 0x09 custom flag · 0x0A hw effect · 0x0B colour group · 0x16 tap/hold threshold · 0x18 sleep (0 = never) · 0x1A knob 0 media / 1 lighting
  *    0x38/0x39 = FF · 0x3A+2i brightness · 0x3B+2i speed<<4 | (colourful ? 7 : 0)   (i < 19)
  *  Key matrix (cmd 0x41 / 0x01, sub = layer 0..3), 512 B = 128 u32, last u32 = 0xA55A0000.
  *  Palette (cmd 0x49 / 0x09), 0x200 B: same offsets as wired (0x15*hw), 5A A5 at 0x1FA.
@@ -157,7 +157,7 @@ export class Mk75Wireless implements Mk75Device {
   // ---------------------------------------------------------------- settings outside the wired profile
   async readSettings(): Promise<KeyboardSettings> {
     const raw = await this.readLedRaw();
-    return { debounce: raw[0x03] };
+    return { debounce: raw[0x03], knob: raw[0x1a] };
   }
 
   async writeSettings(s: Partial<KeyboardSettings>): Promise<void> {
@@ -165,6 +165,10 @@ export class Mk75Wireless implements Mk75Device {
     if (s.debounce !== undefined) {
       if (!Number.isInteger(s.debounce) || s.debounce < 0 || s.debounce > 4) throw new RangeError('Debounce level must be 0..4');
       raw[0x03] = s.debounce;
+    }
+    if (s.knob !== undefined) {
+      if (s.knob !== 0 && s.knob !== 1) throw new RangeError('Knob mode must be 0 or 1');
+      raw[0x1a] = s.knob;
     }
     await sleep(60);
     await this.link.write(this.ops.setLed, 0, raw);
