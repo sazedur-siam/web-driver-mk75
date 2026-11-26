@@ -1,7 +1,8 @@
 /* Lingbao MK75 Driver service worker: makes the app installable and usable offline.
  * Pages: network-first (new deploys arrive quickly), falling back to the cached copy offline.
- * Hashed build assets and icons: cache-first (their names change on every deploy). */
-const CACHE = 'mk75-v1';
+ * Hashed build assets (assets/): cache-first (their names change on every deploy).
+ * Everything else (manual screenshots, icons, manifest): network-first, since their names never change. */
+const CACHE = 'mk75-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -30,6 +31,20 @@ self.addEventListener('fetch', (e) => {
           return res;
         })
         .catch(() => caches.match('./index.html')),
+    );
+    return;
+  }
+  if (!new URL(req.url).pathname.includes('/assets/')) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() => caches.match(req).then((hit) => hit || Response.error())),
     );
     return;
   }
