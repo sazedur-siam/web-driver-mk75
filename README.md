@@ -99,7 +99,7 @@ hardware. They are hidden on the live site and only appear when you run it local
 - **New from text:** type or paste text (US layout) and the macro is generated. Text too long for one macro is
   split across several.
 - Repeat modes: play once, repeat while held, repeat until any key. Up to 32 macros (about 60 events each).
-- Macros are kept in the browser, because the keyboard can't send them back. Writing them requires the USB cable.
+- Macros are kept in the browser (the source of truth for editing). They save over the cable or 2.4 GHz.
 
 ### Key tester
 - Works without connecting. Press keys to see them light up, with press counts and "tested" progress.
@@ -142,7 +142,7 @@ hardware. They are hidden on the live site and only appear when you run it local
 | Per-key colours, image to keys | ✅ | ✅ |
 | Live effects, music, screen sync, signals, custom | ✅ ~33 fps | ✅ (lower frame rate, colour-grouped frames) |
 | Key mapping and layouts | ✅ | ✅ |
-| Macros | ✅ | ❌ (edit only; writing needs the cable) |
+| Macros | ✅ | ✅ (0x13 receivers, the MK75's) |
 | Profiles and presets | ✅ | ✅ (macros skipped) |
 | Sleep timer | ✅ | ✅ |
 | Debounce, knob mode | ✅ IC2481 boards (all current MK75s) | ✅ |
@@ -175,7 +175,6 @@ Not built yet. Most need testing on a real MK75 first. Details are in [features/
 
 | Feature | What it will do | Status |
 |---|---|---|
-| **Macros over 2.4 GHz / Bluetooth** | Write macros without the cable, and read them back from the keyboard | Needs the wireless macro format finished, then hardware testing |
 | **Fn-layer remapping** | Change what Fn + key does, with one-click "restore Fn defaults" | Needs hardware reads to confirm the layer layout (likely over 2.4 GHz first) |
 | **Desktop tray app** | Run live effects and music sync with no browser open, using system audio directly | Planned as a separate Electron app sharing this codebase |
 

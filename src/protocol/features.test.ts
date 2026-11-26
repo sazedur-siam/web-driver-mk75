@@ -3,7 +3,7 @@ import { MK75_KEYS } from '../device/mk75Layout';
 import { keyIndexByName, parseColumns, parseUnits, UNIT_FILES } from '../device/mk75Units';
 import { decodeAction, getKeyCode } from './keycodes';
 import { compose, MusicVisualizer, RtEffect } from './live';
-import { encodeMacroSlot, macroRefCode, planMacros, type Macro } from './macro';
+import { encodeMacroSlot, encodeMacroStore, macroRefCode, MOUSE_USAGE, planMacros, type Macro } from './macro';
 import { MockMk75 } from './mock';
 import { Mk75 } from './mk75';
 
@@ -53,6 +53,32 @@ describe('macro encoding matches vendor', () => {
     expect(plan.codes.get(42)).toBe(macroRefCode(1, 1));
     expect(plan.pages[0].data[3]).toBe(A + 8);
     expect(plan.pages[1].data[3]).toBe(A + 0); // 9th macro (key 50, m0) in page E0 slot 0
+  });
+});
+
+describe('layout-B macro store (hw-re-docs example)', () => {
+  it('macro "T" typing ab', () => {
+    const ev = (usage: number, down: boolean) => ({ usage, down, delay: 20 });
+    const s = encodeMacroStore([{ id: 't', name: 'T', events: [ev(4, true), ev(4, false), ev(5, true), ev(5, false)] }]);
+    expect([...s].map((b) => b.toString(16).padStart(2, '0')).join(' ')).toBe(
+      '04 00 13 00 02 54 00 00 00 14 04 80 00 14 04 00 00 14 05 80 00 14 05',
+    );
+  });
+  it('modifiers, mouse masks and 20-bit delays', () => {
+    const s = encodeMacroStore([
+      { id: 'm', name: '', events: [{ usage: 0xe1, down: true, delay: 0x12345 }, { usage: MOUSE_USAGE.right, down: false, delay: 1 }, { usage: MOUSE_USAGE.middle, down: true, delay: 0 }] },
+    ]);
+    expect([...s.subarray(5)]).toEqual([0x11, 0x23, 0x45, 0xe1, 0xa0, 0, 1, 2, 0x20, 0, 0, 4]);
+  });
+  it('directory points at each body and the store refuses more than 8 blocks', () => {
+    const lib: Macro[] = [0, 1].map((i) => ({ id: `m${i}`, name: 'ab', events: [{ usage: 4 + i, down: true, delay: 1 }] }));
+    const plan = planMacros(new Map([[3, { macroId: 'm1', mode: 4 as const }], [2, { macroId: 'm0', mode: 1 as const }]]), lib, 'store');
+    const d = plan.pages[0].data;
+    expect([...d.subarray(0, 8)]).toEqual([8, 0, 9, 0, 17, 0, 9, 0]);
+    expect(d[16]).toBe(4); // first body (key 2 → m0) ends with A
+    expect(plan.codes.get(3)).toBe(macroRefCode(2, 4));
+    const huge = [{ id: 'h', name: 'h', events: Array.from({ length: 1100 }, () => ({ usage: 4, down: true, delay: 1 })) }];
+    expect(() => planMacros(new Map([[1, { macroId: 'h', mode: 1 as const }]]), huge, 'store')).toThrow(/too long/);
   });
 });
 

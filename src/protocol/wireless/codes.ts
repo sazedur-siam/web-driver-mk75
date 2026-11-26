@@ -7,12 +7,14 @@
  *     mod only:  mods<<8                      (type 0, hid 0)
  *     consumer:  lo<<24 | hi<<16 | 0x02       (type 2)
  *     mouse:     clicks<<16 | button<<8 | 0x01  (button 1 left, 2 middle, 3 right, 4 back, 5 forward)
+ *     macro:     id<<24 | count<<16 | mode<<8 | 0x03   (id 0-based, count 1; wired [10 00 mode id])
  *
  * Anything else (Fn functions, macros, firmware codes) is passed through unchanged.
  */
 const MOD_USAGE = [0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7];
 // wired F0..F4 = left, middle, right, forward, back  →  wireless button numbers
 const WIRED_TO_WL_BUTTON = [1, 2, 3, 5, 4];
+const MACRO_MODES = [1, 2, 4];
 
 export function wirelessToWired(code: number): number | null {
   code >>>= 0;
@@ -28,6 +30,8 @@ export function wirelessToWired(code: number): number | null {
     if (b3 === 0 && b2 !== 0) return ((b2 << 24) | (b1 << 16)) >>> 0;
   }
   if (type === 0x02) return ((b3 << 24) | (b2 << 16) | 0x04) >>> 0;
+  // Stock cells 03 00 00 00 / 03 00 00 01 (mode 0) do nothing: keep them raw. Counts > 1 have no wired form.
+  if (type === 0x03 && MACRO_MODES.includes(b1) && b2 <= 1) return ((b3 << 24) | (b1 << 16) | 0x10) >>> 0;
   if (type === 0x01 && b2 === 1 && b3 === 0) {
     const i = WIRED_TO_WL_BUTTON.indexOf(b1);
     if (i >= 0) return (((0xf0 + i) << 24) | 0x07) >>> 0;
@@ -44,6 +48,7 @@ export function wiredToWireless(code: number): number | null {
   if (type === 0x00 && (code & 0xff00) === 0) return ((b3 << 24) | (b2 << 8)) >>> 0;
   if (type === 0x04 && (code & 0xff00) === 0) return ((b3 << 24) | (b2 << 16) | 0x02) >>> 0;
   if (type === 0x06 && b3 >= 0xe0 && b3 <= 0xe7) return ((1 << (b3 - 0xe0)) << 8) >>> 0;
+  if (type === 0x10 && MACRO_MODES.includes(b2) && (code & 0xff00) === 0) return ((b3 << 24) | (1 << 16) | (b2 << 8) | 0x03) >>> 0;
   if (type === 0x07 && b3 >= 0xf0 && b3 <= 0xf4) return ((1 << 16) | (WIRED_TO_WL_BUTTON[b3 - 0xf0] << 8) | 0x01) >>> 0;
   return null;
 }

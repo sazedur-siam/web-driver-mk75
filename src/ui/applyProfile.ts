@@ -2,7 +2,7 @@
  * Capture / apply profiles. Apply follows the vendor ApplySetting order and skips blocks that are already
  * identical on the keyboard, so applying the active profile again writes nothing.
  */
-import type { Mk75Device } from '../protocol/device';
+import type { DeviceCaps, Mk75Device } from '../protocol/device';
 import { getKeyCode, setKeyCode } from '../protocol/keycodes';
 import { MK75_KEYS } from '../device/mk75Layout';
 import { buildLedMatrix, CUSTOM_MODE_INDEX, parseProfile } from '../protocol/lighting';
@@ -35,10 +35,10 @@ export function captureProfile(name: string, snap: DeviceSnapshot, id?: string, 
  * The key matrix a profile will actually write: its saved matrix plus macro codes from its own macro
  * assignments (cable), or with macro keys left as they are now (wireless, where macros can't be written).
  */
-export function profileMatrix(p: Profile, macrosSupported: boolean, current: Uint8Array) {
+export function profileMatrix(p: Profile, macros: DeviceCaps['macros'], current: Uint8Array) {
   let matrix: Uint8Array = fromHex(p.keyMatrix);
-  const plan = planMacros(assignmentMap(p.macros), p.macros.macros);
-  if (macrosSupported) {
+  const plan = planMacros(assignmentMap(p.macros), p.macros.macros, macros || 'slots');
+  if (macros) {
     for (const [key, code] of plan.codes) matrix = setKeyCode(matrix, key, code);
   } else {
     for (const k of MK75_KEYS) {
@@ -80,7 +80,7 @@ export async function applyProfile(dev: Mk75Device, snap: DeviceSnapshot, p: Pro
   const target = profileMatrix(p, dev.caps.macros, snap.matrix);
   const matrix = target.matrix;
   if (target.plan.pages.length) {
-    if (!dev.caps.macros) skipped.push(dev.kind === 'wired' ? 'macros (not supported on this keyboard revision yet)' : 'macros (need the USB cable)');
+    if (!dev.caps.macros) skipped.push('macros (not supported on this receiver type)');
     else if (eq(matrix, snap.matrix) && macroPagesUnchanged(target.plan.pages)) {
       /* same macros already written from this browser */
     } else {

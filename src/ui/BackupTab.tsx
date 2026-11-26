@@ -72,7 +72,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
       if (Array.isArray(pending.profiles) && pending.profiles.length) profileStore.replaceAll(pending.profiles.map(validateProfile));
       await dev.writeRgbTable(fromHexStr(pending.rgbTable));
       // Macro pages first (ids are re-planned deterministically in key order), then the matrix.
-      const { matrix, plan } = withMacroCodes(fromHexStr(pending.keyMatrix));
+      const { matrix, plan } = withMacroCodes(fromHexStr(pending.keyMatrix), dev.caps.macros || 'slots');
       if (plan.pages.length) await dev.writeMacroPages(plan.pages);
       await dev.writeKeyMatrix(matrix);
       await dev.writeProfile(fromHexStr(pending.profile));

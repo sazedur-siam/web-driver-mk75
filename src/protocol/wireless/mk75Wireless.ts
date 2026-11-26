@@ -13,6 +13,7 @@
 import type { DeviceCaps, KeyboardSettings, Mk75Device } from '../device';
 import { PROFILE_LEN } from '../mk75';
 import { LED_GROUP_LEN } from '../lighting';
+import { STORE_BLOCK, STORE_BLOCKS } from '../macro';
 import { wiredToWireless, wirelessToWired } from './codes';
 import { WCmd } from './packet';
 
@@ -24,6 +25,7 @@ const PALETTE_LEN = 0x200;
 const PALETTE_DATA = 0x1a4;
 const WL_MODES = 19;
 const LIVE_MAX = 200;
+const OP_USB_MACRO = 0x05;
 
 const u32 = (b: Uint8Array, i: number) => new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(i * 4, true);
 const setU32 = (b: Uint8Array, i: number, v: number) => new DataView(b.buffer, b.byteOffset, b.byteLength).setUint32(i * 4, v >>> 0, true);
@@ -79,7 +81,7 @@ export class Mk75Wireless implements Mk75Device {
     private ops: LayoutBOps = WIRELESS_OPS,
   ) {
     this.kind = flavour === 'g5wired' ? 'wired' : 'wireless';
-    this.caps = { macros: false, paletteIndex: flavour === 'g5wired', battery: flavour !== 'combo' };
+    this.caps = { macros: flavour === 'combo' ? false : 'store', paletteIndex: flavour === 'g5wired', battery: flavour !== 'combo' };
     this.simulated = link.io.name.startsWith('Simulated');
     this.transport = { name: `${link.io.name}`, close: () => link.close() };
   }
@@ -232,10 +234,20 @@ export class Mk75Wireless implements Mk75Device {
     await this.link.write(this.ops.setColors, 0, buf.subarray(0, LED_GROUP_LEN));
   }
 
-  async writeMacroPages(): Promise<void> {
-    throw new UnsupportedOverWireless(
-      this.kind === 'wired' ? 'Macros are not supported on this keyboard revision yet.' : 'Macros can only be written over the USB cable for now.',
-    );
+  /** Macro store blocks from planMacros(…, 'store'): contiguous from block 0, 512 bytes each, never block 8+. */
+  async writeMacroPages(pages: { sub: number; data: Uint8Array }[]): Promise<void> {
+    if (!this.caps.macros) throw new UnsupportedOverWireless('Macros are not supported on this receiver type.');
+    if (pages.length > STORE_BLOCKS || pages.some((p, i) => p.sub !== i || p.data.length !== STORE_BLOCK))
+      throw new Error('Invalid macro store blocks');
+    if (this.kind === 'wired') {
+      // Cable: one transfer, the block number in the frame addresses the sector.
+      const all = new Uint8Array(pages.length * STORE_BLOCK);
+      pages.forEach((p, i) => all.set(p.data, i * STORE_BLOCK));
+      await this.link.write(OP_USB_MACRO, 0, all);
+    } else {
+      for (const p of pages) await this.link.write(WCmd.SetMacro, p.sub, p.data);
+    }
+    await sleep(50);
   }
 
   async checkModel(): Promise<Uint8Array | null> {

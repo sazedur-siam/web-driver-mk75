@@ -13,6 +13,7 @@ export class MockWirelessIO implements ReportIO {
   layers = [0, 1, 2, 3].map(() => new Uint8Array(512));
   palette = new Uint8Array(0x200);
   colors = new Uint8Array(0x17a);
+  macroBlocks: Uint8Array[] = [];
   live: Uint8Array | null = null;
   liveFrames = 0;
   badChecksums = 0;
@@ -73,7 +74,7 @@ export class MockWirelessIO implements ReportIO {
       [WCmd.GetPalette]: () => this.palette,
       [WCmd.GetColors]: () => this.colors,
       [WCmd.Online]: () => Uint8Array.of(this.online ? 1 : 0, 0),
-      [WCmd.GetOnBoard]: () => Uint8Array.of(0),
+      [WCmd.GetOnBoard]: () => Uint8Array.of(80, 0x01), // 80 %, on battery
     };
     if (sources[p.cmd]) return this.reply(p.cmd, sources[p.cmd]());
 
@@ -93,6 +94,7 @@ export class MockWirelessIO implements ReportIO {
     else if (p.cmd === WCmd.SetMatrix) this.layers[p.sub] = all.slice(0, 512);
     else if (p.cmd === WCmd.SetPalette) this.palette = all.slice(0, 0x200);
     else if (p.cmd === WCmd.SetColors) this.colors = all.slice(0, 0x17a);
+    else if (p.cmd === WCmd.SetMacro) this.macroBlocks[p.sub] = all.slice(0, 512);
     else if (p.cmd === WCmd.Live) {
       this.live = all;
       this.liveFrames++;

@@ -22,6 +22,12 @@ export const REPEAT_LABELS: { mode: (typeof RepeatMode)[keyof typeof RepeatMode]
   { mode: RepeatMode.UntilReleased, label: 'Repeat while held' },
   { mode: RepeatMode.UntilAnyKey, label: 'Repeat until any key' },
 ];
+/** Same mode numbers behave differently on layout-B boards (hw-re-docs, real MK75). */
+export const STORE_REPEAT_LABELS: typeof REPEAT_LABELS = [
+  { mode: RepeatMode.Once, label: 'Play once' },
+  { mode: RepeatMode.UntilReleased, label: 'Repeat until any key' },
+  { mode: RepeatMode.UntilAnyKey, label: 'Toggle (press again to stop)' },
+];
 
 export function MacrosTab({ api }: { api: DeviceApi }) {
   const store = useMacros();
@@ -137,11 +143,7 @@ export function MacrosTab({ api }: { api: DeviceApi }) {
           }}
         />
         {api.dev && !api.dev.caps.macros && (
-          <p className="hint warn">
-            {api.dev.kind === 'wired'
-              ? "You can edit macros here, but this keyboard revision's macro format isn't supported yet."
-              : "You can edit macros here, but writing them needs the USB cable (the wireless macro format isn't supported yet)."}
-          </p>
+          <p className="hint warn">You can edit macros here, but this receiver type can't store them. Connect the USB cable.</p>
         )}
         <p className="hint">
           Assign macros to keys on the <b>Key mapping</b> tab. The keyboard can't send macros back, so they're kept in this browser

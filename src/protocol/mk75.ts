@@ -53,7 +53,7 @@ export interface Mk75Options {
 
 export class Mk75 implements Mk75Device {
   readonly kind = 'wired' as const;
-  readonly caps: DeviceCaps = { macros: true, paletteIndex: true, battery: false };
+  readonly caps: DeviceCaps = { macros: 'slots', paletteIndex: true, battery: false };
   readonly simulated: boolean;
   private queue: Promise<unknown> = Promise.resolve();
   private readDelay: number;
