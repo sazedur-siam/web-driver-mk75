@@ -138,6 +138,20 @@ describe('Mk75Wireless adapter against the simulator', () => {
     expect([io.led[0x16], io.led[0x18]]).toEqual([0, 20]); // tap/hold threshold untouched
   });
 
+  it('debounce round-trips through byte 0x03 and keeps the rest of the block', async () => {
+    const { io, dev } = make();
+    expect(await dev.readSettings()).toEqual({ debounce: 2 });
+    const before = new Uint8Array(io.led);
+    await dev.writeSettings({ debounce: 4 });
+    expect(io.led[0x03]).toBe(4);
+    before[0x03] = 4;
+    expect(io.led).toEqual(before);
+    await expect(dev.writeSettings({ debounce: 5 })).rejects.toThrow(RangeError);
+    io.asleepReads = Infinity;
+    await expect(dev.writeSettings({ debounce: 1 })).rejects.toThrow(/asleep/);
+    expect(io.led[0x03]).toBe(4);
+  });
+
   it('reads sleep from byte 0x18 even when 0x16 (tap/hold) is 0', async () => {
     const { io, dev } = make();
     io.led[0x16] = 0;

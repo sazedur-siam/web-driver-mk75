@@ -153,7 +153,7 @@ Reads: one request, then `total` reply packets.
 | `4A` | on-board profile; battery on `0x13` receivers |
 | `06` | factory reset (`0x13` receivers only) |
 
-LED profile (MK75 "layout B"): `0x09` custom flag, `0x0A` hw effect, `0x0B` colour group, `0x16` tap/hold threshold, `0x18` sleep (`0` = never),
+LED profile (MK75 "layout B"): `0x09` custom flag, `0x0A` hw effect, `0x0B` colour group, `0x03` debounce 0–4, `0x16` tap/hold threshold, `0x18` sleep (`0` = never),
 `0x38-39 = FF`, per effect `0x3A+2i` brightness and `0x3B+2i` = `speed<<4 | (colourful ? 7 : 0)`.
 Key codes are `[type][mods][x][hid]`: key `hid<<24 | mods<<8`, consumer `…|0x02`, mouse `clicks<<16 | button<<8 | 0x01`
 (1 left, 2 middle, 3 right, 4 back, 5 forward).
@@ -162,4 +162,4 @@ Key codes are `[type][mods][x][hid]`: key `hid<<24 | mods<<8`, consumer `…|0x0
 
 * Wireless macro event format
 * Fn-layer and knob remapping (the official driver doesn't offer them for the MK75 either)
-* Debounce (shown by the vendor UI but never sent on wired), firmware update
+* Debounce on CDev916KB boards (the vendor never sends it there; layout B has it at byte `0x03`, 0–4), firmware update
