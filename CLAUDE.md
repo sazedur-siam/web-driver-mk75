@@ -167,7 +167,6 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
   - Which receiver type the MK75 ships with.
   - Whether Bluetooth exposes the vendor collection at all.
   - Wireless live-stream sub=1 (taken from an F99 capture in OpenRGB issue #5166).
-  - Wireless sleep bytes `0x16`/`0x18`.
   - Fn-function names marked "likely".
   - How the firmware reverts after a live stream stops (we rewrite the profile).
 - **Deliberate choice:** we write per-effect slots for i < 17 (`PER_MODE_SLOTS`). The MK75 vendor build writes 16

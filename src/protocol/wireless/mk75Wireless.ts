@@ -3,7 +3,7 @@
  * Presents the wired data formats to the UI and converts to the wireless layouts:
  *
  *  LED profile (cmd 0x44 / 0x04), 128 B, "layout B", signature 5A A5 at 0x7E:
- *    0x09 custom flag · 0x0A hw effect · 0x0B colour group · 0x16 sleep on/off · 0x18 sleep code
+ *    0x09 custom flag · 0x0A hw effect · 0x0B colour group · 0x16 tap/hold threshold · 0x18 sleep (0 = never)
  *    0x38/0x39 = FF · 0x3A+2i brightness · 0x3B+2i speed<<4 | (colourful ? 7 : 0)   (i < 19)
  *  Key matrix (cmd 0x41 / 0x01, sub = layer 0..3), 512 B = 128 u32, last u32 = 0xA55A0000.
  *  Palette (cmd 0x49 / 0x09), 0x200 B: same offsets as wired (0x15*hw), 5A A5 at 0x1FA.
@@ -113,7 +113,7 @@ export class Mk75Wireless implements Mk75Device {
     p[0x04] = raw[0x09];
     p[0x05] = raw[0x0a];
     p[0x06] = raw[0x0b];
-    p[0x11] = raw[0x16] === 0 ? 0xff : raw[0x18];
+    p[0x11] = raw[0x18] === 0 ? 0xff : raw[0x18];
     p[0x14] = p[0x15] = 0xff;
     for (let i = 0; i < WL_MODES; i++) {
       const bright = raw[0x3a + 2 * i] & 0x0f;
@@ -139,15 +139,8 @@ export class Mk75Wireless implements Mk75Device {
     raw[0x09] = p[0x04];
     raw[0x0a] = p[0x05];
     raw[0x0b] = p[0x06];
-    if (changed(0x11)) {
-      if (p[0x11] === 0xff) {
-        raw[0x16] = 0;
-        raw[0x18] = 0;
-      } else {
-        raw[0x16] = raw[0x16] || 1;
-        raw[0x18] = p[0x11];
-      }
-    }
+    // Byte 0x18 alone is the sleep timer (0 = never); 0x16 is the tap/hold threshold (hw-re-docs, real MK75).
+    if (changed(0x11)) raw[0x18] = p[0x11] === 0xff ? 0 : p[0x11];
     raw[0x38] = raw[0x39] = 0xff;
     for (let i = 0; i < WL_MODES; i++) {
       if (!changed(0x16 + 2 * i) && !changed(0x17 + 2 * i)) continue;
