@@ -8,3 +8,6 @@ tsconfig.tsbuildinfo
 
 # Original vendor driver, kept for reverse-engineering reference
 !vendor-driver/*.zip
+
+# local-only bug plans
+bug-fix/
