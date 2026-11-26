@@ -1,31 +1,31 @@
-/* Lingbao MK75 colour language (sampled from the official MK75 product poster):
-   deep green-black base, lime-green highlight, mint keycaps, charcoal modifiers, orange accents.
+/* Lingbao MK75 colour language, matte like the real board: near-neutral charcoal base, sage highlight,
+   dusty mint keycaps, charcoal modifiers, burnt-orange accents, no glow.
    One theme per official MK75 colourway: dark green-orange (default), iced milk tea, Arthur, summer wilderness. */
 :root {
-  --bg: #050e0a;
-  --bg-glow: rgba(63, 220, 95, 0.16);
-  --surface: #0b1811;
-  --surface-2: #10231a;
-  --border: #1c3829;
-  --text: #e8f5ee;
-  --muted: #8ba999;
-  --accent: #3fdc5f;
-  --accent-ink: #03140a;
-  --accent-2: #f5922a;
-  --mint: #8fd8c5;
+  --bg: #0e110f;
+  --bg-glow: rgba(150, 170, 155, 0.05);
+  --surface: #161a17;
+  --surface-2: #1c211e;
+  --border: #2a302c;
+  --text: #e4e8e5;
+  --muted: #949d97;
+  --accent: #8fb39a;
+  --accent-ink: #0e1410;
+  --accent-2: #d08a4c;
+  --mint: #9cbfb3;
   --danger: #ff6b6b;
-  --ok: #3fdc5f;
+  --ok: #7fb08c;
   --warn: #f5a524;
-  --case: #0a0e0c;
-  --plate: #121815;
-  --cap-alpha: #93d6c6;
-  --cap-alpha-ink: #0b2a22;
-  --cap-mod: #1e2523;
-  --cap-mod-ink: #d3e6dd;
-  --cap-accent: #f39a2b;
-  --cap-accent-ink: #2a1503;
+  --case: #121513;
+  --plate: #181c19;
+  --cap-alpha: #a9c4ba;
+  --cap-alpha-ink: #1c2b26;
+  --cap-mod: #262b28;
+  --cap-mod-ink: #c9d2cd;
+  --cap-accent: #cf8a4a;
+  --cap-accent-ink: #2a1607;
   --cap-edge: rgba(0, 0, 0, 0.45);
-  --knob: #1b201e;
+  --knob: #1f2321;
   --focus: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent);
   color-scheme: dark;
 }
@@ -163,6 +163,8 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: none;
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 button.primary:hover:not(:disabled) { box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 45%, transparent); }
+/* Dark green-orange is matte: no accent glows. */
+:root[data-theme='green-orange'] :is(.brand-logo, button.primary:hover) { box-shadow: none; }
 button.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
 select {
   font: inherit;
@@ -261,6 +263,10 @@ select {
 .key.sel rect { stroke: var(--accent); stroke-width: 2.5; }
 .key.hl rect { stroke: var(--accent-2); stroke-width: 2; stroke-dasharray: 3 2; }
 .key.sel.hl rect { stroke: var(--accent); stroke-dasharray: none; }
+/* Sage on dusty-mint caps is too close in hue: the matte theme selects in near-white, and the Key tester uses
+   near-white for held keys and a deeper green for tested ones. */
+:root[data-theme='green-orange'] :is(.key.sel rect, .knob.sel .knob-cap) { stroke: var(--text); }
+:root[data-theme='green-orange'] { --key-held: var(--text); --key-tested: #6e9c7a; }
 .key.lit .kl { fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, 0.55); stroke-width: 2px; }
 .kl { font-size: 7.5px; pointer-events: none; font-weight: 600; }
 .ks { font-size: 5.5px; fill: var(--accent-2); pointer-events: none; font-weight: 700; paint-order: stroke; stroke: var(--case); stroke-width: 1.5px; }
