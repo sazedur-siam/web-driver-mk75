@@ -6,7 +6,8 @@ protocol was reverse-engineered, how the code is organised, and the rules to fol
 - **Live app:** https://mk75-web.vercel.app/ (Vercel, auto-deploys from `main`)
 - **Repo:** https://github.com/sazedur-siam/web-driver-mk75
 - **User docs:** `README.md` (features), `MANUAL.md` (how to use, with screenshots), `TESTING.md` (hardware test
-  plan). **Protocol:** `PROTOCOL.md`. **Backlog:** `features/` (one plan per unbuilt feature).
+  plan). **Protocol:** `PROTOCOL.md`. **Backlog:** `features/` (one plan per unbuilt feature). **Bugs:** `bug-fix/` (one plan per known bug,
+  `NN-short-name.md`, indexed in `bug-fix/README.md`).
 
 ---
 
@@ -241,7 +242,8 @@ npm run build    # tsc -b && vite build → dist/
 
 - **One feature per branch** (`feat/…`, `fix/…`, `docs/…`): build, test (`npm test`, build, and a browser check
   with a simulator), then `git merge --no-ff` into `main` and push. When a feature from `features/` ships, delete
-  its plan file and its row in `features/README.md`.
+  its plan file and its row in `features/README.md`. Bugs work the same way: every found bug gets a plan file in
+  `bug-fix/` (branch `fix/…`), deleted with its row in `bug-fix/README.md` when the fix ships.
 - **Pushing:** the repo belongs to `sazedur-siam`; push as that account. The repo-local git identity is already
   set. No AI attribution lines in commits or PRs.
 - **Vercel** redeploys on push to `main`. Bump `CACHE` in `public/sw.js` only when the caching strategy changes;
