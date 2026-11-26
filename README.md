@@ -123,7 +123,8 @@ hardware. They are hidden on the live site and only appear when you run it local
 
 ### App
 - **Themes for all four MK75 colourways:** Dark green-orange, Iced milk tea, Arthur and Summer Wilderness. The
-  keyboard drawing (with knob, mode switch and indicator LEDs) recolours to match.
+  keyboard drawing (with knob, mode switch and indicator LEDs) recolours to match. First-time visitors are asked
+  which colourway they own.
 - **Report an Issue:** a short form (title, what happened, steps, expected, optional diagnostics) that opens a
   pre-filled GitHub issue. Screenshots are pasted on GitHub. Needs a free GitHub account.
 - **Contribute device data:** saves one JSON file (HID interface layout, keyboard settings, configuration
