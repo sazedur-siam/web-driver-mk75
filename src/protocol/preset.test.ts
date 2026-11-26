@@ -30,6 +30,8 @@ describe('shareable presets', () => {
     await expect(decodePreset('not-a-real-link')).rejects.toThrow(/damaged/);
     expect(() => validatePreset({ v: 2, name: 'x' })).toThrow();
     expect(() => validatePreset({ v: 1, name: 'x', lighting: { mode: 1, speed: 9, brightness: 0, colorful: false, colorIndex: 0 } })).toThrow(/lighting/);
+    for (const mode of ['18', 'length', 'map', 1.5])
+      expect(() => validatePreset({ v: 1, name: 'x', lighting: { mode, speed: 1, brightness: 1, colorful: false, colorIndex: 0 } })).toThrow(/lighting/);
     expect(() => validatePreset({ v: 1, name: 'x', keys: { 59: { kind: 'key', usage: 4, mods: 0 } } })).toThrow(/key/); // Fn key
     expect(() => validatePreset({ v: 1, name: 'x', keys: { 46: { kind: 'macro', slot: 0, mode: 1 } } })).toThrow(/key/);
     expect(() => validatePreset({ v: 1, name: 'empty' })).toThrow(/empty/);

@@ -73,6 +73,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
   }, [running]);
 
   // Frame loop.
+  const { setError } = api;
   useEffect(() => {
     if (!running || !dev) return;
     let busy = false;
@@ -142,14 +143,14 @@ export function LiveTab({ api }: { api: DeviceApi }) {
           lastFps = now;
         }
       } catch (e) {
-        api.setError(`Live stream stopped: ${e instanceof Error ? e.message : String(e)}`);
+        setError(`Live stream stopped: ${e instanceof Error ? e.message : String(e)}`);
         setRunning(false);
       } finally {
         busy = false;
       }
     });
     return () => ticker.stop();
-  }, [running, dev, api]);
+  }, [running, dev, setError]); // not `api`: it's a new object every render and would restart the clock
 
   // Laptop battery (Chrome: navigator.getBattery) for the battery signal.
   useEffect(() => {
@@ -181,10 +182,13 @@ export function LiveTab({ api }: { api: DeviceApi }) {
   // Leaving the tab stops streaming; restore the saved effect if we were live.
   const runningRef = useRef(running);
   runningRef.current = running;
+  const latest = useRef({ dev, snap }); // the unmount cleanup must restore the current profile, not the first render's
+  latest.current = { dev, snap };
   useEffect(
     () => () => {
       stopAudio();
       stopScreen();
+      const { dev, snap } = latest.current;
       if (runningRef.current && dev && snap) void dev.writeProfile(snap.profile).catch(() => undefined);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -133,6 +133,23 @@ describe('live frames', () => {
     expect(mock.liveFrame?.[3]).toBe(99);
     expect([...(await d.checkModel())!]).toEqual([0x03, 0, 0, 0, 0, 0xc6]);
   });
+  it('cable reads strip a kept report ID and retry short replies instead of zero-padding', async () => {
+    const mock = new MockMk75();
+    const d = new Mk75(mock, { readDelayMs: 0, writeDelayMs: 0 });
+    const recv = mock.receiveFeature.bind(mock);
+    let n = 0;
+    mock.receiveFeature = async (id: number) => {
+      const r = await recv(id);
+      if (id !== 6) return r;
+      n++;
+      if (n === 1) return r.subarray(0, 7 + 100); // short: retried
+      if (n === 2) return Uint8Array.of(6, ...r.subarray(0, 7 + 1024)); // report-ID prefixed, not size + 1
+      return r;
+    };
+    const m = await d.readKeyMatrix();
+    expect(n).toBe(2);
+    expect(m).toEqual(mock.matrix);
+  });
   it('macro pages + matrix refs round-trip through the simulator', async () => {
     const mock = new MockMk75();
     const d = new Mk75(mock, { readDelayMs: 0, writeDelayMs: 0 });

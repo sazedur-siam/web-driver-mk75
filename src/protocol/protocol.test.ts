@@ -121,6 +121,14 @@ describe('lighting', () => {
     expect(p[0x16 + 2 * PER_MODE_SLOTS]).toBe(0x5a);
     expect(p[200]).toBe(0x5a);
   });
+  it('Blossoming (index 16) settings are saved', () => {
+    const state = parseProfile(new Uint8Array(254));
+    state.activeIndex = 16;
+    state.perMode[16] = { speed: 3, brightness: 1, colorful: false, colorIndex: 2 };
+    const p = patchProfile(new Uint8Array(254), state);
+    expect(p[0x16 + 2 * 16]).toBe(2);
+    expect(p[0x17 + 2 * 16]).toBe(0x31);
+  });
   it('self-define sets custom flag and hw 21', () => {
     const p = patchProfile(new Uint8Array(254), { activeIndex: CUSTOM_MODE_INDEX, perMode: parseProfile(new Uint8Array(254)).perMode });
     expect(p[4]).toBe(1);

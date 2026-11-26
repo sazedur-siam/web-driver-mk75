@@ -12,7 +12,7 @@
  */
 import type { DeviceCaps, KeyboardSettings, Mk75Device } from '../device';
 import { PROFILE_LEN } from '../mk75';
-import { LED_GROUP_LEN } from '../lighting';
+import { LED_GROUP_LEN, PER_MODE_SLOTS } from '../lighting';
 import { STORE_BLOCK, STORE_BLOCKS } from '../macro';
 import { wiredToWireless, wirelessToWired } from './codes';
 import { WCmd } from './packet';
@@ -76,6 +76,14 @@ export class Mk75Wireless implements Mk75Device {
   /** Last read/written layer bytes (layout B) and their wired view, by layer. */
   private layers = new Map<number, { raw: Uint8Array; view: Uint8Array }>();
   private paletteRaw: Uint8Array | null = null;
+  private chain: Promise<unknown> = Promise.resolve();
+
+  /** Read-modify-write sequences must not interleave: the link only queues single transfers. */
+  private exclusive<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.chain.then(fn, fn);
+    this.chain = run.catch(() => undefined);
+    return run;
+  }
 
   constructor(
     protected link: LayoutBLink,
@@ -136,7 +144,11 @@ export class Mk75Wireless implements Mk75Device {
     return c === 7 ? 7 : 0;
   }
 
-  async writeProfile(p: Uint8Array): Promise<void> {
+  writeProfile(p: Uint8Array): Promise<void> {
+    return this.exclusive(() => this.writeProfileNow(p));
+  }
+
+  private async writeProfileNow(p: Uint8Array): Promise<void> {
     // Vendor: read the live block first, patch, write back.
     const raw = await this.readLedRaw();
     const prev = this.ledView ?? (await this.readProfile());
@@ -147,7 +159,7 @@ export class Mk75Wireless implements Mk75Device {
     // Byte 0x18 alone is the sleep timer (0 = never); 0x16 is the tap/hold threshold (hw-re-docs, real MK75).
     if (changed(0x11)) raw[0x18] = p[0x11] === 0xff ? 0 : p[0x11];
     raw[0x38] = raw[0x39] = 0xff;
-    for (let i = 0; i < WL_MODES; i++) {
+    for (let i = 0; i < PER_MODE_SLOTS; i++) {
       if (!changed(0x16 + 2 * i) && !changed(0x17 + 2 * i)) continue;
       raw[0x3a + 2 * i] = p[0x17 + 2 * i] & 0x0f;
       raw[0x3b + 2 * i] = (p[0x17 + 2 * i] & 0xf0) | this.colour(p[0x16 + 2 * i] & 0x0f);
@@ -165,7 +177,11 @@ export class Mk75Wireless implements Mk75Device {
     return { debounce: raw[0x03], knob: raw[0x1a] };
   }
 
-  async writeSettings(s: Partial<KeyboardSettings>): Promise<void> {
+  writeSettings(s: Partial<KeyboardSettings>): Promise<void> {
+    return this.exclusive(() => this.writeSettingsNow(s));
+  }
+
+  private async writeSettingsNow(s: Partial<KeyboardSettings>): Promise<void> {
     const raw = await this.readLedRaw();
     if (s.debounce !== undefined) {
       if (!Number.isInteger(s.debounce) || s.debounce < 0 || s.debounce > 4) throw new RangeError('Debounce level must be 0..4');
@@ -191,7 +207,8 @@ export class Mk75Wireless implements Mk75Device {
     return new Uint8Array(view);
   }
 
-  private async writeLayer(layer: number, m: Uint8Array): Promise<void> {
+  /** Layout-B bytes for a wired-view layer. Throws, without writing, on a protected cell or a code with no layout-B form. */
+  private async encodeLayer(layer: number, m: Uint8Array): Promise<Uint8Array> {
     if (!this.layers.has(layer)) await this.readLayer(layer);
     const prev = this.layers.get(layer)!;
     const raw = new Uint8Array(prev.raw);
@@ -212,6 +229,15 @@ export class Mk75Wireless implements Mk75Device {
       setU32(raw, i, wl);
     }
     setU32(raw, LAYER_SLOTS - 1, LAYER_TRAILER);
+    return raw;
+  }
+
+  private writeLayer(layer: number, m: Uint8Array): Promise<void> {
+    return this.exclusive(() => this.writeLayerNow(layer, m));
+  }
+
+  private async writeLayerNow(layer: number, m: Uint8Array): Promise<void> {
+    const raw = await this.encodeLayer(layer, m);
     await this.link.write(this.ops.setMatrix, layer, raw);
     this.layers.set(layer, { raw, view: new Uint8Array(m) });
     await sleep(50);
@@ -222,6 +248,10 @@ export class Mk75Wireless implements Mk75Device {
   }
   writeKeyMatrix(m: Uint8Array): Promise<void> {
     return this.writeLayer(0, m);
+  }
+  /** Dry run of writeKeyMatrix, so callers fail before the macro store is on flash. */
+  async checkKeyMatrix(m: Uint8Array): Promise<void> {
+    await this.encodeLayer(0, m);
   }
   /** Keymap layer 1: what each key does while Fn is held (hw-re-docs, real MK75). */
   readFnLayer(): Promise<Uint8Array> {
@@ -240,7 +270,11 @@ export class Mk75Wireless implements Mk75Device {
     return t;
   }
 
-  async writeRgbTable(t: Uint8Array): Promise<void> {
+  writeRgbTable(t: Uint8Array): Promise<void> {
+    return this.exclusive(() => this.writeRgbTableNow(t));
+  }
+
+  private async writeRgbTableNow(t: Uint8Array): Promise<void> {
     const buf = new Uint8Array(this.paletteRaw ?? new Uint8Array(PALETTE_LEN));
     buf.set(t.subarray(0, PALETTE_DATA));
     buf[0x1fa] = 0x5a;
@@ -259,6 +293,15 @@ export class Mk75Wireless implements Mk75Device {
     if (!this.caps.macros) throw new UnsupportedOverWireless('Macros are not supported on this receiver type.');
     if (pages.length > STORE_BLOCKS || pages.some((p, i) => p.sub !== i || p.data.length !== STORE_BLOCK))
       throw new Error('Invalid macro store blocks');
+    // The OEM app numbers macro ids across all layers; ours only plans the base layer, so rewriting the store
+    // would point macro keys on the Fn (1) or tap/hold (3) layer at the wrong macro.
+    for (const [layer, name] of [[1, 'Fn'], [3, 'tap/hold']] as const) {
+      const raw = await this.link.read(this.ops.getMatrix, layer, LAYER_LEN);
+      for (let i = 0; i < LAYER_SLOTS - 1; i++) {
+        if (raw[4 * i] === 0x03 && raw[4 * i + 1] !== 0)
+          throw new Error(`The ${name} layer has macro keys set by the official app. Remove them there first, or saving macros here would renumber them.`);
+      }
+    }
     if (this.kind === 'wired') {
       // Cable: one transfer, the block number in the frame addresses the sector.
       const all = new Uint8Array(pages.length * STORE_BLOCK);

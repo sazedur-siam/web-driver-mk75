@@ -90,7 +90,7 @@ export function validatePreset(x: unknown): Preset {
   if (o.lighting) {
     const L = o.lighting;
     const mode = LED_MODES[L.mode as number];
-    if (!mode || mode.hidden || !lvl(L.speed) || !lvl(L.brightness) || typeof L.colorful !== 'boolean' || !Number.isInteger(L.colorIndex) || L.colorIndex < 0 || L.colorIndex >= PALETTE_SIZE)
+    if (!Number.isInteger(L.mode) || !mode || mode.hidden || !lvl(L.speed) || !lvl(L.brightness) || typeof L.colorful !== 'boolean' || !Number.isInteger(L.colorIndex) || L.colorIndex < 0 || L.colorIndex >= PALETTE_SIZE)
       throw new Error('Preset lighting settings are invalid');
     if (L.palette && (!Array.isArray(L.palette) || L.palette.length !== PALETTE_SIZE || !L.palette.every(isRgb))) throw new Error('Preset palette is invalid');
     out.lighting = { mode: L.mode, speed: L.speed, brightness: L.brightness, colorful: L.colorful, colorIndex: L.colorIndex, palette: L.palette };

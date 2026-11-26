@@ -115,7 +115,11 @@ export class Mk75 implements Mk75Device {
     for (let attempt = 0; attempt < 3; attempt++) {
       await this.send(REPORT_CMD, Uint8Array.of(readOp, sub, 0, 0, 0, 0));
       await sleep(this.readDelay + attempt * 30);
-      const reply = await this.receive(REPORT_DATA);
+      let reply = await this.receive(REPORT_DATA);
+      // Some platforms keep the report ID on a reply that isn't exactly the descriptor size (see g5Wired.ts).
+      if (reply[0] === REPORT_DATA && reply[1] === readOp) reply = reply.subarray(1);
+      // A short block would be zero-padded and written back on the next save: retry instead.
+      if (reply.length < DATA_HEADER_LEN + len) continue;
       if (!requireEcho || reply[0] === readOp) return reply.slice(DATA_HEADER_LEN, DATA_HEADER_LEN + len);
     }
     throw new ProtocolError(`Device did not answer read 0x${readOp.toString(16)}/0x${sub.toString(16)}`);

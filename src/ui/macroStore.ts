@@ -15,10 +15,16 @@ interface MacroState {
 
 const empty: MacroState = { macros: [], assignments: {} };
 
+/** Shape check for stored or imported macro state (the tabs index into both fields). */
+export const isMacroState = (v: unknown): v is MacroState => {
+  const o = v as MacroState | null;
+  return !!o && Array.isArray(o.macros) && !!o.assignments && typeof o.assignments === 'object' && !Array.isArray(o.assignments);
+};
+
 function load(): MacroState {
   try {
     const v = JSON.parse(localStorage.getItem(KEY) || 'null');
-    return v && Array.isArray(v.macros) ? v : empty;
+    return isMacroState(v) ? v : empty;
   } catch {
     return empty;
   }

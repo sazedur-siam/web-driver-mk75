@@ -116,7 +116,8 @@ describe('Mk75G5Wired macros', () => {
     const plan = planMacros(new Map([[9, { macroId: 'b', mode: 1 as const }]]), [big], 'store');
     expect(plan.pages.map((p) => p.sub)).toEqual([0, 1]); // 4 + 7 + 560 bytes → 2 blocks
     await dev.writeMacroPages(plan.pages);
-    expect(t.sent.map((f) => hx(f.subarray(0, 7)))).toEqual(['05 00 00 02 00 00 02', '05 00 00 02 01 00 02']);
+    // Layers 1 and 3 are read first (OEM macro guard); only the 05 frames are the store write.
+    expect(t.sent.filter((f) => f[0] === 0x05).map((f) => hx(f.subarray(0, 7)))).toEqual(['05 00 00 02 00 00 02', '05 00 00 02 01 00 02']);
     const m = await dev.readKeyMatrix();
     await dev.writeKeyMatrix(setKeyCode(m, 9, plan.codes.get(9)!));
     expect(hx(t.blocks.get('3/0')!.subarray(36, 40))).toBe('03 01 01 00');

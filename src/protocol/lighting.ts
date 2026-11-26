@@ -76,10 +76,11 @@ export const LED_MODES: LedMode[] = LEDOPT.map((o, i) => ({
 }));
 
 /**
- * Number of per-mode slots the vendor writes: it loops over the count of *visible* effect names
- * (20 names - 3 masked = 17), indexing slots by LedOpt index. We never write past that.
+ * Number of per-mode slots we write. The vendor loops over the count of *visible* effect names, indexing
+ * slots by LedOpt index: the MK75 mask hides 4 (20 - 4 = 16), the AU75 build on the same firmware hides 3 (17).
+ * We use 17 so Blossoming (index 16, visible) keeps its speed/brightness (CLAUDE.md §5). Never write past that.
  */
-export const PER_MODE_SLOTS = LED_MODES.filter((m) => !m.hidden).length; // 17
+export const PER_MODE_SLOTS = 17;
 
 /** GaoshouIndex in KB.ini: the per-key custom ("Self-define") mode. */
 export const CUSTOM_MODE_INDEX = 18;
