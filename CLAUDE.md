@@ -200,7 +200,9 @@ src/ui/                  React tabs + browser stores (profileStore, macroStore, 
                          guide.ts/GuideView.tsx (MANUAL/README reader), report.ts/ReportDialog.tsx,
                          contribute.ts/ContributeDialog.tsx (device-data JSON; contents in DEVICE_DATA.md)
 src/presets/gallery.ts   bundled presets
-public/                  manifest, sw.js (cache name `mk75-vN`), icons, manual/*.webp screenshots
+public/                  manifest, sw.js (cache name `mk75-vN`), icons, favicon.svg, manual/*.webp screenshots
+desktop/                 Electron tray app: main.cjs serves ../dist on app://mk75 (secure context for WebHID),
+                         grants HID, auto-picks the device, answers getDisplayMedia; `npm run smoke` self-checks
 ```
 
 - **Data ownership:**

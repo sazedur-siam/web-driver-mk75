@@ -9,7 +9,7 @@ Live app: https://mk75-web.vercel.app/ · Repo: https://github.com/sazedur-siam/
 
 | # | Feature | Group | Priority | Effort | Needs hardware? |
 |---|---|---|---|---|---|
-| 19 | [Desktop tray app (always-on live effects)](19-desktop-tray-app.md) | Platform | P2 | M | No |
+| 19 | [Desktop tray app (always-on live effects)](19-desktop-tray-app.md) | Platform | P2 | M | No · first version built |
 
 Effort: S ≈ 1 day or less, M ≈ 2–4 days. "Verify only" = buildable now, but confirm on a real MK75.
 

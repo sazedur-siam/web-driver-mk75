@@ -141,8 +141,21 @@ export default function App() {
     const onDisconnect = () => {
       if (api.dev && !api.isDemo) void api.disconnect();
     };
+    // Plugging an already-allowed MK75 back in reconnects; its interfaces arrive one by one, so wait for all.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onConnect = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (!api.dev && !api.busy) void api.grantedDevices().then((d) => (d.length ? api.reconnect() : undefined));
+      }, 800);
+    };
     navigator.hid.addEventListener('disconnect', onDisconnect);
-    return () => navigator.hid.removeEventListener('disconnect', onDisconnect);
+    navigator.hid.addEventListener('connect', onConnect);
+    return () => {
+      clearTimeout(timer);
+      navigator.hid.removeEventListener('disconnect', onDisconnect);
+      navigator.hid.removeEventListener('connect', onConnect);
+    };
   }, [api, supported]);
 
   return (

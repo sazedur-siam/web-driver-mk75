@@ -175,7 +175,7 @@ Not built yet. Most need testing on a real MK75 first. Details are in [features/
 
 | Feature | What it will do | Status |
 |---|---|---|
-| **Desktop tray app** | Run live effects and music sync with no browser open, using system audio directly | Planned as a separate Electron app sharing this codebase |
+| **Desktop tray app** | Run live effects and music sync with no browser open, using system audio directly | First version in [desktop/](desktop/README.md) (tray, start at login, auto-reconnect, Windows system audio); no installers published yet |
 
 ---
 
