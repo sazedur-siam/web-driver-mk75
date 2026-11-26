@@ -41,5 +41,8 @@ export interface Mk75Device {
   sendLiveFrame(rgb: Uint8Array): Promise<void>;
   readBattery?(): Promise<{ level: number; charging: boolean } | null>;
   readSettings?(): Promise<KeyboardSettings>;
+  /** Keymap layer 1 (Fn held), wired view like readKeyMatrix. Layout B boards only. */
+  readFnLayer?(): Promise<Uint8Array>;
+  writeFnLayer?(m: Uint8Array): Promise<void>;
   writeSettings?(s: Partial<KeyboardSettings>): Promise<void>;
 }

@@ -201,6 +201,31 @@ describe('Mk75Wireless adapter against the simulator', () => {
     expect(getKeyCode(await dev.readKeyMatrix(), 9)).toBe(plan.codes.get(9)); // reads back as the wired macro code
   });
 
+  it('Fn layer: reads and writes layer 1 only, keeps firmware functions, round-trips lighting cells', async () => {
+    const { io, dev } = make();
+    const base = new Uint8Array(io.layers[0]);
+    const fn = await dev.readFnLayer();
+    expect(getKeyCode(fn, 78)).toBe(0xe9000004); // Fn+F12 = Volume+ in the wired view
+    expect(getKeyCode(fn, 88)).toBe(0x00010308); // lighting cell passes through raw
+    const lighting = getKeyCode(fn, 88);
+    // F12 → Play/Pause, Up → B
+    let m = setKeyCode(fn, 78, encodeAction({ kind: 'consumer', usage: 0xcd }));
+    m = setKeyCode(m, 88, encodeAction({ kind: 'key', usage: 0x05, mods: 0 }));
+    await dev.writeFnLayer(m);
+    const v = new DataView(io.layers[1].buffer);
+    expect(v.getUint32(78 * 4, true)).toBe(0xcd000002);
+    expect(v.getUint32(88 * 4, true)).toBe(0x05000000);
+    expect(v.getUint32(8 * 4, true)).toBe(0x16000007); // Fn+Q untouched
+    expect(io.layers[0]).toEqual(base);
+    // restoring the lighting cell from the saved view writes the raw code back
+    await dev.writeFnLayer(setKeyCode(await dev.readFnLayer(), 88, lighting));
+    expect(new DataView(io.layers[1].buffer).getUint32(88 * 4, true)).toBe(0x00010308);
+    // device functions and the Fn key are refused
+    const before = new Uint8Array(io.layers[1]);
+    await expect(dev.writeFnLayer(setKeyCode(await dev.readFnLayer(), 8, 0x05000000))).rejects.toThrow(/keyboard function/);
+    expect(io.layers[1]).toEqual(before);
+  });
+
   it('stock do-nothing macro cells (mode 0) and repeat counts stay raw', () => {
     expect(wirelessToWired(0x00000003)).toBeNull();
     expect(wirelessToWired(0x01000003)).toBeNull();

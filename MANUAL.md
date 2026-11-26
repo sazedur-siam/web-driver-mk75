@@ -110,6 +110,10 @@ Live effects run from your computer, so **keep the website open** while you use 
 
 To change the whole layout (Colemak, Dvorak, Mac-style keys), use the **Layout** box on the same tab.
 
+To change what a key does **while Fn is held** (for example Fn + F12), click **Fn layer** first (experimental,
+current MK75 boards). The mode, pairing and battery keys are locked so you can't lose them, and **Restore Fn layer**
+puts back the Fn layer as the app first read it.
+
 ![Key mapping tab](public/manual/key-mapping.webp)
 *Key mapping: click a key (here Caps Lock), choose its new job below, then Save to keyboard.*
 
