@@ -132,9 +132,17 @@ describe('Mk75Wireless adapter against the simulator', () => {
     await dev.writeProfile(p);
     expect([io.led[0x16], io.led[0x18]]).toEqual([0, 0]);
     const q = await dev.readProfile();
+    expect(q[0x11]).toBe(0xff);
     q[0x11] = 20;
     await dev.writeProfile(q);
-    expect([io.led[0x16], io.led[0x18]]).toEqual([1, 20]);
+    expect([io.led[0x16], io.led[0x18]]).toEqual([0, 20]); // tap/hold threshold untouched
+  });
+
+  it('reads sleep from byte 0x18 even when 0x16 (tap/hold) is 0', async () => {
+    const { io, dev } = make();
+    io.led[0x16] = 0;
+    io.led[0x18] = 2;
+    expect((await dev.readProfile())[0x11]).toBe(2);
   });
 
   it('key remap converts to wireless encoding and keeps the trailer', async () => {

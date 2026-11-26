@@ -25,7 +25,6 @@ export class MockWirelessIO implements ReportIO {
   constructor() {
     this.led[0x0a] = 1; // Fixed on
     this.led[0x0b] = CUSTOM_GROUP;
-    this.led[0x16] = 1;
     this.led[0x18] = 4; // sleep 120 s
     this.led[0x38] = this.led[0x39] = 0xff;
     for (let i = 0; i < 19; i++) {
