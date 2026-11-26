@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { KeyboardSettings } from '../protocol/device';
 import type { Battery } from './battery';
 import { BatteryIcon } from './BatteryIcon';
 import type { DeviceApi } from './useDevice';
@@ -54,7 +55,26 @@ export function DeviceTab({ api, battery }: { api: DeviceApi; battery: Battery |
   const [sleep, setSleep] = useState(current);
   useEffect(() => setSleep(current), [current]);
   const [notify, setNotify] = useState(() => ('Notification' in window ? Notification.permission : 'denied'));
+  const [settings, setSettings] = useState<KeyboardSettings | null>(null);
+  const [debounce, setDebounce] = useState(0);
+  useEffect(() => {
+    setSettings(null);
+    if (!dev?.readSettings) return;
+    void api.run('Reading keyboard settings', async () => {
+      const s = await dev.readSettings!();
+      setSettings(s);
+      setDebounce(s.debounce);
+    });
+  }, [dev]);
   if (!snap || !dev) return null;
+
+  const saveDebounce = () =>
+    api.run('Saving debounce', async () => {
+      await dev.writeSettings!({ debounce });
+      const s = await dev.readSettings!();
+      setSettings(s);
+      api.push({ dir: 'info', text: `Debounce set to level ${s.debounce + 1}` });
+    });
 
   const known = SLEEP_OPTIONS.some((o) => o.code === current);
   const saveSleep = () =>
@@ -132,6 +152,31 @@ export function DeviceTab({ api, battery }: { api: DeviceApi; battery: Battery |
             </button>
           </div>
         </section>
+
+        {settings && (
+          <section className="card">
+            <h2>
+              Debounce <span className="likely">experimental</span>
+            </h2>
+            <p className="muted small">
+              Raise it if a key sometimes types twice (check with the Key tester). Higher levels filter more chatter but
+              react slightly later.
+            </p>
+            <div className="row">
+              <select value={debounce} onChange={(e) => setDebounce(Number(e.target.value))} aria-label="Debounce level">
+                {[0, 1, 2, 3, 4].map((v) => (
+                  <option key={v} value={v}>
+                    Level {v + 1}
+                    {v === 2 ? ' (factory)' : ''}
+                  </option>
+                ))}
+              </select>
+              <button className="primary" disabled={debounce === settings.debounce || !!api.busy} onClick={saveDebounce}>
+                Save
+              </button>
+            </div>
+          </section>
+        )}
       </div>
 
       <section className="card">

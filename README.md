@@ -111,6 +111,7 @@ hardware. They are hidden on the live site and only appear when you run it local
 ### Device
 - Connection type, MK75 model check, battery level (on receivers that report it).
 - Sleep timer (Never, 30 s … 20 min).
+- Debounce level 1–5 (experimental; current MK75 boards over the cable or 2.4 GHz). Raise it if a key types twice.
 - Reference list of the MK75's built-in Fn shortcuts, with unconfirmed ones marked "likely".
 
 ### Backup & log
@@ -142,6 +143,7 @@ hardware. They are hidden on the live site and only appear when you run it local
 | Macros | ✅ | ❌ (edit only; writing needs the cable) |
 | Profiles and presets | ✅ | ✅ (macros skipped) |
 | Sleep timer | ✅ | ✅ |
+| Debounce | ✅ IC2481 boards (all current MK75s) | ✅ |
 | Battery level | n/a | receivers with report ID 0x13 |
 
 Bluetooth support assumes the keyboard exposes the same configuration interface as the receiver. It's not yet
@@ -173,7 +175,6 @@ Not built yet. Most need testing on a real MK75 first. Details are in [features/
 | **Macros over 2.4 GHz / Bluetooth** | Write macros without the cable, and read them back from the keyboard | Needs the wireless macro format finished, then hardware testing |
 | **Fn-layer remapping** | Change what Fn + key does, with one-click "restore Fn defaults" | Needs hardware reads to confirm the layer layout (likely over 2.4 GHz first) |
 | **Knob remapping** | Choose what the knob does (volume, brightness, scroll…) | Needs hardware testing of the knob's function codes |
-| **Debounce setting** | Adjust switch debounce to fix chatter | Needs hardware testing (wireless only; the wired protocol doesn't send it) |
 | **Low-battery alerts** | Battery icon in the header and a notification below 20 % / 10 % | Depends on which receiver type the MK75 ships with |
 | **Desktop tray app** | Run live effects and music sync with no browser open, using system audio directly | Planned as a separate Electron app sharing this codebase |
 

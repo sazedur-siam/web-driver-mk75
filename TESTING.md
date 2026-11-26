@@ -80,6 +80,7 @@ Use a text editor and a keyboard/mouse tester website.
 
 - [ ] **D1** (P1) Set the sleep timer to 30 s, switch to 2.4G and leave it idle. It sleeps after about 30 s.
 - [ ] **D2** (P1) With the sleep timer set to **Never**, it doesn't sleep within 5 minutes.
+- [ ] **D4** (P2) Set **Debounce** to level 5 and save, then unplug and replug. It still reads level 5, and the Key tester's chatter check flags fewer double presses than at level 1.
 - [ ] **D3** (P0) **Load backup** → Restore. Lighting, key mapping and macros return to the backup state.
 
 ## 8. 2.4 GHz receiver
