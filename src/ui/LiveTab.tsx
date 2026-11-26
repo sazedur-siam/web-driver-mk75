@@ -5,6 +5,7 @@ import { keyIndexForCode } from '../device/codeMap';
 import { SCREEN_MODES, ScreenSync, type ScreenMode } from '../protocol/screenSync';
 import { batteryColours, clockColours, coloursToFrame, timerColours } from '../protocol/signals';
 import { renderEffect } from '../protocol/effectDesigner';
+import { scrollTextFrame } from '../protocol/scrollText';
 import { EffectDesigner } from './EffectDesigner';
 import { effectStore } from './effectStore';
 import { Keyboard } from './Keyboard';
@@ -12,7 +13,8 @@ import { loadPerKey, perKeyMap } from './perKeyStore';
 import { startTicker } from './ticker';
 import type { DeviceApi } from './useDevice';
 
-const FRAME_MS = 30; // ~33 fps (vendor streams ~50 fps)
+const FRAME_MS = 30; // ~33 fps for existing effects
+const TEXT_FRAME_MS = 20; // target up to 50 fps; slow transports naturally drop ticks
 /** Screen sync samples a tiny downscaled frame: cheap, and plenty for 82 keys. */
 const SCREEN_W = 32;
 const SCREEN_H = 12;
@@ -21,7 +23,11 @@ type Source = 'solid' | 'rainbow' | 'perkey';
 
 export function LiveTab({ api }: { api: DeviceApi }) {
   const { dev, snap } = api;
-  const [kind, setKind] = useState<'effects' | 'music' | 'screen' | 'signals' | 'custom'>('effects');
+  const [kind, setKind] = useState<'effects' | 'music' | 'screen' | 'signals' | 'custom' | 'text'>('effects');
+  const [scrollText, setScrollText] = useState('HELLO 123');
+  const [textSpeed, setTextSpeed] = useState(3);
+  const [textWidth, setTextWidth] = useState<'narrow' | 'wide' | 'block'>('narrow');
+  const [textBottom, setTextBottom] = useState(true);
   const [customId, setCustomId] = useState(() => effectStore.get()[0].id);
   const pressedAt = useRef(new Map<number, number>());
   const [signal, setSignal] = useState<'timer' | 'clock' | 'battery'>('timer');
@@ -52,8 +58,8 @@ export function LiveTab({ api }: { api: DeviceApi }) {
   const sync = useRef(new ScreenSync());
   Object.assign(sync.current, { mode: screenMode, smooth: screenSmooth, saturation });
   const music = useRef(new MusicVisualizer(musicMode, gain, smooth, autoGain));
-  const cfg = useRef({ kind, source, color, brightness, signal, timerMin, battery, customId });
-  cfg.current = { kind, source, color, brightness, signal, timerMin, battery, customId };
+  const cfg = useRef({ kind, source, color, brightness, signal, timerMin, battery, customId, scrollText, textSpeed, textWidth, textBottom });
+  cfg.current = { kind, source, color, brightness, signal, timerMin, battery, customId, scrollText, textSpeed, textWidth, textBottom };
   effect.current.mode = rtMode;
   effect.current.speed = speed;
   Object.assign(music.current, { mode: musicMode, gain, smooth, autoGain });
@@ -85,7 +91,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
     const bins = new Uint8Array(128);
     let timerDone = false;
     let lastTimerLabel = '';
-    const ticker = startTicker(FRAME_MS, async () => {
+    const ticker = startTicker(kind === 'text' ? TEXT_FRAME_MS : FRAME_MS, async () => {
       if (busy) return; // never queue frames behind a slow USB write
       busy = true;
       try {
@@ -95,7 +101,9 @@ export function LiveTab({ api }: { api: DeviceApi }) {
           c.source === 'solid' ? { kind: 'solid', color: fromHex(c.color) } : c.source === 'perkey' ? { kind: 'perkey', colors: perkey, fallback: fromHex(c.color) } : { kind: 'rainbow' };
         let frame: Uint8Array;
         const bg = c.source === 'solid' ? fromHex(c.color) : ([60, 120, 90] as [number, number, number]);
-        if (c.kind === 'custom') {
+        if (c.kind === 'text') {
+          frame = scrollTextFrame(c.scrollText, t, c.textSpeed, fromHex(c.color), c.brightness, c.textWidth, c.textBottom);
+        } else if (c.kind === 'custom') {
           const fx = effectStore.get().find((e) => e.id === c.customId) ?? effectStore.get()[0];
           frame = coloursToFrame(renderEffect(fx, performance.now() / 1000, pressedAt.current), c.brightness);
         } else if (c.kind === 'signals') {
@@ -150,7 +158,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
       }
     });
     return () => ticker.stop();
-  }, [running, dev, setError]); // not `api`: it's a new object every render and would restart the clock
+  }, [running, dev, setError, kind]); // not `api`: it's a new object every render and would restart the clock
 
   // Laptop battery (Chrome: navigator.getBattery) for the battery signal.
   useEffect(() => {
@@ -322,8 +330,27 @@ export function LiveTab({ api }: { api: DeviceApi }) {
             <button role="tab" aria-selected={kind === 'custom'} className={kind === 'custom' ? 'on' : ''} onClick={() => setKind('custom')}>
               Custom
             </button>
+            <button role="tab" aria-selected={kind === 'text'} className={kind === 'text' ? 'on' : ''} onClick={() => setKind('text')}>
+              Scrolling text
+            </button>
           </div>
-          {kind === 'custom' ? (
+          {kind === 'text' ? (
+            <>
+              <div className="field">
+                <label className="field-l" htmlFor="scroll-message">Message</label>
+                <input id="scroll-message" type="text" maxLength={64} value={scrollText} onChange={(e) => setScrollText(e.target.value)} aria-describedby="scroll-hint" />
+                <p id="scroll-hint" className="hint">Up to 64 characters. Letters, numbers and . ! ? : - / are supported; other characters appear as ?. Text is uppercase on the keyboard. Tip: try squinting or viewing from a little farther away to blend the key lights into letters.</p>
+              </div>
+              <fieldset>
+                <legend>Font width</legend>
+                <label className="chk"><input type="radio" name="scroll-width" checked={textWidth === 'narrow'} onChange={() => setTextWidth('narrow')} /> Narrow (3 columns)</label>{' '}
+                <label className="chk"><input type="radio" name="scroll-width" checked={textWidth === 'wide'} onChange={() => setTextWidth('wide')} /> Wide (5 columns)</label>{' '}
+                <label className="chk"><input type="radio" name="scroll-width" checked={textWidth === 'block'} onChange={() => setTextWidth('block')} /> Block (7 columns)</label>
+              </fieldset>
+              <label className="chk"><input type="checkbox" checked={textBottom} onChange={(e) => setTextBottom(e.target.checked)} /> Include bottom row (Ctrl, Alt, Space, Fn and arrows)</label>
+              <Slider label="Scroll speed" min={1} max={10} step={0.5} value={textSpeed} onChange={setTextSpeed} fmt={(v) => `${v} columns/s`} />
+            </>
+          ) : kind === 'custom' ? (
             <EffectDesigner selectedId={customId} onSelect={setCustomId} />
           ) : kind === 'signals' ? (
             <>
@@ -411,7 +438,13 @@ export function LiveTab({ api }: { api: DeviceApi }) {
 
         <section className="card">
           <h2>Colour</h2>
-          {kind === 'screen' || kind === 'custom' ? (
+          {kind === 'text' ? (
+            <div className="row">
+              <label htmlFor="scroll-color">Text colour</label>
+              <input id="scroll-color" type="color" value={color} onChange={(e) => setColor(e.target.value)} className="color-big" />
+              <span className="muted small">Black background</span>
+            </div>
+          ) : kind === 'screen' || kind === 'custom' ? (
             <p className="muted small">{kind === 'screen' ? 'Colours come from the shared screen.' : 'Colours are set per layer in the designer.'}</p>
           ) : (
             <>
