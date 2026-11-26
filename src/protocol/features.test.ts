@@ -3,7 +3,7 @@ import { MK75_KEYS } from '../device/mk75Layout';
 import { keyIndexByName, parseColumns, parseUnits, UNIT_FILES } from '../device/mk75Units';
 import { decodeAction, getKeyCode } from './keycodes';
 import { compose, MusicVisualizer, RtEffect } from './live';
-import { encodeMacroSlot, encodeMacroStore, macroRefCode, MOUSE_USAGE, planMacros, type Macro } from './macro';
+import { encodeMacroSlot, encodeMacroStore, macroRefCode, macroStoreBytes, MOUSE_USAGE, planMacros, type Macro } from './macro';
 import { MockMk75 } from './mock';
 import { Mk75 } from './mk75';
 
@@ -68,7 +68,14 @@ describe('layout-B macro store (hw-re-docs example)', () => {
     const s = encodeMacroStore([
       { id: 'm', name: '', events: [{ usage: 0xe1, down: true, delay: 0x12345 }, { usage: MOUSE_USAGE.right, down: false, delay: 1 }, { usage: MOUSE_USAGE.middle, down: true, delay: 0 }] },
     ]);
-    expect([...s.subarray(5)]).toEqual([0x11, 0x23, 0x45, 0xe1, 0xa0, 0, 1, 2, 0x20, 0, 0, 4]);
+    expect([...s.subarray(5)]).toEqual([0x11, 0x23, 0x45, 0xe1, 0xa0, 0, 3, 2, 0x20, 0, 3, 4]); // delays ≥ 3 ms
+  });
+  it('macroStoreBytes matches the encoded size', () => {
+    const lib: Macro[] = [
+      { id: 'a', name: 'A long macro name here', events: [{ usage: 4, down: true, delay: 1 }, { usage: 0x1234, down: true, delay: 1 }] },
+      { id: 'b', name: '', events: [] },
+    ];
+    expect(macroStoreBytes(lib)).toBe(encodeMacroStore(lib).length);
   });
   it('directory points at each body and the store refuses more than 8 blocks', () => {
     const lib: Macro[] = [0, 1].map((i) => ({ id: `m${i}`, name: 'ab', events: [{ usage: 4 + i, down: true, delay: 1 }] }));

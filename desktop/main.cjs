@@ -17,7 +17,8 @@ let quitting = false;
 // WebHID needs a secure context, so serve dist/ from a privileged scheme instead of file://.
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, serviceWorkers: true } }]);
 
-if (!app.requestSingleInstanceLock()) app.quit();
+const primary = app.requestSingleInstanceLock();
+if (!primary) app.quit();
 app.on('second-instance', () => show());
 app.on('activate', () => show());
 app.on('before-quit', () => (quitting = true));
@@ -51,9 +52,11 @@ function permissions() {
   });
   // Music / screen sync: answer getDisplayMedia with the main screen and system audio, no share dialog.
   // shortcut: audio loopback is Windows-only here; macOS needs ScreenCaptureKit audio or a virtual device.
-  ses.setDisplayMediaRequestHandler(async (req, cb) => {
-    const [screen] = await desktopCapturer.getSources({ types: ['screen'] });
-    cb({ video: screen, audio: req.audioRequested && process.platform === 'win32' ? 'loopback' : undefined });
+  ses.setDisplayMediaRequestHandler((req, cb) => {
+    desktopCapturer.getSources({ types: ['screen'] }).then(
+      ([screen]) => cb(screen ? { video: screen, audio: req.audioRequested && process.platform === 'win32' ? 'loopback' : undefined } : {}),
+      () => cb({}), // no screen: the page gets a normal "permission denied" instead of hanging
+    );
   });
 }
 
@@ -116,6 +119,7 @@ async function smoke() {
 }
 
 app.whenReady().then(() => {
+  if (!primary) return; // a second launch only focuses the running app
   serve();
   permissions();
   const hidden = SMOKE || process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAtLogin;

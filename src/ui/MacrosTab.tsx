@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MK75_KEYS } from '../device/mk75Layout';
 import { HID_KEYS, HID_MODIFIERS } from '../protocol/keycodes';
-import { MACRO_SLOT, MAX_MACROS, macroBytes, MOUSE_USAGE, RepeatMode, type Macro, type MacroEvent } from '../protocol/macro';
+import { MACRO_SLOT, MAX_MACROS, macroBytes, macroStoreBytes, MOUSE_USAGE, RepeatMode, STORE_BYTES, type Macro, type MacroEvent } from '../protocol/macro';
 import { splitText, textToEvents } from '../protocol/textMacro';
 import { macroStore, newId, useMacros } from './macroStore';
 import { saveKeysAndMacros } from './saveKeys';
@@ -99,6 +99,8 @@ export function MacrosTab({ api }: { api: DeviceApi }) {
   const bytes = editing ? macroBytes(editing.events) : 0;
   const dirty = editing && JSON.stringify(store.macros.find((m) => m.id === editing.id)) !== JSON.stringify(editing);
   const assignedCount = Object.keys(store.assignments).length;
+  const assignedIds = new Set(Object.values(store.assignments).map((a) => a.macroId));
+  const storeUsed = api.dev?.caps.macros === 'store' ? macroStoreBytes(store.macros.filter((m) => assignedIds.has(m.id))) : null;
 
   const writeAll = () =>
     api.snap &&
@@ -142,6 +144,12 @@ export function MacrosTab({ api }: { api: DeviceApi }) {
             setEditing(ms[0]);
           }}
         />
+        {storeUsed !== null && (
+          <p className={`hint${storeUsed > STORE_BYTES ? ' warn' : ''}`}>
+            Keyboard macro memory: {storeUsed} of {STORE_BYTES} bytes used by assigned macros
+            {storeUsed > STORE_BYTES ? '. Too much to save: shorten or unassign some.' : '.'}
+          </p>
+        )}
         {api.dev && !api.dev.caps.macros && (
           <p className="hint warn">You can edit macros here, but this receiver type can't store them. Connect the USB cable.</p>
         )}

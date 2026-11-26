@@ -36,7 +36,11 @@ export function ProfilesTab({ api }: { api: DeviceApi }) {
     const out: string[] = [];
     if (!eq(fromHex(p.profile), snap.profile)) out.push('lighting');
     if (!eq(fromHex(p.rgbTable), snap.rgbTable)) out.push('palette');
-    if (!eq(profileMatrix(p, dev.caps.macros, snap.matrix).matrix, snap.matrix)) out.push('keys');
+    try {
+      if (!eq(profileMatrix(p, dev.caps.macros, snap.matrix).matrix, snap.matrix)) out.push('keys');
+    } catch {
+      out.push('keys'); // macros don't fit; Apply shows the error instead of crashing the page
+    }
     return out;
   };
 
