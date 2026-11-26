@@ -12,6 +12,14 @@ export interface DeviceCaps {
   battery: boolean;
 }
 
+/** Config-block settings the wired 254-byte profile has no field for (layout B boards only). */
+export interface KeyboardSettings {
+  /** Debounce level 0..4 (layout B byte 0x03; the official app shows level + 1). */
+  debounce: number;
+  /** Knob mode (byte 0x1A): 0 = media (volume), 1 = lighting (brightness / effect). */
+  knob: number;
+}
+
 export interface Mk75Device {
   readonly kind: 'wired' | 'wireless';
   readonly transport: { readonly name: string; close(): Promise<void> };
@@ -30,4 +38,6 @@ export interface Mk75Device {
   readonly canStream: boolean;
   sendLiveFrame(rgb: Uint8Array): Promise<void>;
   readBattery?(): Promise<{ level: number; charging: boolean } | null>;
+  readSettings?(): Promise<KeyboardSettings>;
+  writeSettings?(s: Partial<KeyboardSettings>): Promise<void>;
 }

@@ -172,7 +172,7 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
 - **Deliberate choice:** we write per-effect slots for i < 17 (`PER_MODE_SLOTS`). The MK75 vendor build writes 16
   because of its `LedMask=0x22120`, but the AU75 build writes 17 on the same firmware generation, so effect 16
   (Blossoming) settings are saved too.
-- **Hardware checklist:** `TESTING.md`. Pending features that need hardware: `features/14–18`.
+- **Hardware checklist:** `TESTING.md`. Pending features that need hardware: `features/` (14, 15, 18).
 
 ---
 
@@ -267,7 +267,8 @@ npm run build    # tsc -b && vite build → dist/
   translation happens only inside the adapter.
 - **Firmware version:** only in USB `bcdDevice`, which WebHID doesn't expose.
 - **Factory reset:** there's no reset command on the wired class.
-- **Debounce:** shown in the vendor UI but never sent over the cable.
+- **Debounce:** layout B byte `0x03` (0–4, the vendor UI shows +1), from hw-re-docs tests on a real MK75. The
+  CDev916KB wired class never sends it.
 - **GitHub issues:** they need an account. "Report an Issue" builds a pre-filled `issues/new` URL (≤ 7 KB);
   screenshots are pasted on GitHub.
 - **Footer flag:** the Bangladesh flag is an inline SVG ("Ported in Bangladesh"), because Windows renders flag

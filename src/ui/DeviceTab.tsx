@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { KeyboardSettings } from '../protocol/device';
 import type { Battery } from './battery';
 import { BatteryIcon } from './BatteryIcon';
 import type { DeviceApi } from './useDevice';
@@ -18,6 +19,8 @@ const SLEEP_OPTIONS: { label: string; code: number }[] = [
   { label: '20 minutes', code: 40 },
 ];
 const P_SLEEP = 0x11;
+/** Knob mode by config value (layout B byte 0x1A). */
+const KNOB_MODES = ['Volume (media)', 'Lighting (brightness, effect)'];
 
 /**
  * On-keyboard shortcuts. Confirmed = official MK75 product sheet and/or KB.ini [FN1] codes;
@@ -54,7 +57,28 @@ export function DeviceTab({ api, battery }: { api: DeviceApi; battery: Battery |
   const [sleep, setSleep] = useState(current);
   useEffect(() => setSleep(current), [current]);
   const [notify, setNotify] = useState(() => ('Notification' in window ? Notification.permission : 'denied'));
+  const [settings, setSettings] = useState<KeyboardSettings | null>(null);
+  const [draft, setDraft] = useState<KeyboardSettings | null>(null);
+  useEffect(() => {
+    setSettings(null);
+    if (!dev?.readSettings) return;
+    void api.run('Reading keyboard settings', async () => {
+      const s = await dev.readSettings!();
+      setSettings(s);
+      setDraft(s);
+    });
+  }, [dev]);
   if (!snap || !dev) return null;
+
+  const settingsChanged = !!settings && !!draft && (draft.debounce !== settings.debounce || draft.knob !== settings.knob);
+  const saveSettings = () =>
+    api.run('Saving keyboard settings', async () => {
+      await dev.writeSettings!(draft!);
+      const s = await dev.readSettings!();
+      setSettings(s);
+      setDraft(s);
+      api.push({ dir: 'info', text: `Debounce level ${s.debounce + 1}, knob: ${KNOB_MODES[s.knob] ?? `code ${s.knob}`}` });
+    });
 
   const known = SLEEP_OPTIONS.some((o) => o.code === current);
   const saveSleep = () =>
@@ -132,6 +156,49 @@ export function DeviceTab({ api, battery }: { api: DeviceApi; battery: Battery |
             </button>
           </div>
         </section>
+
+        {settings && draft && (
+          <section className="card">
+            <h2>
+              Keyboard settings <span className="likely">experimental</span>
+            </h2>
+            <dl className="shortcuts">
+              <div>
+                <dt>Debounce</dt>
+                <dd>
+                  <select value={draft.debounce} onChange={(e) => setDraft({ ...draft, debounce: Number(e.target.value) })} aria-label="Debounce level">
+                    {[0, 1, 2, 3, 4].map((v) => (
+                      <option key={v} value={v}>
+                        Level {v + 1}
+                        {v === 2 ? ' (factory)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </dd>
+              </div>
+              <div>
+                <dt>Knob</dt>
+                <dd>
+                  <select value={draft.knob} onChange={(e) => setDraft({ ...draft, knob: Number(e.target.value) })} aria-label="Knob mode">
+                    {!(draft.knob in KNOB_MODES) && <option value={draft.knob}>Unknown (code {draft.knob})</option>}
+                    {KNOB_MODES.map((label, v) => (
+                      <option key={v} value={v}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </dd>
+              </div>
+            </dl>
+            <p className="muted small">
+              Raise debounce if a key sometimes types twice (check with the Key tester); higher levels react slightly later.
+              Holding the knob for 3 s also switches its mode.
+            </p>
+            <button className="primary" disabled={!settingsChanged || !!api.busy} onClick={saveSettings}>
+              Save
+            </button>
+          </section>
+        )}
       </div>
 
       <section className="card">

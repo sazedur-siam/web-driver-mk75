@@ -11,8 +11,6 @@ Live app: https://mk75-web.vercel.app/ · Repo: https://github.com/sazedur-siam/
 |---|---|---|---|---|---|
 | 14 | [Macros over 2.4 GHz](14-wireless-macros.md) | Needs RE | P1 | M | Yes |
 | 15 | [Fn-layer remapping](15-fn-layers.md) | Needs RE | P2 | M | Yes |
-| 16 | [Knob remapping](16-knob.md) | Needs RE | P2 | S | Yes |
-| 17 | [Debounce setting](17-debounce.md) | Needs RE | P2 | S | Yes |
 | 18 | [Low-battery alerts](18-battery-alerts.md) | Needs RE | P2 | S | Yes |
 | 19 | [Desktop tray app (always-on live effects)](19-desktop-tray-app.md) | Platform | P2 | M | No |
 
