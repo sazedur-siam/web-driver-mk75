@@ -139,7 +139,13 @@ or `0x13` (`CDev3632`); pick by the descriptor.
 ```
 
 Replies echo `cmd`; bit 7 of `total` = busy. Writes: 14-byte chunks, 15 ms apart, per-packet ack, ≤ 5 retries.
-Reads: one request, then `total` reply packets.
+Reads: one request, then `total` reply packets. On a real `0x13` receiver (issue #31) the LED block arrives whole
+(128 B) but the keymap stops at 504 of 512 bytes and the palette at 490: the missing keymap bytes are slot 126 (zero)
+and the trailer, the missing palette bytes are fixed (see below).
+
+Palette bytes 483–511 (cable read, issue #29): `03 00 00 00 00 C6` (copy of the model id, used as the model check
+over 2.4 GHz), `00 00 10`, zeros, `5A A5 00 10 00 00`. The vendor app writes 490–511 back as zeros after a 2.4 GHz
+read; we restore these values when 483–489 match.
 
 | Write / read | Content |
 |---|---|
