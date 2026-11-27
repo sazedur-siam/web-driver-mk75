@@ -20,23 +20,23 @@ Please send one file per connection mode you can use: **USB cable**, **2.4 GHz r
 | `log` | The last ~400 configuration packets between the app and the keyboard (full bytes) | Shows exactly what the keyboard replies |
 | `browser`, `app` | Browser user-agent string (includes your OS) and app version | Reproducing problems |
 | `note` | Whatever you typed in the Notes box | Your description |
-| `probe` | Only if you ran the **side-light probe**: each snapshot of the keyboard's readable blocks (128-byte settings, palette, key-map layers 0–3) and which shortcut you pressed before it. `null` otherwise | Finding where the keyboard stores the side-light settings, so the app can change them |
+| `probe` | Only if you ran the **side-light probe**: each snapshot of the keyboard's readable blocks (128-byte settings, palette, key-map layers 0–3), which shortcut the step asked for, how the press was noticed, any messages the keyboard sent, and the key codes the page saw during the test. `null` otherwise | Finding where the keyboard stores the side-light settings, so the app can change them |
 
 ### Side-light probe
 
 The dialog has an optional **Side-light probe** section (USB on newer boards, 2.4 GHz and Bluetooth). It only
-reads; nothing is written to the keyboard. To run it:
+reads; nothing is written to the keyboard.
 
-1. Click **Take snapshot**.
-2. Check that the probe sees changes: press **Fn + F6** (or **Fn + F5**) so the key backlight gets brighter
-   (or dimmer), then click **Fn + F5 or F6**. It should report a changed byte.
-3. Press **one** side-light shortcut on the keyboard, **Fn + Right Shift** (mode), **Fn + /** (colour), **Fn +
-   Right Ctrl** (speed) or **Fn + Right Alt** (brightness), then click the same shortcut in the dialog. Repeat
-   until each setting has gone all the way round.
-4. Unplug the keyboard and plug it back in with the dialog open (it reconnects by itself), then click **check
-   after reconnecting**.
+Click **Start the test** and follow the instructions on screen. Each step names one shortcut to press: first
+**Fn + F6** (a control check: the key backlight brightness is a known setting), then the side-light shortcuts
+**Fn + Right Shift** (mode), **Fn + /** (colour), **Fn + Right Ctrl** (speed) and **Fn + Right Alt**
+(brightness), and finally unplugging and plugging the keyboard back in.
 
-The section lists the bytes that changed after each click. Save the file and attach it as usual.
+A step moves on when the page notices the press: a changed byte in any readable block (polled about once a
+second), a message the keyboard sends by itself, or the key event if the keyboard passes it to the computer. If
+the computer sees a different key, the page says so and waits. If nothing can be noticed, after 8 seconds the
+page offers **I pressed it, nothing was detected**. That outcome is useful data too. Save the file and attach
+it as usual.
 
 ## What it never contains
 

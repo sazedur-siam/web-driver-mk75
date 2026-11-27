@@ -52,4 +52,9 @@ export interface Mk75Device {
    * knob ...), `palette`, `keymap 0`..`keymap 3`. Read-only, for diagnostics such as the side-light probe.
    */
   readRawBlocks?(): Promise<Record<string, Uint8Array>>;
+  /**
+   * Input reports the keyboard sends unasked on its vendor interface (diagnostics). Returns the unsubscribe
+   * function, or null where the connection can't tell them apart from protocol replies (2.4 GHz, Bluetooth).
+   */
+  onRawInput?(cb: (reportId: number, data: Uint8Array) => void): (() => void) | null;
 }

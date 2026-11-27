@@ -69,7 +69,12 @@ export function ContributeDialog({ api, onClose }: { api: DeviceApi; onClose: ()
                 onChange={(e) => setNote(e.target.value)}
               />
             </label>
-            <SideLightProbePanel api={api} reads={probe} setReads={setProbe} />
+          </>
+        )}
+        {/* Same place in the tree with or without a device: it must survive the unplug in its re-plug step. */}
+        <SideLightProbePanel api={api} reads={probe} setReads={setProbe} />
+        {data && (
+          <>
             <details>
               <summary>
                 Preview file ({Math.round(json.length / 1024)} KB, {data.hid.length} HID interface{data.hid.length === 1 ? '' : 's'}, {data.log.length} log lines)

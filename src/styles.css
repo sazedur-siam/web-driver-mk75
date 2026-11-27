@@ -411,17 +411,12 @@ footer p { margin: 2px 0; }
 .diag-preview { max-height: 180px; overflow: auto; background: var(--surface-2); padding: 8px; border-radius: 8px; }
 .probe { margin: 8px 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
 .probe > summary { cursor: pointer; font-weight: 600; }
-.probe-step { display: flex; gap: 10px; align-items: flex-start; margin: 12px 0; }
-.probe-step.off { opacity: 0.45; }
-.probe-num { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 13px; }
-.probe-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.probe-done { color: var(--ok); font-weight: 600; font-size: 13px; }
-.probe-keys { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
-.probe-keys button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 8px; }
-.probe-key { font-weight: 700; }
-.probe-what { font-size: 12px; color: var(--muted); }
-.probe-inline { font-size: 12px; padding: 2px 10px; }
-.probe-last { margin: 8px 0; padding: 8px 10px; border-radius: 8px; background: var(--surface-2); font-size: 13px; }
+.probe-now { margin: 10px 0; padding: 14px 16px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.probe-now p { margin: 0; }
+.probe-progress { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.probe-prompt { font-size: 22px; font-weight: 700; line-height: 1.25; }
+.probe-nudge { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 4px; border-top: 1px solid var(--border); }
+.probe-ok { color: var(--ok); }
 .probe-h { margin: 12px 0 4px; font-size: 13px; }
 .probe-reads { margin: 8px 0; padding-left: 20px; max-height: 200px; overflow: auto; }
 .probe-reads li { margin-bottom: 4px; }

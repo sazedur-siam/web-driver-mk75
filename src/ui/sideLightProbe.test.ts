@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { WirelessLink } from '../protocol/wireless/link';
 import { MockWirelessIO } from '../protocol/wireless/mockWireless';
 import { Mk75Wireless } from '../protocol/wireless/mk75Wireless';
-import { byteLabel, describeOffset, diffReads, probeForFile, summarise, type ProbeRead } from './sideLightProbe';
+import { byteLabel, describeOffset, diffReads, GUIDE, judgeKey, probeForFile, summarise, type ProbeRead } from './sideLightProbe';
 
 const fast = { pace: 0, livePace: 0, ackMs: 300, readMs: 300 };
 
@@ -60,6 +60,31 @@ describe('side-light probe', () => {
     expect(r.blocks.led).toHaveLength(256);
     expect(r.blocks.led.slice(-4)).toBe('5aa5');
     expect(r.blocks.palette).toHaveLength(0x400);
+  });
+
+  it('guides through the control check, every side-light shortcut, then a re-plug', () => {
+    expect(GUIDE[0]).toMatchObject({ action: 'check', kind: 'press' });
+    expect(GUIDE.at(-1)).toMatchObject({ action: 'replug', kind: 'replug' });
+    const count = (a: string) => GUIDE.filter((s) => s.action === a).length;
+    expect([count('mode'), count('colour'), count('speed'), count('brightness')]).toEqual([5, 4, 3, 3]);
+    // Colours only change in steady/breathe, so the user sets that up before the colour presses.
+    expect(GUIDE.findIndex((s) => s.kind === 'setup')).toBe(GUIDE.findIndex((s) => s.action === 'colour') - 1);
+    for (const s of GUIDE.filter((x) => x.kind === 'press')) expect(s.codes?.length).toBeGreaterThan(0);
+  });
+
+  it('accepts the expected key, ignores modifiers and flags anything else', () => {
+    const mode = GUIDE.find((s) => s.action === 'mode')!;
+    expect(judgeKey(mode, 'ShiftRight')).toBe('right');
+    expect(judgeKey(mode, 'ControlRight')).toBe('ignore');
+    expect(judgeKey(mode, 'KeyA')).toBe('wrong');
+    expect(judgeKey(GUIDE[0], 'F5')).toBe('right');
+    expect(judgeKey(GUIDE[0], 'F7')).toBe('wrong');
+  });
+
+  it('keeps how each press was detected in the file', () => {
+    const [r] = probeForFile([{ ...read('mode', led()), signal: 'hid', hid: ['0601'], keys: [] }]);
+    expect(r).toMatchObject({ signal: 'hid', hid: ['0601'] });
+    expect('keys' in r).toBe(false);
   });
 
   it('reads every block from the simulator without writing or touching the caches', async () => {

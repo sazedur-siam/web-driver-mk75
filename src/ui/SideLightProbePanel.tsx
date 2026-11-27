@@ -1,100 +1,249 @@
-import { actionLabel, byteLabel, describeOffset, diffReads, hex2, PROBE_ACTIONS, probeAction, summarise, type ProbeAction, type ProbeRead } from './sideLightProbe';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { toHex } from './profileStore';
+import {
+  actionLabel,
+  byteLabel,
+  describeOffset,
+  diffReads,
+  GUIDE,
+  hex2,
+  judgeKey,
+  probeAction,
+  summarise,
+  type ProbeRead,
+  type ProbeSignal,
+} from './sideLightProbe';
 import type { DeviceApi } from './useDevice';
 
-const SHORTCUTS = PROBE_ACTIONS.filter((a) => ['mode', 'colour', 'speed', 'brightness'].includes(a.id));
-const READING = 'Reading the keyboard';
+const POLL_MS = 800;
+/** After this long without a detected press, offer "I pressed it, nothing was detected". */
+const NUDGE_MS = 8000;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-/** "1 byte changed: led 0x06 00 → 02" for read i (compared with the read before it). */
-function resultText(reads: ProbeRead[], i: number) {
+const SIGNAL_TEXT: Record<ProbeSignal, string> = {
+  bytes: 'detected: a byte changed',
+  hid: 'detected: the keyboard sent a message',
+  key: 'detected: the computer saw the key',
+  none: 'not detected (you confirmed the press)',
+};
+
+function changesText(reads: ProbeRead[], i: number) {
   const changes = diffReads(reads[i - 1], reads[i]);
-  if (changes.length === 0) return 'nothing changed';
-  const shown = changes.slice(0, 8).map((c) => `${byteLabel(c.block, c.offset)} ${hex2(c.from)} → ${hex2(c.to)}`);
-  if (changes.length > 8) shown.push(`… ${changes.length - 8} more`);
-  return `${changes.length} byte${changes.length === 1 ? '' : 's'} changed: ${shown.join(', ')}`;
-}
-
-function Step({ n, off, children }: { n: number; off?: boolean; children: ReactNode }) {
-  return (
-    <div className={`probe-step${off ? ' off' : ''}`}>
-      <span className="probe-num">{n}</span>
-      <div className="probe-body">{children}</div>
-    </div>
-  );
+  if (changes.length === 0) return 'no bytes changed';
+  const shown = changes.slice(0, 6).map((c) => `${byteLabel(c.block, c.offset)} ${hex2(c.from)} → ${hex2(c.to)}`);
+  if (changes.length > 6) shown.push(`… ${changes.length - 6} more`);
+  return shown.join(', ');
 }
 
 /**
- * Read-only side-light probe inside "Contribute device data": snapshot the keyboard's blocks, press a shortcut on
- * the keyboard, click the same shortcut here, see which bytes moved. Layout B boards only (readRawBlocks).
+ * Guided, read-only side-light probe inside "Contribute device data". Each step tells the user which shortcut to
+ * press and only moves on when the page detects it: a byte change in any readable block (polled), an input report
+ * from the vendor interface, or the key event itself. If nothing is detectable, the user can confirm the press.
+ * Stays mounted while the keyboard is unplugged, so the re-plug step can finish after the automatic reconnect.
  */
 export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; reads: ProbeRead[]; setReads: (r: ProbeRead[]) => void }) {
-  const dev = api.dev;
-  if (!dev?.readRawBlocks) return null;
+  const dev = api.dev?.readRawBlocks ? api.dev : null;
+  /** -1 = not started, GUIDE.length = finished. */
+  const [step, setStep] = useState(-1);
+  const [wrongKey, setWrongKey] = useState<string | null>(null);
+  const [nudge, setNudge] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [working, setWorking] = useState(false);
+  const readsRef = useRef(reads);
+  readsRef.current = reads;
+  const seen = useRef<{ hid: string[]; keys: string[] }>({ hid: [], keys: [] });
+  const replugFrom = useRef<unknown>(null);
+  /** The step already recorded: the poll, a keyboard message and the user's button can all finish the same step. */
+  const recordedFor = useRef(-2);
 
-  const read = (action: ProbeAction) =>
-    api.run(READING, async () => {
-      const blocks = await dev.readRawBlocks!();
-      setReads([...reads, { t: Date.now(), action, blocks }]);
+  const cur = step >= 0 && step < GUIDE.length ? GUIDE[step] : null;
+
+  const record = (blocks: Record<string, Uint8Array>, signal?: ProbeSignal) => {
+    if (recordedFor.current === step) return;
+    recordedFor.current = step;
+    const action = step < 0 ? 'baseline' : GUIDE[step].action;
+    const extra = signal ? { signal, hid: [...seen.current.hid], keys: [...seen.current.keys] } : {};
+    setReads([...readsRef.current, { t: Date.now(), action, blocks, ...extra }]);
+    setStep((s) => s + 1);
+  };
+
+  /** Read now and record (start, Ready, "I pressed it"). */
+  const readAndRecord = async (signal?: ProbeSignal) => {
+    if (!dev) return;
+    setWorking(true);
+    try {
+      record(await dev.readRawBlocks!(), signal);
+      setError(null);
+    } catch (e) {
+      setError(errText(e));
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  // A press step: watch for the press, then record the blocks and move on.
+  useEffect(() => {
+    if (!cur || cur.kind !== 'press' || !dev) return;
+    const ref = readsRef.current[readsRef.current.length - 1];
+    let finished = false;
+    let cancelled = false;
+    seen.current = { hid: [], keys: [] };
+    setWrongKey(null);
+    setNudge(false);
+
+    const finish = async (signal: ProbeSignal, blocks?: Record<string, Uint8Array>) => {
+      if (finished) return;
+      finished = true;
+      try {
+        if (!blocks) {
+          await sleep(500); // let the firmware finish whatever the key started
+          blocks = await dev.readRawBlocks!();
+        }
+        if (!cancelled) record(blocks, signal);
+      } catch (e) {
+        finished = false;
+        if (!cancelled) setError(errText(e));
+      }
+    };
+
+    const off = dev.onRawInput?.((id, data) => {
+      seen.current.hid.push(hex2(id) + toHex(data));
+      void finish('hid');
     });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      seen.current.keys.push(e.code);
+      const verdict = judgeKey(cur, e.code);
+      if (verdict === 'right') void finish('key');
+      else if (verdict === 'wrong') setWrongKey(e.code);
+    };
+    window.addEventListener('keydown', onKey, true);
+    const nudgeTimer = setTimeout(() => setNudge(true), NUDGE_MS);
 
-  const started = reads.length > 0;
-  const busy = !!api.busy;
-  const last = reads.length - 1;
+    void (async () => {
+      while (!finished && !cancelled) {
+        await sleep(POLL_MS);
+        if (finished || cancelled) break;
+        try {
+          const blocks = await dev.readRawBlocks!();
+          if (!cancelled) setError(null);
+          if (diffReads(ref, { ...ref, blocks }).length > 0) await finish('bytes', blocks);
+        } catch (e) {
+          if (!cancelled) setError(errText(e));
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      off?.();
+      window.removeEventListener('keydown', onKey, true);
+      clearTimeout(nudgeTimer);
+    };
+  }, [step, dev]);
+
+  // The re-plug step: remember the connection it started on, record once a new one appears.
+  useEffect(() => {
+    if (cur?.kind !== 'replug') return;
+    if (!replugFrom.current) replugFrom.current = dev ?? 'gone';
+    if (!dev || dev === replugFrom.current) return;
+    let cancelled = false;
+    void (async () => {
+      await sleep(500);
+      if (cancelled) return;
+      replugFrom.current = null;
+      await readAndRecord();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, dev]);
+
+  if (!dev && reads.length === 0) return null;
+
+  const started = step >= 0;
+  const finished = step >= GUIDE.length;
   const summary = summarise(reads);
-  const key = (a: (typeof PROBE_ACTIONS)[number]) => (
-    <button key={a.id} disabled={!started || busy} onClick={() => read(a.id)}>
-      <span className="probe-key">{a.keys}</span>
-      <span className="probe-what">{a.what}</span>
-    </button>
-  );
+  const restart = () => {
+    setReads([]);
+    setStep(-1);
+    setError(null);
+    replugFrom.current = null;
+    recordedFor.current = -2;
+  };
 
   return (
-    // Re-opens itself after a reconnect (the panel unmounts while the keyboard is unplugged).
+    // Open while a test runs, so it survives the dialog re-rendering during a reconnect.
     <details className="probe" open={started || undefined}>
       <summary>Side-light probe: help add side-light control</summary>
-      <p className="muted small">It only reads the keyboard; nothing is changed.</p>
+      <p className="muted small">A guided test. The page tells you which keys to press and moves on when it notices each press. It only reads the keyboard; nothing is changed.</p>
 
-      <Step n={1}>
-        <b>Take a snapshot</b> of the keyboard's current settings.
-        <div>
-          {started ? (
-            <span className="probe-done">✓ Done</span>
-          ) : (
-            <button className="primary" disabled={busy} onClick={() => read('baseline')}>
-              Take snapshot
+      {!started && (
+        <button className="primary" disabled={!dev || working} onClick={() => void readAndRecord()}>
+          Start the test
+        </button>
+      )}
+
+      {cur && (
+        <div className="probe-now">
+          <div className="probe-progress">
+            Step {step + 1} of {GUIDE.length}
+          </div>
+          <div className="probe-prompt">{cur.prompt}</div>
+          <p className="small">{cur.detail}</p>
+          {cur.kind === 'press' && (
+            <>
+              <p className="hint">{dev ? 'Waiting for the key press…' : 'Keyboard disconnected. Plug it back in.'}</p>
+              {wrongKey && (
+                <p className="hint warn">
+                  The computer saw <b>{wrongKey}</b>, which isn't this shortcut. {cur.prompt}.
+                </p>
+              )}
+              {nudge && (
+                <div className="probe-nudge">
+                  <span className="small">Pressed it but nothing happened here? The keyboard may not report this change.</span>
+                  <button disabled={!dev || working} onClick={() => void readAndRecord('none')}>
+                    I pressed it, nothing was detected
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          {cur.kind === 'setup' && (
+            <button className="primary" disabled={!dev || working} onClick={() => void readAndRecord()}>
+              Ready
             </button>
           )}
+          {cur.kind === 'replug' && <p className="hint">{dev ? 'Waiting for the keyboard to disconnect…' : 'Disconnected. Plug it back in…'}</p>}
         </div>
-      </Step>
+      )}
 
-      <Step n={2} off={!started}>
-        <b>Check that the probe sees changes.</b> Press Fn + F6 (or Fn + F5) on the keyboard so the key backlight gets brighter (or dimmer), then click
-        this. It should say a byte changed.
-        <div className="probe-keys">{key(probeAction('check'))}</div>
-      </Step>
+      {finished && (
+        <div className="probe-now">
+          <div className="probe-prompt">✓ All done</div>
+          <p className="small">Thanks! Save the file below, or send a screenshot of this section.</p>
+        </div>
+      )}
 
-      <Step n={3} off={!started}>
-        <b>Press a side-light shortcut on the keyboard, then click the same shortcut here.</b> Repeat each one until the setting comes back round.
-        <div className="probe-keys">{SHORTCUTS.map(key)}</div>
-        <p className="small muted">
-          Finally, unplug the keyboard and plug it back in. Keep this window open: it reconnects by itself. Then{' '}
-          <button className="probe-inline" disabled={!started || busy} onClick={() => read('replug')}>
-            check after reconnecting
-          </button>
-        </p>
-      </Step>
+      {error && <p className="hint warn">{error}</p>}
 
-      {api.busy === READING && <p className="hint">Reading…</p>}
-      {api.error && <p className="hint warn">{api.error}</p>}
-      {last > 0 && (
-        <p className="probe-last">
-          <b>{actionLabel(reads[last].action)}:</b> <span className="mono">{resultText(reads, last)}</span>
-        </p>
+      {reads.length > 1 && (
+        <ol className="probe-reads small">
+          {reads.slice(1).map((r, i) => (
+            <li key={r.t}>
+              <b>{actionLabel(r.action)}</b>
+              {r.signal && <span className={r.signal === 'none' ? 'muted' : 'probe-ok'}> · {SIGNAL_TEXT[r.signal]}</span>}
+              <div className="mono">{changesText(reads, i + 1)}</div>
+              {!!r.hid?.length && <div className="mono muted">keyboard sent: {r.hid.join(' | ')}</div>}
+            </li>
+          ))}
+        </ol>
       )}
 
       {summary.length > 0 && (
         <>
-          <h4 className="probe-h">Bytes that changed so far</h4>
+          <h4 className="probe-h">Bytes that changed</h4>
           <table className="probe-table small">
             <thead>
               <tr>
@@ -118,22 +267,9 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
         </>
       )}
 
-      {last > 0 && (
-        <details className="small">
-          <summary>All {last} clicks</summary>
-          <ol className="probe-reads">
-            {reads.slice(1).map((r, i) => (
-              <li key={r.t}>
-                <b>{actionLabel(r.action)}:</b> <span className="mono">{resultText(reads, i + 1)}</span>
-              </li>
-            ))}
-          </ol>
-        </details>
-      )}
-
       {started && (
         <div className="actions">
-          <button disabled={busy} onClick={() => setReads([])}>
+          <button disabled={working} onClick={restart}>
             Start over
           </button>
         </div>

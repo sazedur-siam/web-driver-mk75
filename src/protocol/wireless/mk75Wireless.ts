@@ -63,6 +63,11 @@ export interface LayoutBLink {
   readonly io: { readonly name: string };
   read(cmd: number, sub: number, len: number, min?: number): Promise<Uint8Array>;
   write(cmd: number, sub: number, data: Uint8Array): Promise<void>;
+  /**
+   * Input reports the keyboard sends unasked (diagnostics). Only links whose protocol doesn't itself use input
+   * reports can offer this; 2.4 GHz / Bluetooth replies arrive as input reports, so WirelessLink leaves it out.
+   */
+  onUnsolicited?(cb: (reportId: number, data: Uint8Array) => void): (() => void) | null;
   close(): Promise<void>;
 }
 
@@ -194,6 +199,10 @@ export class Mk75Wireless implements Mk75Device {
   }
 
   // ---------------------------------------------------------------- settings outside the wired profile
+  onRawInput(cb: (reportId: number, data: Uint8Array) => void): (() => void) | null {
+    return this.link.onUnsolicited?.(cb) ?? null;
+  }
+
   /** All readable blocks, unchanged, without touching the adapter's caches. Waits for any write in progress. */
   readRawBlocks(): Promise<Record<string, Uint8Array>> {
     return this.exclusive(async () => {

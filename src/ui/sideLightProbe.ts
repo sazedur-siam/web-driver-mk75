@@ -14,6 +14,7 @@ export const PROBE_ACTIONS = [
   { id: 'brightness', keys: 'Fn + Right Alt', what: 'brightness' },
   /** Control: main backlight brightness lives at led 0x3A+2i, so this must show a change if the probe works. */
   { id: 'check', keys: 'Fn + F5 or F6', what: 'main backlight brightness' },
+  { id: 'setup', keys: 'Fn + Right Shift', what: 'set to steady' },
   { id: 'replug', keys: 'Re-plugged', what: 'after reconnecting' },
 ] as const;
 
@@ -22,12 +23,70 @@ export type ProbeAction = (typeof PROBE_ACTIONS)[number]['id'];
 export const probeAction = (id: ProbeAction) => PROBE_ACTIONS.find((a) => a.id === id)!;
 export const actionLabel = (id: ProbeAction) => `${probeAction(id).keys} (${probeAction(id).what})`;
 
+/** How the page noticed the press: a byte changed, the keyboard sent an input report, the browser saw the key, or nothing (user confirmed). */
+export type ProbeSignal = 'bytes' | 'hid' | 'key' | 'none';
+
 export interface ProbeRead {
   t: number;
   /** What the user did on the keyboard just before this read. */
   action: ProbeAction;
   /** Raw blocks by name (`led`, `palette`, `keymap 0`..`keymap 3`), see Mk75Device.readRawBlocks. */
   blocks: Record<string, Uint8Array>;
+  /** Guided test only: what detected the press, input reports seen (hex, report ID first) and key codes the browser saw. */
+  signal?: ProbeSignal;
+  hid?: string[];
+  keys?: string[];
+}
+
+/**
+ * One step of the guided test. `press` steps wait for the press to be detected; `setup` waits for the user's
+ * "Ready"; `replug` waits for the keyboard to reconnect. `codes` = KeyboardEvent.code values the key would send
+ * if the keyboard passes it to the computer (with Fn held it usually doesn't).
+ */
+export interface GuideStep {
+  action: ProbeAction;
+  kind: 'press' | 'setup' | 'replug';
+  prompt: string;
+  detail: string;
+  codes?: string[];
+}
+
+const presses = (action: ProbeAction, n: number, prompt: string, what: string, codes: string[]): GuideStep[] =>
+  Array.from({ length: n }, (_, i) => ({ action, kind: 'press' as const, prompt, detail: `${what}: press ${i + 1} of ${n}.`, codes }));
+
+export const GUIDE: GuideStep[] = [
+  {
+    action: 'check',
+    kind: 'press',
+    prompt: 'Press Fn + F6',
+    detail: 'The key backlight gets brighter. This checks that the page notices changes. Already at full brightness? Press Fn + F5 instead.',
+    codes: ['F5', 'F6'],
+  },
+  ...presses('mode', 5, 'Press Fn + Right Shift', 'Side-light mode', ['ShiftRight']),
+  {
+    action: 'setup',
+    kind: 'setup',
+    prompt: 'Set the side lights to steady',
+    detail: 'Press Fn + Right Shift until the side lights glow in one steady colour, then click Ready. Colours only change in steady or breathe mode.',
+  },
+  ...presses('colour', 4, 'Press Fn + /', 'Side-light colour', ['Slash']),
+  ...presses('speed', 3, 'Press Fn + Right Ctrl', 'Side-light speed', ['ControlRight']),
+  ...presses('brightness', 3, 'Press Fn + Right Alt', 'Side-light brightness', ['AltRight']),
+  {
+    action: 'replug',
+    kind: 'replug',
+    prompt: 'Unplug the keyboard, then plug it back in',
+    detail: 'Keep this window open. The page reconnects by itself and continues.',
+  },
+];
+
+/** Keys that are only half of a shortcut (Fn itself never reaches the computer). */
+const MODIFIERS = new Set(['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight']);
+
+/** For a key the browser saw during a press step: 'right', 'wrong' (tell the user), or 'ignore' (part of a shortcut). */
+export function judgeKey(step: GuideStep, code: string): 'right' | 'wrong' | 'ignore' {
+  if (step.codes?.includes(code)) return 'right';
+  return MODIFIERS.has(code) ? 'ignore' : 'wrong';
 }
 
 export interface ByteChange {
@@ -122,6 +181,9 @@ export function probeForFile(reads: ProbeRead[]) {
   return reads.map((r) => ({
     t: new Date(r.t).toISOString(),
     action: r.action,
+    ...(r.signal ? { signal: r.signal } : {}),
+    ...(r.hid?.length ? { hid: r.hid } : {}),
+    ...(r.keys?.length ? { keys: r.keys } : {}),
     blocks: Object.fromEntries(Object.entries(r.blocks).map(([k, v]) => [k, toHex(v)])),
   }));
 }
