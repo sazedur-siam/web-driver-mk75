@@ -118,7 +118,8 @@ export class WirelessLink {
     });
   }
 
-  read(cmd: number, sub: number, len: number) {
+  /** `min`: fewest bytes that count as a whole reply (2.4 GHz receivers never send the last bytes of some blocks). */
+  read(cmd: number, sub: number, len: number, min = len) {
     return this.exclusive(async () => {
       let lastErr: unknown;
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -135,7 +136,7 @@ export class WirelessLink {
           }
           // A short config block would be zero-padded and written back on the next save. Small status replies
           // (online, battery) may legitimately carry fewer bytes than asked, so only blocks are checked.
-          if (len > PKT_DATA && filled < len) throw new LinkError(`short reply for 0x${cmd.toString(16)}: ${filled} of ${len} bytes`);
+          if (len > PKT_DATA && filled < min) throw new LinkError(`short reply for 0x${cmd.toString(16)}: ${filled} of ${len} bytes`);
           return out;
         } catch (e) {
           lastErr = e;
