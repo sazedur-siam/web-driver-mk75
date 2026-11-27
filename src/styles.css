@@ -224,6 +224,7 @@ select {
 .field-l b { color: var(--text); margin-left: 4px; }
 .levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .levels button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.levels.seven { grid-template-columns: repeat(7, 1fr); }
 
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
 .swatch { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }

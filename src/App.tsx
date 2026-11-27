@@ -10,6 +10,7 @@ import { MacrosTab } from './ui/MacrosTab';
 import { KeymapTab } from './ui/KeymapTab';
 import { LightingTab } from './ui/LightingTab';
 import { PerKeyTab } from './ui/PerKeyTab';
+import { SideLightsTab } from './ui/SideLightsTab';
 import { ProfilesTab } from './ui/ProfilesTab';
 import { TesterTab } from './ui/TesterTab';
 import { Keyboard } from './ui/Keyboard';
@@ -106,7 +107,7 @@ function ThemeSwitch() {
   );
 }
 
-const TABS = ['Profiles', 'Lighting', 'Per-key RGB', 'Live effects', 'Key mapping', 'Macros', 'Key tester', 'Device', 'Backup & log'] as const;
+const TABS = ['Profiles', 'Lighting', 'Per-key RGB', 'Side lights', 'Live effects', 'Key mapping', 'Macros', 'Key tester', 'Device', 'Backup & log'] as const;
 type Tab = (typeof TABS)[number];
 
 export default function App() {
@@ -311,6 +312,7 @@ export default function App() {
             {tab === 'Profiles' && <ProfilesTab api={api} />}
             {tab === 'Lighting' && <LightingTab api={api} />}
             {tab === 'Per-key RGB' && <PerKeyTab api={api} />}
+            {tab === 'Side lights' && <SideLightsTab api={api} />}
             {tab === 'Live effects' && <LiveTab api={api} />}
             {tab === 'Key mapping' && <KeymapTab api={api} />}
             {tab === 'Macros' && <MacrosTab api={api} />}
