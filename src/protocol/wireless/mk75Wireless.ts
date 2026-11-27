@@ -194,6 +194,11 @@ export class Mk75Wireless implements Mk75Device {
   }
 
   // ---------------------------------------------------------------- settings outside the wired profile
+  /** The whole config block, unchanged (a copy). Waits for any write in progress. */
+  readConfigBlock(): Promise<Uint8Array> {
+    return this.exclusive(async () => new Uint8Array(await this.readLedRaw()));
+  }
+
   async readSettings(): Promise<KeyboardSettings> {
     const raw = await this.readLedRaw();
     return { debounce: raw[0x03], knob: raw[0x1a] };

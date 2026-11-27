@@ -96,6 +96,13 @@ describe('IC2481 USB capture from issue #29', () => {
     for (let i = 0; i < 19; i++) expect([p[0x16 + 2 * i], p[0x17 + 2 * i]]).toEqual([0x07, 0x44]);
   });
 
+  it('hands the side-light probe the exact config block the keyboard sent, without writing', async () => {
+    const t = new Replay();
+    const block = await new Mk75G5Wired(t).readConfigBlock();
+    expect(hex(block)).toBe(hex(payload(0x84, 0, 0x80)));
+    expect(t.writes.size).toBe(0);
+  });
+
   it('maps every key of the factory key map, keeping Fn and the knob as firmware codes', async () => {
     const m = await new Mk75G5Wired(new Replay()).readKeyMatrix();
     for (const k of MK75_KEYS) {

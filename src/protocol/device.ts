@@ -47,4 +47,9 @@ export interface Mk75Device {
   readFnLayer?(): Promise<Uint8Array>;
   writeFnLayer?(m: Uint8Array): Promise<void>;
   writeSettings?(s: Partial<KeyboardSettings>): Promise<void>;
+  /**
+   * The raw 128-byte layout B config block (LED profile, debounce, knob, ...), as the keyboard holds it.
+   * Read-only, for diagnostics such as the side-light probe. Layout B boards only.
+   */
+  readConfigBlock?(): Promise<Uint8Array>;
 }

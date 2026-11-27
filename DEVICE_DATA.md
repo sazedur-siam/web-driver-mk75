@@ -20,6 +20,21 @@ Please send one file per connection mode you can use: **USB cable**, **2.4 GHz r
 | `log` | The last ~400 configuration packets between the app and the keyboard (full bytes) | Shows exactly what the keyboard replies |
 | `browser`, `app` | Browser user-agent string (includes your OS) and app version | Reproducing problems |
 | `note` | Whatever you typed in the Notes box | Your description |
+| `probe` | Only if you ran the **side-light probe**: each read of the keyboard's 128-byte settings block, which shortcut you pressed before it, and what you wrote the side lights showed. `null` otherwise | Finding where the keyboard stores the side-light settings, so the app can change them |
+
+### Side-light probe
+
+The dialog has an optional **Side-light probe** section (USB on newer boards, 2.4 GHz and Bluetooth). It only
+reads; nothing is written to the keyboard. To run it:
+
+1. Click **Read the keyboard** once as a starting point.
+2. Press **one** side-light shortcut on the keyboard: **Fn + Right Shift** (mode), **Fn + /** (colour), **Fn +
+   Right Ctrl** (speed) or **Fn + Right Alt** (brightness).
+3. Pick that shortcut in **What I just pressed**, optionally describe what the side lights show now, and click
+   **Read the keyboard** again.
+4. Repeat until each setting has gone all the way round, then unplug and plug back in and read once more.
+
+The section lists the bytes that changed after each read. Save the file and attach it as usual.
 
 ## What it never contains
 
