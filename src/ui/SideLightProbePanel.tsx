@@ -9,48 +9,40 @@ const actionLabel = (a: ProbeAction) => PROBE_ACTIONS.find((x) => x.id === a)!.l
  * read again, see which bytes moved. Layout B boards only (readConfigBlock). Nothing is written to the keyboard.
  */
 export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; reads: ProbeRead[]; setReads: (r: ProbeRead[]) => void }) {
-  const [action, setAction] = useState<ProbeAction>(reads.length ? 'mode' : 'baseline');
   const [seen, setSeen] = useState('');
   const dev = api.dev;
   if (!dev?.readConfigBlock) return null;
 
-  const read = () =>
+  const read = (action: ProbeAction) =>
     api.run('Reading the config block', async () => {
       const block = await dev.readConfigBlock!();
       setReads([...reads, { t: Date.now(), action, seen, block }]);
       setSeen('');
-      if (action === 'baseline') setAction('mode');
     });
 
   const summary = summarise(reads);
+  const started = reads.length > 0;
 
   return (
     <details className="probe">
       <summary>Side-light probe (optional, helps add side-light control)</summary>
       <p className="muted small">
-        Finds where the keyboard stores the side-light settings. Read once as a starting point, then press <b>one</b> side-light shortcut on the
-        keyboard, pick it below and read again. Repeat for each shortcut until its setting wraps around. Nothing is written to the keyboard. The reads
-        go into the file you save below.
+        Finds where the keyboard stores the side-light settings. Click <b>Read starting point</b> first. Then press <b>one</b> side-light shortcut on
+        the keyboard and click the button for it: that reads the keyboard right away. Repeat until each setting comes back round. Nothing is written
+        to the keyboard. The reads go into the file you save below.
       </p>
-      <div className="probe-form">
-        <label className="field">
-          <span className="field-l">What I just pressed</span>
-          <select value={action} onChange={(e) => setAction(e.target.value as ProbeAction)}>
-            {PROBE_ACTIONS.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="field">
-          <span className="field-l">Side lights now show</span>
-          <input className="text-input" placeholder="e.g. steady, red, bright" value={seen} onChange={(e) => setSeen(e.target.value)} />
-        </label>
-        <button className="primary" disabled={!!api.busy} onClick={read}>
-          Read the keyboard
-        </button>
+      <label className="field">
+        <span className="field-l">Side lights now show (optional, typed before clicking)</span>
+        <input className="text-input" placeholder="e.g. steady, red, bright" value={seen} onChange={(e) => setSeen(e.target.value)} />
+      </label>
+      <div className="probe-actions">
+        {PROBE_ACTIONS.filter((a) => (a.id === 'baseline') !== started).map((a) => (
+          <button key={a.id} className={a.id === 'baseline' ? 'primary' : undefined} disabled={!!api.busy} onClick={() => read(a.id)}>
+            {a.id === 'baseline' ? 'Read starting point' : a.label}
+          </button>
+        ))}
       </div>
+      {api.busy === 'Reading the config block' && <p className="hint">Reading…</p>}
       {api.error && <p className="hint warn">{api.error}</p>}
 
       {reads.length > 0 && (

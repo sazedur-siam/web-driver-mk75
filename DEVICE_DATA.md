@@ -27,12 +27,13 @@ Please send one file per connection mode you can use: **USB cable**, **2.4 GHz r
 The dialog has an optional **Side-light probe** section (USB on newer boards, 2.4 GHz and Bluetooth). It only
 reads; nothing is written to the keyboard. To run it:
 
-1. Click **Read the keyboard** once as a starting point.
+1. Click **Read starting point**.
 2. Press **one** side-light shortcut on the keyboard: **Fn + Right Shift** (mode), **Fn + /** (colour), **Fn +
    Right Ctrl** (speed) or **Fn + Right Alt** (brightness).
-3. Pick that shortcut in **What I just pressed**, optionally describe what the side lights show now, and click
-   **Read the keyboard** again.
-4. Repeat until each setting has gone all the way round, then unplug and plug back in and read once more.
+3. Click the button for that shortcut. It reads the keyboard right away. To note what the side lights show,
+   type it in the box before clicking.
+4. Repeat until each setting has gone all the way round. Then unplug, plug back in, reconnect, and click
+   **Re-plugged the keyboard**.
 
 The section lists the bytes that changed after each read. Save the file and attach it as usual.
 
