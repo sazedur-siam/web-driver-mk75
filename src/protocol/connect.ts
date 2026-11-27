@@ -1,6 +1,6 @@
 /**
  * One "Connect" for every MK75 mode: USB cable (feature reports 0x05/0x06 on page 0xFF00),
- * 2.4 GHz receiver 3554:FA09 or Bluetooth (20-byte reports on page 0xFF02).
+ * 2.4 GHz receiver 3554:FA09 or Bluetooth 3554:FA07 (issue #35) (20-byte reports on page 0xFF02).
  */
 import { MK75_KEYS } from '../device/mk75Layout';
 import type { Mk75Device } from './device';
@@ -14,7 +14,7 @@ import { findWirelessInterface, WebHidReportIO, WIRELESS_USAGE } from './wireles
 export const MK75_FILTERS: HIDDeviceFilter[] = [
   { vendorId: MK75_USB.vendorId, productId: MK75_USB.productId, usagePage: MK75_USB.usagePage },
   { vendorId: MK75_USB.wirelessVendorId, productId: MK75_USB.wirelessProductId },
-  // Bluetooth ("MK75-5.0" / "MK75-3.0") may enumerate with other IDs; match the vendor collection.
+  // Bluetooth ("MK75-5.0" / "MK75-3.0", seen as 3554:FA07) and other IDs: match the vendor collection.
   { usagePage: WIRELESS_USAGE.usagePage, usage: WIRELESS_USAGE.usage },
 ];
 

@@ -21,7 +21,8 @@ The MK75 is the same Sinowealth-based board and firmware family as the **AULA AU
 AU75 port and was retargeted once the MK75 driver was available. Both vendor apps are the same "BYCOMBO4"
 framework (`OemDrv.exe`).
 
-USB IDs: wired `258A:010C` (Sinowealth), 2.4 GHz receiver `3554:FA09`. Bluetooth name `MK75-5.0` / `MK75-3.0`.
+USB IDs: wired `258A:010C` (Sinowealth), 2.4 GHz receiver `3554:FA09`, Bluetooth `3554:FA07` (issue #35). Bluetooth
+name `MK75-5.0` / `MK75-3.0`.
 
 ---
 
@@ -165,8 +166,8 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
   command bytes, the wired↔wireless key-code encoders, mouse code order.
 - **Inferred:**
   - Whether speed level 0 is the slowest or the fastest.
-  - Whether Bluetooth writes work. Bluetooth does expose the vendor collection and answers reads, but drops reply
-    packets, so reads merge packets across attempts (issue #32, PROTOCOL.md).
+  - Whether Bluetooth writes work. Bluetooth does expose the vendor collection and answers reads (replayed from
+    issue #35), but drops about half of each reply, so reads merge packets across attempts (issue #32, PROTOCOL.md).
   - Wireless live-stream sub=1 (taken from an F99 capture in OpenRGB issue #5166).
   - Fn-function names marked "likely".
   - How the firmware reverts after a live stream stops (we rewrite the profile).
