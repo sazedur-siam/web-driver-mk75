@@ -19,9 +19,12 @@ import { WCmd } from './packet';
 
 const LED_LEN = 128;
 const LAYER_LEN = 512;
+/** Real receivers answer 504 of 512 keymap and 490 of 512 palette bytes (hw-re-docs, Wireless → Reading). */
+const LAYER_READ_MIN = 504;
 const LAYER_SLOTS = LAYER_LEN / 4;
 const LAYER_TRAILER = 0xa55a0000;
 const PALETTE_LEN = 0x200;
+const PALETTE_READ_MIN = 490;
 const PALETTE_DATA = 0x1a4;
 const WL_MODES = 19;
 const LIVE_MAX = 200;
@@ -39,7 +42,7 @@ export class UnsupportedOverWireless extends Error {}
 /** What the adapter needs from its link: WirelessLink (2.4 GHz / BT) or G5WiredLink (USB, IC2481 boards). */
 export interface LayoutBLink {
   readonly io: { readonly name: string };
-  read(cmd: number, sub: number, len: number): Promise<Uint8Array>;
+  read(cmd: number, sub: number, len: number, min?: number): Promise<Uint8Array>;
   write(cmd: number, sub: number, data: Uint8Array): Promise<void>;
   close(): Promise<void>;
 }
@@ -197,7 +200,7 @@ export class Mk75Wireless implements Mk75Device {
 
   // ---------------------------------------------------------------- key layers (0 base, 1 Fn)
   private async readLayer(layer: number): Promise<Uint8Array> {
-    const raw = await this.link.read(this.ops.getMatrix, layer, LAYER_LEN);
+    const raw = await this.link.read(this.ops.getMatrix, layer, LAYER_LEN, LAYER_READ_MIN);
     const view = new Uint8Array(1024);
     for (let i = 0; i < LAYER_SLOTS - 1; i++) {
       const c = u32(raw, i);
@@ -263,7 +266,7 @@ export class Mk75Wireless implements Mk75Device {
 
   // ---------------------------------------------------------------- palette / per-key
   async readRgbTable(): Promise<Uint8Array> {
-    const raw = await this.link.read(this.ops.getPalette, 0, PALETTE_LEN);
+    const raw = await this.link.read(this.ops.getPalette, 0, PALETTE_LEN, PALETTE_READ_MIN);
     this.paletteRaw = raw;
     const t = new Uint8Array(1024);
     t.set(raw.subarray(0, PALETTE_DATA));
@@ -296,7 +299,7 @@ export class Mk75Wireless implements Mk75Device {
     // The OEM app numbers macro ids across all layers; ours only plans the base layer, so rewriting the store
     // would point macro keys on the Fn (1) or tap/hold (3) layer at the wrong macro.
     for (const [layer, name] of [[1, 'Fn'], [3, 'tap/hold']] as const) {
-      const raw = await this.link.read(this.ops.getMatrix, layer, LAYER_LEN);
+      const raw = await this.link.read(this.ops.getMatrix, layer, LAYER_LEN, LAYER_READ_MIN);
       for (let i = 0; i < LAYER_SLOTS - 1; i++) {
         if (raw[4 * i] === 0x03 && raw[4 * i + 1] !== 0)
           throw new Error(`The ${name} layer has macro keys set by the official app. Remove them there first, or saving macros here would renumber them.`);
