@@ -2,7 +2,8 @@
  * Request/ack engine for the wireless protocol, modelled on the vendor SendData/ReadData:
  *  - writes: 14-byte chunks, 15 ms before each packet (10 ms for live 0x88/0x8E), wait for an ack
  *    with the same cmd (1.5 s), retry each packet up to 5x on busy/timeout; no ack for 0x88/0x8E/0x06.
- *  - reads: one request packet, then collect `total` reply packets (1 s each), 3 attempts.
+ *  - reads: one request packet, then collect `total` reply packets (1 s each). The vendor makes 3 attempts; we keep
+ *    packets across attempts and continue while attempts bring new ones (Bluetooth drops input reports, issue #32).
  */
 import { chunk, parsePacket, PKT_DATA, type Packet } from './packet';
 
@@ -16,6 +17,11 @@ export interface ReportIO {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Most attempts per read; the vendor makes 3, but over Bluetooth each attempt only fills some gaps (issue #32). */
+const READ_ATTEMPTS = 12;
+/** A read gives up after this many attempts in a row that brought no new packet (the vendor's 3 attempts). */
+const READ_STALE_ATTEMPTS = 3;
 
 export class LinkError extends Error {}
 
@@ -88,10 +94,12 @@ export class WirelessLink {
     });
   }
 
-  /** Collect every reply packet for `cmd` (buffered, so none are lost) until `total` arrived. */
-  private collect(cmd: number, ms: number): Promise<Packet[]> {
+  /**
+   * Collect reply packets for `cmd` into `got` (keyed by index) until packets 0..total-1 are all there.
+   * `got` may already hold packets from an earlier attempt of the same read; only the gaps are waited for.
+   */
+  private collect(cmd: number, ms: number, got: Map<number, Packet>): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
-      const got = new Map<number, Packet>();
       let timer = setTimeout(fail, ms);
       function fail() {
         remove();
@@ -105,9 +113,12 @@ export class WirelessLink {
           reject(new LinkError('device busy'));
           return true;
         }
-        got.set(p.index, p);
+        const total = Math.max(1, p.total);
+        // A different packet count means a different reply (e.g. a short one): never mix the two.
+        if ([...got.values()].some((q) => Math.max(1, q.total) !== total)) got.clear();
+        if (p.index < total) got.set(p.index, p);
         clearTimeout(timer);
-        if (got.size >= Math.max(1, p.total)) {
+        if (got.size >= total) {
           resolve([...got.values()].sort((a, b) => a.index - b.index));
           return true;
         }
@@ -118,13 +129,21 @@ export class WirelessLink {
     });
   }
 
-  /** `min`: fewest bytes that count as a whole reply (2.4 GHz receivers never send the last bytes of some blocks). */
+  /**
+   * `min`: fewest bytes that count as a whole reply (2.4 GHz receivers never send the last bytes of some blocks).
+   *
+   * Bluetooth drops some input reports, and a packet that is lost on one attempt may be lost on the next two as well
+   * (issue #32). The block does not change between attempts, so packets are kept across attempts and each resend
+   * only has to fill the gaps. Attempts continue while they bring new packets, up to READ_ATTEMPTS.
+   */
   read(cmd: number, sub: number, len: number, min = len) {
     return this.exclusive(async () => {
+      const got = new Map<number, Packet>();
       let lastErr: unknown;
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0, stale = 0; attempt < READ_ATTEMPTS && stale < READ_STALE_ATTEMPTS; attempt++) {
+        const before = got.size;
         try {
-          const replies = this.collect(cmd, this.timing.readMs);
+          const replies = this.collect(cmd, this.timing.readMs, got);
           replies.catch(() => undefined);
           await sleep(this.timing.pace);
           await this.sendBody(chunk(this.reportId, cmd, sub, new Uint8Array(0))[0]);
@@ -136,10 +155,14 @@ export class WirelessLink {
           }
           // A short config block would be zero-padded and written back on the next save. Small status replies
           // (online, battery) may legitimately carry fewer bytes than asked, so only blocks are checked.
-          if (len > PKT_DATA && filled < min) throw new LinkError(`short reply for 0x${cmd.toString(16)}: ${filled} of ${len} bytes`);
+          if (len > PKT_DATA && filled < min) {
+            got.clear(); // ask again from scratch
+            throw new LinkError(`short reply for 0x${cmd.toString(16)}: ${filled} of ${len} bytes`);
+          }
           return out;
         } catch (e) {
           lastErr = e;
+          stale = got.size > before ? 0 : stale + 1;
           await sleep(100);
         }
       }
