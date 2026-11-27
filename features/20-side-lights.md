@@ -43,6 +43,23 @@ Today this only works with the keyboard shortcuts **Fn + RShift** (mode), **Fn +
 - **CDev916KB boards** (1031-byte report 0x06, 254-byte profile) have no layout B block. Every real MK75 seen
   so far is IC2481 (layout B), so this feature targets layout B only.
 
+## First hardware run (2026-11-28, IC2481 MK75 on the cable)
+
+Guided probe, first version. It read 500 ms after each press, which turned out to be too early: the keyboard
+sends its input reports at once but updates the config block later, so some changes landed on the next step.
+The probe now waits for the block to settle. Findings so far, to be confirmed by a clean re-run:
+
+| Byte | Values seen | Shortcut | Reading |
+|---|---|---|---|
+| `led 0x12` | `01 02 03` | Fn + Right Shift | side-light **mode** (likely) |
+| `led 0x13` | `00 01 02 04 06` | Fn + / | side-light **colour** (likely; the skipped values may be lag) |
+| `led 0x14`, `0x15`, `0x75` | `04 → 00`, `04 → 01`, `04 → 03 → 04` | unclear | possibly the Fn + F6 control step, credited late |
+| none | — | Fn + Right Ctrl, Fn + Right Alt | side-light **speed** and **brightness** changed on the keyboard but not in any readable block |
+
+Every Fn shortcut makes the keyboard send input reports `02 00 00` and `03 08 00 01` on the vendor interface.
+Mode and colour presses also send `06 0A 07 00 00 00 00 00`; speed and brightness don't. That report looks like a
+"config saved" notice, which would mean speed and brightness aren't stored (re-plug test pending).
+
 ## Phase 1: find the bytes (hardware, read-only)
 
 Nothing is written to the keyboard in this phase.

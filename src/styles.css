@@ -417,6 +417,7 @@ footer p { margin: 2px 0; }
 .probe-prompt { font-size: 22px; font-weight: 700; line-height: 1.25; }
 .probe-nudge { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 4px; border-top: 1px solid var(--border); }
 .probe-ok { color: var(--ok); }
+.probe-got { color: var(--ok); font-weight: 600; }
 .probe-h { margin: 12px 0 4px; font-size: 13px; }
 .probe-reads { margin: 8px 0; padding-left: 20px; max-height: 200px; overflow: auto; }
 .probe-reads li { margin-bottom: 4px; }

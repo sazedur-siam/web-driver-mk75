@@ -18,6 +18,14 @@ import type { DeviceApi } from './useDevice';
 const POLL_MS = 800;
 /** After this long without a detected press, offer "I pressed it, nothing was detected". */
 const NUDGE_MS = 8000;
+/**
+ * After a press, keep reading until two reads in a row agree, for at least SETTLE_MIN_MS and at most
+ * SETTLE_MAX_MS. A real MK75 sends its input reports at once but updates the config block a moment later; reading
+ * once 500 ms after the press credited changes to the next step.
+ */
+const SETTLE_POLL_MS = 400;
+const SETTLE_MIN_MS = 1500;
+const SETTLE_MAX_MS = 4000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -50,6 +58,7 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
   const [nudge, setNudge] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
+  const [settling, setSettling] = useState(false);
   const readsRef = useRef(reads);
   readsRef.current = reads;
   const seen = useRef<{ hid: string[]; keys: string[] }>({ hid: [], keys: [] });
@@ -91,19 +100,35 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
     seen.current = { hid: [], keys: [] };
     setWrongKey(null);
     setNudge(false);
+    setSettling(false);
 
-    const finish = async (signal: ProbeSignal, blocks?: Record<string, Uint8Array>) => {
+    const same = (a: Record<string, Uint8Array>, b: Record<string, Uint8Array>) => diffReads({ ...ref, blocks: a }, { ...ref, blocks: b }).length === 0;
+    /** Read until the keyboard has finished updating its blocks (see SETTLE_MIN_MS). */
+    const settle = async () => {
+      const start = Date.now();
+      let prev = await dev.readRawBlocks!();
+      for (;;) {
+        await sleep(SETTLE_POLL_MS);
+        if (cancelled) return prev;
+        const next = await dev.readRawBlocks!();
+        const elapsed = Date.now() - start;
+        if ((same(prev, next) && elapsed >= SETTLE_MIN_MS) || elapsed >= SETTLE_MAX_MS) return next;
+        prev = next;
+      }
+    };
+
+    const finish = async (signal: ProbeSignal) => {
       if (finished) return;
       finished = true;
+      setSettling(true);
       try {
-        if (!blocks) {
-          await sleep(500); // let the firmware finish whatever the key started
-          blocks = await dev.readRawBlocks!();
-        }
+        const blocks = await settle();
         if (!cancelled) record(blocks, signal);
       } catch (e) {
         finished = false;
         if (!cancelled) setError(errText(e));
+      } finally {
+        if (!cancelled) setSettling(false);
       }
     };
 
@@ -112,7 +137,7 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
       void finish('hid');
     });
     const onKey = (e: KeyboardEvent) => {
-      if (e.repeat) return;
+      if (e.repeat || finished) return;
       seen.current.keys.push(e.code);
       const verdict = judgeKey(cur, e.code);
       if (verdict === 'right') void finish('key');
@@ -128,7 +153,7 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
         try {
           const blocks = await dev.readRawBlocks!();
           if (!cancelled) setError(null);
-          if (diffReads(ref, { ...ref, blocks }).length > 0) await finish('bytes', blocks);
+          if (!same(ref.blocks, blocks)) await finish('bytes');
         } catch (e) {
           if (!cancelled) setError(errText(e));
         }
@@ -192,9 +217,10 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
           </div>
           <div className="probe-prompt">{cur.prompt}</div>
           <p className="small">{cur.detail}</p>
-          {cur.kind === 'press' && (
+          {cur.kind === 'press' && settling && <p className="probe-got">✓ Got it. Recording, don't press anything yet…</p>}
+          {cur.kind === 'press' && !settling && dev && (
             <>
-              <p className="hint">{dev ? 'Waiting for the key press…' : 'Keyboard disconnected. Plug it back in.'}</p>
+              <p className="hint">Waiting for the key press…</p>
               {wrongKey && (
                 <p className="hint warn">
                   The computer saw <b>{wrongKey}</b>, which isn't this shortcut. {cur.prompt}.
@@ -215,7 +241,19 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
               Ready
             </button>
           )}
-          {cur.kind === 'replug' && <p className="hint">{dev ? 'Waiting for the keyboard to disconnect…' : 'Disconnected. Plug it back in…'}</p>}
+          {cur.kind === 'replug' && dev && <p className="hint">Waiting for the keyboard to disconnect…</p>}
+        </div>
+      )}
+
+      {!dev && (
+        <div className="probe-nudge">
+          <span className="small">
+            Keyboard disconnected. Plug it back in; the page should reconnect within a few seconds. If it doesn't, click Reconnect. Your progress is kept.
+          </span>
+          <button className="primary" disabled={!!api.busy} onClick={() => void api.reconnect()}>
+            {api.busy === 'Reconnecting' ? 'Reconnecting…' : 'Reconnect'}
+          </button>
+          {api.error && <span className="hint warn">{api.error}</span>}
         </div>
       )}
 
