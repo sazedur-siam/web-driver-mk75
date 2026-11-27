@@ -163,6 +163,12 @@ type 0 key, 1 modifier, 2 mouse mask (1 L, 2 R, 4 M). Key cell `03 mode count id
 Key codes are `[type][mods][x][hid]`: key `hid<<24 | mods<<8`, consumer `…|0x02`, mouse `clicks<<16 | button<<8 | 0x01`
 (1 left, 2 middle, 3 right, 4 back, 5 forward).
 
+Bluetooth (issue #32) exposes the same `0xFF02` collection and answers reads, but loses reply packets: in the
+reported log each `44` request delivered only 5–7 of its 10 packets, and packet 5 was missing from all three tries.
+There is no request for a single packet, so `WirelessLink.read` keeps packets across attempts (keyed by index; the
+block doesn't change between them) and continues while attempts bring new ones: at most 12, stopping after 3 in a
+row add nothing. The vendor makes 3 independent attempts. The `07` online query got no reply over Bluetooth.
+
 ## Not yet decoded / not ported
 
 * Fn-layer remapping on CDev916KB boards (FnCombo is firmware-owned there). On layout B the Fn layer is keymap layer 1 and is editable; cells `07` (device function) and `0D` (Fn) are locked. The knob has two firmware modes, layout B byte `0x1A`: 0 media (volume), 1 lighting

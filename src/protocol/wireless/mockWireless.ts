@@ -23,6 +23,9 @@ export class MockWirelessIO implements ReportIO {
   online = true;
   /** LED-profile reads still to answer like a sleeping keyboard: zeros, only 5A A5 kept. */
   asleepReads = 0;
+  /** Lose a read-reply packet on its way to the host, like Bluetooth does (issue #32). `round` counts requests per cmd from 1. */
+  dropReply?: (cmd: number, round: number, index: number) => boolean;
+  private readRounds = new Map<number, number>();
   private subs = new Set<(id: number, body: Uint8Array) => void>();
   private incoming = new Map<number, Uint8Array[]>();
 
@@ -59,7 +62,9 @@ export class MockWirelessIO implements ReportIO {
   }
 
   private reply(cmd: number, data: Uint8Array) {
-    for (const p of chunk(REPLY_ID, cmd, 0, data)) this.emit(p);
+    const round = (this.readRounds.get(cmd) ?? 0) + 1;
+    this.readRounds.set(cmd, round);
+    for (const p of chunk(REPLY_ID, cmd, 0, data)) if (!this.dropReply?.(cmd, round, p[2])) this.emit(p);
   }
 
   async send(reportId: number, body: Uint8Array) {

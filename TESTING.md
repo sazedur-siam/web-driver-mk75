@@ -103,6 +103,7 @@ Use a text editor and a keyboard/mouse tester website.
 
 - [ ] **B1** (P1) Switch to BT, hold Fn+1 for 3 s, pair "MK75-5.0" in the OS, then **Connect**. The keyboard appears in the browser picker. If it doesn't, note that here (known risk): ______
 - [ ] **B2** (P1) If B1 passes, repeat W3. Lighting changes apply.
+- [ ] **B3** (P1) Connect over Bluetooth 5 times in a row. Each connect succeeds, with no "timeout reading 0x44" error (issue #32). In the log, `←` reply lines with gaps in the packet index are expected: ______
 
 ## 10. Themes and browser
 

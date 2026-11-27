@@ -165,7 +165,8 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
   command bytes, the wired↔wireless key-code encoders, mouse code order.
 - **Inferred:**
   - Whether speed level 0 is the slowest or the fastest.
-  - Whether Bluetooth exposes the vendor collection at all.
+  - Whether Bluetooth writes work. Bluetooth does expose the vendor collection and answers reads, but drops reply
+    packets, so reads merge packets across attempts (issue #32, PROTOCOL.md).
   - Wireless live-stream sub=1 (taken from an F99 capture in OpenRGB issue #5166).
   - Fn-function names marked "likely".
   - How the firmware reverts after a live stream stops (we rewrite the profile).

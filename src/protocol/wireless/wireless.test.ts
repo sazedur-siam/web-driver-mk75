@@ -176,6 +176,24 @@ describe('Mk75Wireless adapter against the simulator', () => {
     expect(getKeyCode(m, 20)).not.toBe(0);
   });
 
+  it('Bluetooth: packets lost on every attempt are filled in across attempts (issue #32)', async () => {
+    const { io, dev } = make();
+    // LED reply packets that reached the browser in the issue #32 log, per request. Packet 5 never arrived in the
+    // three attempts the old code made, so each attempt failed on its own.
+    const arrived = [[0, 1, 3, 4, 6, 7, 9], [0, 2, 4, 6, 8], [0, 1, 2, 4, 6, 8], [0, 5]];
+    io.dropReply = (cmd, round, index) => cmd === 0x44 && !(arrived[round - 1] ?? []).includes(index);
+    const p = await dev.readProfile();
+    expect(p[0x11]).toBe(4); // sleep 120 s from byte 0x18 of the block
+    expect(parseProfile(p).activeIndex).toBe(0);
+  });
+
+  it('Bluetooth: a packet that never arrives still fails the read instead of hanging', async () => {
+    const io = new MockWirelessIO();
+    io.dropReply = (cmd, _round, index) => cmd === 0x44 && index === 5;
+    const link = new WirelessLink(io, 0x13, undefined, fast);
+    await expect(link.read(0x44, 0, 128)).rejects.toThrow(/timeout reading 0x44 \(9 packets\)/);
+  });
+
   it('knob mode round-trips through byte 0x1A', async () => {
     const { io, dev } = make();
     await dev.writeSettings({ knob: 1 });
