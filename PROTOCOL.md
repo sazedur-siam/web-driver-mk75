@@ -169,11 +169,14 @@ type 0 key, 1 modifier, 2 mouse mask (1 L, 2 R, 4 M). Key cell `03 mode count id
 Key codes are `[type][mods][x][hid]`: key `hid<<24 | mods<<8`, consumer `…|0x02`, mouse `clicks<<16 | button<<8 | 0x01`
 (1 left, 2 middle, 3 right, 4 back, 5 forward).
 
-Bluetooth (issue #32) exposes the same `0xFF02` collection and answers reads, but loses reply packets: in the
-reported log each `44` request delivered only 5–7 of its 10 packets, and packet 5 was missing from all three tries.
+Bluetooth enumerates as `3554:FA07` with the same `0xFF02` collection (report ID `0x13`, CDev3632 framing) and
+answers reads, but loses reply packets (issues #32, #35). Each request delivers about half of its packets, a
+different half every time: 3–7 of 10 for `44`, 16–19 of 35 for `49`, 18–19 of 36 for `41`. Delivered packets arrive
+at most 30 ms apart and a whole reply within about 160 ms. The `07` online query got no reply over Bluetooth.
 There is no request for a single packet, so `WirelessLink.read` keeps packets across attempts (keyed by index; the
-block doesn't change between them) and continues while attempts bring new ones: at most 12, stopping after 3 in a
-row add nothing. The vendor makes 3 independent attempts. The `07` online query got no reply over Bluetooth.
+block doesn't change between them) and continues while attempts bring new ones: at most 20, stopping after 3 in a
+row add nothing. It waits 1 s for the first packet and 250 ms for each later one. The vendor makes 3 independent
+attempts and waits 1 s per packet. In issue #35 the palette needed 8 requests, the keymap 6 and the LED block 4.
 
 ## Not yet decoded / not ported
 

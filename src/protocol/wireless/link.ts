@@ -2,8 +2,10 @@
  * Request/ack engine for the wireless protocol, modelled on the vendor SendData/ReadData:
  *  - writes: 14-byte chunks, 15 ms before each packet (10 ms for live 0x88/0x8E), wait for an ack
  *    with the same cmd (1.5 s), retry each packet up to 5x on busy/timeout; no ack for 0x88/0x8E/0x06.
- *  - reads: one request packet, then collect `total` reply packets (1 s each). The vendor makes 3 attempts; we keep
- *    packets across attempts and continue while attempts bring new ones (Bluetooth drops input reports, issue #32).
+ *  - reads: one request packet, then collect `total` reply packets. The vendor waits 1 s per packet and makes
+ *    3 attempts. We keep packets across attempts and continue while attempts bring new ones (Bluetooth drops input
+ *    reports, issues #32/#35), so we also stop waiting sooner once a burst has ended: 1 s for the first packet,
+ *    250 ms between packets.
  */
 import { chunk, parsePacket, PKT_DATA, type Packet } from './packet';
 
@@ -18,8 +20,11 @@ export interface ReportIO {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Most attempts per read; the vendor makes 3, but over Bluetooth each attempt only fills some gaps (issue #32). */
-const READ_ATTEMPTS = 12;
+/**
+ * Most attempts per read. The vendor makes 3, but over Bluetooth each attempt delivers only about half the packets
+ * (issue #35: up to 8 attempts for the 35-packet palette), so a read needs many attempts to fill every gap.
+ */
+const READ_ATTEMPTS = 20;
 /** A read gives up after this many attempts in a row that brought no new packet (the vendor's 3 attempts). */
 const READ_STALE_ATTEMPTS = 3;
 
@@ -34,7 +39,18 @@ export class WirelessLink {
     readonly io: ReportIO,
     readonly reportId: number,
     private log?: (dir: 'out' | 'in', body: Uint8Array) => void,
-    private timing = { pace: 15, livePace: 10, ackMs: 1500, readMs: 1000 },
+    /**
+     * `readMs`: wait for the first reply packet. `gapMs`: wait for each later one. Issue #35 (Bluetooth) measured
+     * at most 30 ms between delivered packets and 160 ms per whole reply; issue #31 (2.4 GHz) at most 6 ms. Ending
+     * an attempt early costs one more request, never data, because packets are kept across attempts.
+     */
+    private timing: { pace: number; livePace: number; ackMs: number; readMs: number; gapMs?: number } = {
+      pace: 15,
+      livePace: 10,
+      ackMs: 1500,
+      readMs: 1000,
+      gapMs: 250,
+    },
   ) {
     this.unsub = io.onInput((_id, body) => {
       this.log?.('in', body);
@@ -98,7 +114,7 @@ export class WirelessLink {
    * Collect reply packets for `cmd` into `got` (keyed by index) until packets 0..total-1 are all there.
    * `got` may already hold packets from an earlier attempt of the same read; only the gaps are waited for.
    */
-  private collect(cmd: number, ms: number, got: Map<number, Packet>): Promise<Packet[]> {
+  private collect(cmd: number, ms: number, gapMs: number, got: Map<number, Packet>): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
       let timer = setTimeout(fail, ms);
       function fail() {
@@ -122,7 +138,7 @@ export class WirelessLink {
           resolve([...got.values()].sort((a, b) => a.index - b.index));
           return true;
         }
-        timer = setTimeout(fail, ms); // per-packet timeout, like the vendor
+        timer = setTimeout(fail, gapMs); // the rest of the burst follows within milliseconds
         return false;
       };
       this.waiters.push(h);
@@ -143,7 +159,8 @@ export class WirelessLink {
       for (let attempt = 0, stale = 0; attempt < READ_ATTEMPTS && stale < READ_STALE_ATTEMPTS; attempt++) {
         const before = got.size;
         try {
-          const replies = this.collect(cmd, this.timing.readMs, got);
+          const { readMs, gapMs = readMs } = this.timing;
+          const replies = this.collect(cmd, readMs, Math.min(gapMs, readMs), got);
           replies.catch(() => undefined);
           await sleep(this.timing.pace);
           await this.sendBody(chunk(this.reportId, cmd, sub, new Uint8Array(0))[0]);
