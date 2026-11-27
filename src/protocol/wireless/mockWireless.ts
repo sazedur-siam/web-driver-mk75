@@ -7,8 +7,8 @@ import { buildPacket, chunk, checksum, parsePacket, WCmd } from './packet';
 
 const REPLY_ID = 0x13;
 const FN_KEY = MK75_KEYS.find((k) => k.vk === 0xfa)!.index;
-/** Palette bytes 483..511: identity copy (model id ... 5A A5) then 00 10 00 00 (hw-re-docs; middle bytes unknown, zero here). */
-export const PALETTE_TAIL = Uint8Array.from([3, 0, 0, 0, 0, 0xc6, ...new Array(17).fill(0), 0x5a, 0xa5, 0, 0x10, 0, 0]);
+/** Palette bytes 483..511 from a cable read of a real MK75 (issue #29): model id copy, 00 00 10, zeros, 5A A5 00 10 00 00. */
+export const PALETTE_TAIL = Uint8Array.from([3, 0, 0, 0, 0, 0xc6, 0, 0, 0x10, ...new Array(14).fill(0), 0x5a, 0xa5, 0, 0x10, 0, 0]);
 
 export class MockWirelessIO implements ReportIO {
   readonly name = 'Simulated MK75 (2.4 GHz)';

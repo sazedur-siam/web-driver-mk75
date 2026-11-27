@@ -26,6 +26,13 @@ const LAYER_TRAILER = 0xa55a0000;
 const PALETTE_LEN = 0x200;
 const PALETTE_READ_MIN = 490;
 const PALETTE_DATA = 0x1a4;
+/**
+ * Palette bytes 483..511 as a cable read of a real MK75 returns them (issue #29): a copy of the model id
+ * (03 00 00 00 00 C6), then 00 00 10, zeros, 5A A5 00 10 00 00. 2.4 GHz reads stop at byte 490 (issue #31, same
+ * keyboard), so a save restores the missing bytes from here instead of zeroing them.
+ */
+export const PALETTE_TAIL_AT = 483;
+export const MK75_PALETTE_TAIL = Uint8Array.from([3, 0, 0, 0, 0, 0xc6, 0, 0, 0x10, ...new Array(14).fill(0), 0x5a, 0xa5, 0, 0x10, 0, 0]);
 const WL_MODES = 19;
 const LIVE_MAX = 200;
 const OP_USB_MACRO = 0x05;
@@ -38,6 +45,18 @@ const setU32 = (b: Uint8Array, i: number, v: number) => new DataView(b.buffer, b
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class UnsupportedOverWireless extends Error {}
+
+/**
+ * Fill palette bytes 490..511 that a short 2.4 GHz read left as zeros with the MK75's own values, but only when
+ * the bytes that did arrive (483..489) are the MK75 identity copy. Full reads (cable) are left untouched.
+ */
+function restorePaletteTail(buf: Uint8Array) {
+  const got = PALETTE_READ_MIN - PALETTE_TAIL_AT;
+  const seen = buf.subarray(PALETTE_TAIL_AT, PALETTE_READ_MIN);
+  if (!seen.every((b, i) => b === MK75_PALETTE_TAIL[i])) return;
+  if (buf.subarray(PALETTE_READ_MIN).some((b) => b !== 0)) return;
+  buf.set(MK75_PALETTE_TAIL.subarray(got), PALETTE_READ_MIN);
+}
 
 /** What the adapter needs from its link: WirelessLink (2.4 GHz / BT) or G5WiredLink (USB, IC2481 boards). */
 export interface LayoutBLink {
@@ -265,9 +284,14 @@ export class Mk75Wireless implements Mk75Device {
   }
 
   // ---------------------------------------------------------------- palette / per-key
-  async readRgbTable(): Promise<Uint8Array> {
+  private async readPaletteRaw(): Promise<Uint8Array> {
     const raw = await this.link.read(this.ops.getPalette, 0, PALETTE_LEN, PALETTE_READ_MIN);
     this.paletteRaw = raw;
+    return raw;
+  }
+
+  async readRgbTable(): Promise<Uint8Array> {
+    const raw = await this.readPaletteRaw();
     const t = new Uint8Array(1024);
     t.set(raw.subarray(0, PALETTE_DATA));
     return t;
@@ -280,6 +304,7 @@ export class Mk75Wireless implements Mk75Device {
   private async writeRgbTableNow(t: Uint8Array): Promise<void> {
     const buf = new Uint8Array(this.paletteRaw ?? new Uint8Array(PALETTE_LEN));
     buf.set(t.subarray(0, PALETTE_DATA));
+    restorePaletteTail(buf);
     buf[0x1fa] = 0x5a;
     buf[0x1fb] = 0xa5;
     await sleep(120);
@@ -316,8 +341,14 @@ export class Mk75Wireless implements Mk75Device {
     await sleep(50);
   }
 
+  /** No model command over 2.4 GHz, but the palette holds a copy of the id at byte 483 (issues #29, #31). */
   async checkModel(): Promise<Uint8Array | null> {
-    return null;
+    try {
+      const id = (this.paletteRaw ?? (await this.readPaletteRaw())).slice(PALETTE_TAIL_AT, PALETTE_TAIL_AT + 6);
+      return id.some((b) => b !== 0) ? id : null;
+    } catch {
+      return null;
+    }
   }
 
   // ---------------------------------------------------------------- live stream

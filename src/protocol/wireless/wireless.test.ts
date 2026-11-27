@@ -293,12 +293,26 @@ describe('Mk75Wireless adapter against the simulator', () => {
     expect([...io.palette.slice(483, 490)]).toEqual([...PALETTE_TAIL.subarray(0, 7)]);
   });
 
-  // Known bug: bytes 490..511 never reach us over 2.4 GHz and are written back as zeros (the vendor app does
-  // the same). Fixing it needs the real tail from a cable read on hardware. Remove `.fails` when the fix lands.
-  it.fails('palette save keeps identity tail bytes 490..511', async () => {
+  // Bytes 490..511 never reach us over 2.4 GHz (the vendor app writes them back as zeros); we restore the
+  // MK75's own values, taken from a cable read of the same keyboard (issues #29 and #31).
+  it('palette save keeps identity tail bytes 490..511', async () => {
     const { io, dev } = make();
     await dev.writeRgbTable(await dev.readRgbTable());
     expect([...io.palette.slice(483)]).toEqual([...PALETTE_TAIL]);
+  });
+
+  it('palette save leaves an unknown tail alone', async () => {
+    const { io, dev } = make();
+    io.palette.fill(0, 483);
+    io.palette[483] = 9; // not the MK75 identity copy
+    await dev.writeRgbTable(await dev.readRgbTable());
+    expect([...io.palette.slice(490, 506)].every((b) => b === 0)).toBe(true);
+    expect([io.palette[0x1fa], io.palette[0x1fb]]).toEqual([0x5a, 0xa5]);
+  });
+
+  it('model check reads the id copy in the palette', async () => {
+    const { dev } = make();
+    expect([...(await dev.checkModel())!]).toEqual([3, 0, 0, 0, 0, 0xc6]);
   });
 
   it('live frames are colour groups within 200 bytes', async () => {

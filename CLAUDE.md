@@ -163,6 +163,9 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
 
 - **Confirmed** (byte-exact by emulation): all wired frames, macro slot encoding, wireless packet framing and
   command bytes, the wired↔wireless key-code encoders, mouse code order.
+- **Confirmed on hardware** (replayed in tests): IC2481 cable reads (issue #29) and `0x13` receiver reads (issue
+  #31, same keyboard). The wireless key map and palette decode identically to the cable read. Writes over 2.4 GHz
+  still need a capture.
 - **Inferred:**
   - Whether speed level 0 is the slowest or the fastest.
   - Whether Bluetooth exposes the vendor collection at all.
