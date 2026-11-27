@@ -112,8 +112,8 @@ export class G5WiredLink implements LayoutBLink {
           await sleep(this.delayMs + attempt * 30);
           let r = await this.t.receiveFeature(G5_REPORT);
           this.log?.('in', G5_REPORT, r);
-          // Linux may return the report ID on short responses even when the transport
-          // has already normalized full-sized reports. G5 read opcodes are >= 0x80,
+          // Chrome may return the report ID on short responses even when the transport has already
+          // normalized full-sized reports (seen on Linux and, in issue #29, on Windows). G5 read opcodes are >= 0x80,
           // so matching both the ID and expected command avoids stripping payload.
           if (r[0] === G5_REPORT && r[1] === cmd) r = r.subarray(1);
           // Short HID reports are valid only when they still contain the complete requested payload.
