@@ -15,6 +15,7 @@ export const PROBE_ACTIONS = [
   /** Control: main backlight brightness lives at led 0x3A+2i, so this must show a change if the probe works. */
   { id: 'check', keys: 'Fn + F5 or F6', what: 'main backlight brightness' },
   { id: 'setup', keys: 'Fn + Right Shift', what: 'set to steady' },
+  { id: 'breathe', keys: 'Fn + Right Shift', what: 'set to breathe' },
   { id: 'replug', keys: 'Re-plugged', what: 'after reconnecting' },
 ] as const;
 
@@ -40,21 +41,33 @@ export interface ProbeRead {
 
 /**
  * One step of the guided test. `press` steps wait for the press to be detected; `setup` waits for the user's
- * "Ready"; `replug` waits for the keyboard to reconnect. `codes` = KeyboardEvent.code values the key would send
- * if the keyboard passes it to the computer (with Fn held it usually doesn't).
+ * "Ready"; `save` waits for the user to save the results file; `replug` waits for the keyboard to reconnect.
+ * `codes` = KeyboardEvent.code values the key would send if the keyboard passes it to the computer (with Fn held
+ * it usually doesn't).
  */
 export interface GuideStep {
+  /** Unused for `save` steps (nothing is read). */
   action: ProbeAction;
-  kind: 'press' | 'setup' | 'replug';
+  kind: 'press' | 'setup' | 'save' | 'replug';
   prompt: string;
   detail: string;
   codes?: string[];
 }
 
-const presses = (action: ProbeAction, n: number, prompt: string, what: string, codes: string[]): GuideStep[] =>
-  Array.from({ length: n }, (_, i) => ({ action, kind: 'press' as const, prompt, detail: `${what}: press ${i + 1} of ${n}.`, codes }));
+const presses = (action: ProbeAction, n: number, prompt: string, what: string, look: string, codes: string[]): GuideStep[] =>
+  Array.from({ length: n }, (_, i) => ({ action, kind: 'press' as const, prompt, detail: `${what}: press ${i + 1} of ${n}. ${look}`, codes }));
 
+/**
+ * The order keeps every press visible on the side lights: steady first (colour and brightness show there),
+ * breathe for speed, and mode last because it cycles through the animated modes.
+ */
 export const GUIDE: GuideStep[] = [
+  {
+    action: 'setup',
+    kind: 'setup',
+    prompt: 'Set the side lights to steady',
+    detail: 'Press Fn + Right Shift until the side lights glow in one steady colour (not moving, not breathing), then click Ready.',
+  },
   {
     action: 'check',
     kind: 'press',
@@ -62,23 +75,41 @@ export const GUIDE: GuideStep[] = [
     detail: 'The key backlight gets brighter. This checks that the page notices changes. Already at full brightness? Press Fn + F5 instead.',
     codes: ['F5', 'F6'],
   },
-  ...presses('mode', 5, 'Press Fn + Right Shift', 'Side-light mode', ['ShiftRight']),
+  ...presses('colour', 7, 'Press Fn + /', 'Side-light colour', 'The side lights should change colour.', ['Slash']),
+  ...presses('brightness', 4, 'Press Fn + Right Alt', 'Side-light brightness', 'The side lights should get brighter or dimmer.', ['AltRight']),
   {
-    action: 'setup',
+    action: 'breathe',
     kind: 'setup',
-    prompt: 'Set the side lights to steady',
-    detail: 'Press Fn + Right Shift until the side lights glow in one steady colour, then click Ready. Colours only change in steady or breathe mode.',
+    prompt: 'Set the side lights to breathe',
+    detail: 'Press Fn + Right Shift until the side lights slowly fade in and out, then click Ready. Speed only shows in a moving mode.',
   },
-  ...presses('colour', 4, 'Press Fn + /', 'Side-light colour', ['Slash']),
-  ...presses('speed', 3, 'Press Fn + Right Ctrl', 'Side-light speed', ['ControlRight']),
-  ...presses('brightness', 3, 'Press Fn + Right Alt', 'Side-light brightness', ['AltRight']),
+  ...presses('speed', 4, 'Press Fn + Right Ctrl', 'Side-light speed', 'The breathing should get faster or slower.', ['ControlRight']),
+  ...presses('mode', 5, 'Press Fn + Right Shift', 'Side-light mode', 'The side-light pattern should change.', ['ShiftRight']),
+  {
+    action: 'replug',
+    kind: 'save',
+    prompt: 'Save the results',
+    detail: 'Click Save results. The file goes to your Downloads folder. Then the last step.',
+  },
   {
     action: 'replug',
     kind: 'replug',
     prompt: 'Unplug the keyboard, then plug it back in',
-    detail: 'Keep this window open. The page reconnects by itself and continues.',
+    detail: 'Keep this window open. The page reconnects by itself and continues. If it doesn\'t, click Reconnect below.',
   },
 ];
+
+/** The probe on its own, for "Save results" (works while the keyboard is unplugged). */
+export function probeResultsFile(reads: ProbeRead[], connection: { kind: string; flavour: string; transport: string } | null, appVersion: string) {
+  return {
+    format: 'mk75-side-light-probe' as const,
+    version: 1,
+    created: new Date().toISOString(),
+    app: appVersion,
+    connection,
+    probe: probeForFile(reads),
+  };
+}
 
 /** Keys that are only half of a shortcut (Fn itself never reaches the computer). */
 const MODIFIERS = new Set(['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight']);

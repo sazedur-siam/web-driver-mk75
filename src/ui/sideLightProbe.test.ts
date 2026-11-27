@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { WirelessLink } from '../protocol/wireless/link';
 import { MockWirelessIO } from '../protocol/wireless/mockWireless';
 import { Mk75Wireless } from '../protocol/wireless/mk75Wireless';
-import { byteLabel, describeOffset, diffReads, GUIDE, judgeKey, probeForFile, summarise, type ProbeRead } from './sideLightProbe';
+import { byteLabel, describeOffset, diffReads, GUIDE, judgeKey, probeForFile, probeResultsFile, summarise, type ProbeRead } from './sideLightProbe';
 
 const fast = { pace: 0, livePace: 0, ackMs: 300, readMs: 300 };
 
@@ -62,14 +62,24 @@ describe('side-light probe', () => {
     expect(r.blocks.palette).toHaveLength(0x400);
   });
 
-  it('guides through the control check, every side-light shortcut, then a re-plug', () => {
-    expect(GUIDE[0]).toMatchObject({ action: 'check', kind: 'press' });
-    expect(GUIDE.at(-1)).toMatchObject({ action: 'replug', kind: 'replug' });
-    const count = (a: string) => GUIDE.filter((s) => s.action === a).length;
-    expect([count('mode'), count('colour'), count('speed'), count('brightness')]).toEqual([5, 4, 3, 3]);
-    // Colours only change in steady/breathe, so the user sets that up before the colour presses.
-    expect(GUIDE.findIndex((s) => s.kind === 'setup')).toBe(GUIDE.findIndex((s) => s.action === 'colour') - 1);
+  it('keeps every press visible: steady before colour and brightness, breathe before speed, mode last', () => {
+    const at = (pred: (s: (typeof GUIDE)[number]) => boolean) => GUIDE.findIndex(pred);
+    expect(GUIDE[0]).toMatchObject({ action: 'setup', kind: 'setup' });
+    expect(GUIDE[1]).toMatchObject({ action: 'check', kind: 'press' });
+    expect(at((s) => s.action === 'colour')).toBeGreaterThan(0);
+    expect(at((s) => s.action === 'breathe')).toBe(at((s) => s.action === 'speed') - 1);
+    const lastPress = GUIDE.map((s) => s.kind).lastIndexOf('press');
+    expect(GUIDE[lastPress].action).toBe('mode');
+    const count = (a: string) => GUIDE.filter((s) => s.action === a && s.kind === 'press').length;
+    expect([count('colour'), count('brightness'), count('speed'), count('mode')]).toEqual([7, 4, 4, 5]);
     for (const s of GUIDE.filter((x) => x.kind === 'press')) expect(s.codes?.length).toBeGreaterThan(0);
+  });
+
+  it('saves the results before the re-plug, which comes last', () => {
+    expect(GUIDE.slice(-2).map((s) => s.kind)).toEqual(['save', 'replug']);
+    const f = probeResultsFile([read('baseline', led())], { kind: 'wired', flavour: 'g5wired', transport: 'MK75' }, '0.1.0');
+    expect(f).toMatchObject({ format: 'mk75-side-light-probe', connection: { flavour: 'g5wired' } });
+    expect(f.probe).toHaveLength(1);
   });
 
   it('accepts the expected key, ignores modifiers and flags anything else', () => {
@@ -77,8 +87,8 @@ describe('side-light probe', () => {
     expect(judgeKey(mode, 'ShiftRight')).toBe('right');
     expect(judgeKey(mode, 'ControlRight')).toBe('ignore');
     expect(judgeKey(mode, 'KeyA')).toBe('wrong');
-    expect(judgeKey(GUIDE[0], 'F5')).toBe('right');
-    expect(judgeKey(GUIDE[0], 'F7')).toBe('wrong');
+    expect(judgeKey(GUIDE.find((s) => s.action === 'check')!, 'F5')).toBe('right');
+    expect(judgeKey(GUIDE.find((s) => s.action === 'check')!, 'F7')).toBe('wrong');
   });
 
   it('keeps how each press was detected in the file', () => {

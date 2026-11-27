@@ -8,7 +8,7 @@ import {
   GUIDE,
   hex2,
   judgeKey,
-  probeAction,
+  probeResultsFile,
   summarise,
   type ProbeRead,
   type ProbeSignal,
@@ -27,6 +27,20 @@ const SETTLE_POLL_MS = 400;
 const SETTLE_MIN_MS = 1500;
 const SETTLE_MAX_MS = 4000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const appVersion = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
+
+/** Download the probe on its own; needs no device, so it also works while the keyboard is unplugged. */
+function downloadResults(file: ReturnType<typeof probeResultsFile>) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url;
+  const d = new Date(file.created);
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  // Local time, so the name matches the clock of whoever saved it.
+  a.download = `mk75-side-light-probe-${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 const SIGNAL_TEXT: Record<ProbeSignal, string> = {
@@ -63,6 +77,9 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
   readsRef.current = reads;
   const seen = useRef<{ hid: string[]; keys: string[] }>({ hid: [], keys: [] });
   const replugFrom = useRef<unknown>(null);
+  /** The connection the test started on, for the results file (the device may be gone when saving). */
+  const connection = useRef<{ kind: string; flavour: string; transport: string } | null>(null);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   /** The step already recorded: the poll, a keyboard message and the user's button can all finish the same step. */
   const recordedFor = useRef(-2);
 
@@ -77,9 +94,18 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
     setStep((s) => s + 1);
   };
 
+  const save = () => {
+    downloadResults(probeResultsFile(readsRef.current, connection.current, appVersion));
+    setSavedAt(readsRef.current.length);
+  };
+
   /** Read now and record (start, Ready, "I pressed it"). */
   const readAndRecord = async (signal?: ProbeSignal) => {
     if (!dev) return;
+    if (step < 0) {
+      const flavour = (dev as { flavour?: string }).flavour ?? 'cdev916';
+      connection.current = { kind: dev.kind, flavour, transport: dev.transport.name };
+    }
     setWorking(true);
     try {
       record(await dev.readRawBlocks!(), signal);
@@ -241,6 +267,17 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
               Ready
             </button>
           )}
+          {cur.kind === 'save' && (
+            <button
+              className="primary"
+              onClick={() => {
+                save();
+                setStep((s) => s + 1);
+              }}
+            >
+              Save results
+            </button>
+          )}
           {cur.kind === 'replug' && dev && <p className="hint">Waiting for the keyboard to disconnect…</p>}
         </div>
       )}
@@ -260,7 +297,12 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
       {finished && (
         <div className="probe-now">
           <div className="probe-prompt">✓ All done</div>
-          <p className="small">Thanks! Save the file below, or send a screenshot of this section.</p>
+          <p className="small">Thanks! Save the results once more so the file includes the re-plug check.</p>
+          <div>
+            <button className="primary" onClick={save}>
+              Save results
+            </button>
+          </div>
         </div>
       )}
 
@@ -297,7 +339,7 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
                   <td className="mono">{byteLabel(s.block, s.offset)}</td>
                   <td>{describeOffset(s.block, s.offset) || <span className="muted">unknown</span>}</td>
                   <td className="mono">{s.values.map(hex2).join(' ')}</td>
-                  <td>{s.actions.map((a) => probeAction(a).keys).join(', ')}</td>
+                  <td>{s.actions.map(actionLabel).join(', ')}</td>
                 </tr>
               ))}
             </tbody>
@@ -307,9 +349,17 @@ export function SideLightProbePanel({ api, reads, setReads }: { api: DeviceApi; 
 
       {started && (
         <div className="actions">
+          <button disabled={reads.length < 2} onClick={save}>
+            Save results
+          </button>
           <button disabled={working} onClick={restart}>
             Start over
           </button>
+          {savedAt !== null && (
+            <span className="hint">
+              Saved {savedAt - 1} step{savedAt === 2 ? '' : 's'} to your Downloads folder.
+            </span>
+          )}
         </div>
       )}
     </details>
