@@ -20,22 +20,23 @@ Please send one file per connection mode you can use: **USB cable**, **2.4 GHz r
 | `log` | The last ~400 configuration packets between the app and the keyboard (full bytes) | Shows exactly what the keyboard replies |
 | `browser`, `app` | Browser user-agent string (includes your OS) and app version | Reproducing problems |
 | `note` | Whatever you typed in the Notes box | Your description |
-| `probe` | Only if you ran the **side-light probe**: each read of the keyboard's 128-byte settings block, which shortcut you pressed before it, and what you wrote the side lights showed. `null` otherwise | Finding where the keyboard stores the side-light settings, so the app can change them |
+| `probe` | Only if you ran the **side-light probe**: each snapshot of the keyboard's readable blocks (128-byte settings, palette, key-map layers 0–3) and which shortcut you pressed before it. `null` otherwise | Finding where the keyboard stores the side-light settings, so the app can change them |
 
 ### Side-light probe
 
 The dialog has an optional **Side-light probe** section (USB on newer boards, 2.4 GHz and Bluetooth). It only
 reads; nothing is written to the keyboard. To run it:
 
-1. Click **Read starting point**.
-2. Press **one** side-light shortcut on the keyboard: **Fn + Right Shift** (mode), **Fn + /** (colour), **Fn +
-   Right Ctrl** (speed) or **Fn + Right Alt** (brightness).
-3. Click the button for that shortcut. It reads the keyboard right away. To note what the side lights show,
-   type it in the box before clicking.
-4. Repeat until each setting has gone all the way round. Then unplug, plug back in, reconnect, and click
-   **Re-plugged the keyboard**.
+1. Click **Take snapshot**.
+2. Check that the probe sees changes: press **Fn + F6** (or **Fn + F5**) so the key backlight gets brighter
+   (or dimmer), then click **Fn + F5 or F6**. It should report a changed byte.
+3. Press **one** side-light shortcut on the keyboard, **Fn + Right Shift** (mode), **Fn + /** (colour), **Fn +
+   Right Ctrl** (speed) or **Fn + Right Alt** (brightness), then click the same shortcut in the dialog. Repeat
+   until each setting has gone all the way round.
+4. Unplug the keyboard and plug it back in with the dialog open (it reconnects by itself), then click **check
+   after reconnecting**.
 
-The section lists the bytes that changed after each read. Save the file and attach it as usual.
+The section lists the bytes that changed after each click. Save the file and attach it as usual.
 
 ## What it never contains
 

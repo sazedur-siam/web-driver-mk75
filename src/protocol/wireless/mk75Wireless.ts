@@ -194,9 +194,14 @@ export class Mk75Wireless implements Mk75Device {
   }
 
   // ---------------------------------------------------------------- settings outside the wired profile
-  /** The whole config block, unchanged (a copy). Waits for any write in progress. */
-  readConfigBlock(): Promise<Uint8Array> {
-    return this.exclusive(async () => new Uint8Array(await this.readLedRaw()));
+  /** All readable blocks, unchanged, without touching the adapter's caches. Waits for any write in progress. */
+  readRawBlocks(): Promise<Record<string, Uint8Array>> {
+    return this.exclusive(async () => {
+      const out: Record<string, Uint8Array> = { led: new Uint8Array(await this.readLedRaw()) };
+      out.palette = new Uint8Array(await this.link.read(this.ops.getPalette, 0, PALETTE_LEN, PALETTE_READ_MIN));
+      for (let l = 0; l < 4; l++) out[`keymap ${l}`] = new Uint8Array(await this.link.read(this.ops.getMatrix, l, LAYER_LEN, LAYER_READ_MIN));
+      return out;
+    });
   }
 
   async readSettings(): Promise<KeyboardSettings> {

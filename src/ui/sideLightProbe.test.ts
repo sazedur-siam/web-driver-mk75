@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { WirelessLink } from '../protocol/wireless/link';
 import { MockWirelessIO } from '../protocol/wireless/mockWireless';
 import { Mk75Wireless } from '../protocol/wireless/mk75Wireless';
-import { describeOffset, diffBlocks, probeForFile, summarise, type ProbeRead } from './sideLightProbe';
+import { byteLabel, describeOffset, diffReads, probeForFile, summarise, type ProbeRead } from './sideLightProbe';
 
 const fast = { pace: 0, livePace: 0, ackMs: 300, readMs: 300 };
 
-const block = (patch: Record<number, number> = {}) => {
+const led = (patch: Record<number, number> = {}) => {
   const b = new Uint8Array(128);
   b[0x06] = 4;
   b[0x7e] = 0x5a;
@@ -14,62 +14,76 @@ const block = (patch: Record<number, number> = {}) => {
   for (const [o, v] of Object.entries(patch)) b[+o] = v;
   return b;
 };
-const read = (action: ProbeRead['action'], b: Uint8Array, seen = ''): ProbeRead => ({ t: 0, action, seen, block: b });
+const read = (action: ProbeRead['action'], l: Uint8Array, palette = new Uint8Array(0x200)): ProbeRead => ({ t: 0, action, blocks: { led: l, palette } });
 
 describe('side-light probe', () => {
-  it('lists the bytes that differ between two reads', () => {
-    expect(diffBlocks(block(), block())).toEqual([]);
-    expect(diffBlocks(block(), block({ 0x04: 1, 0x06: 3 }))).toEqual([
-      { offset: 0x04, from: 0, to: 1 },
-      { offset: 0x06, from: 4, to: 3 },
+  it('lists the bytes that differ between two reads, block by block', () => {
+    expect(diffReads(read('baseline', led()), read('mode', led()))).toEqual([]);
+    const pal = new Uint8Array(0x200);
+    pal[0x1a3] = 7;
+    expect(diffReads(read('baseline', led()), read('mode', led({ 0x04: 1, 0x06: 3 }), pal))).toEqual([
+      { block: 'led', offset: 0x04, from: 0, to: 1 },
+      { block: 'led', offset: 0x06, from: 4, to: 3 },
+      { block: 'palette', offset: 0x1a3, from: 0, to: 7 },
     ]);
   });
 
   it('summarises which action moved which byte, with every value seen', () => {
     const reads = [
-      read('baseline', block()),
-      read('mode', block({ 0x04: 1 })),
-      read('mode', block({ 0x04: 2 })),
-      read('colour', block({ 0x04: 2, 0x08: 1 })),
-      read('replug', block({ 0x04: 2, 0x08: 1 })),
+      read('baseline', led()),
+      read('mode', led({ 0x04: 1 })),
+      read('mode', led({ 0x04: 2 })),
+      read('colour', led({ 0x04: 2, 0x08: 1 })),
+      read('replug', led({ 0x04: 2, 0x08: 1 })),
     ];
     expect(summarise(reads)).toEqual([
-      { offset: 0x04, values: [0, 1, 2], actions: ['mode'] },
-      { offset: 0x08, values: [0, 1], actions: ['colour'] },
+      { block: 'led', offset: 0x04, values: [0, 1, 2], actions: ['mode'] },
+      { block: 'led', offset: 0x08, values: [0, 1], actions: ['colour'] },
     ]);
     expect(summarise(reads.slice(0, 1))).toEqual([]);
   });
 
-  it('names the offsets the app already decodes and leaves the rest unknown', () => {
-    expect(describeOffset(0x0e)).toBe('connection mode');
-    expect(describeOffset(0x3a)).toBe('effect 0 brightness');
-    expect(describeOffset(0x3b + 2 * 18)).toBe('effect 18 speed/colour');
-    expect(describeOffset(0x06)).toBe('');
-    expect(describeOffset(0x74)).toBe('');
+  it('names the bytes the app already decodes and leaves the rest unknown', () => {
+    expect(describeOffset('led', 0x0e)).toBe('connection mode');
+    expect(describeOffset('led', 0x3a)).toBe('effect 0 brightness');
+    expect(describeOffset('led', 0x3b + 2 * 18)).toBe('effect 18 speed/colour');
+    expect(describeOffset('led', 0x06)).toBe('');
+    expect(describeOffset('keymap 1', 0x41)).toBe('key slot 16');
+    expect(describeOffset('palette', 0x1f0)).toBe('');
+    expect(byteLabel('led', 6)).toBe('led 0x06');
+    expect(byteLabel('palette', 0x1a3)).toBe('palette 0x1A3');
   });
 
-  it('stores reads in the device-data file as hex with what the user saw', () => {
-    const [r] = probeForFile([read('mode', block(), ' steady, red ')]);
-    expect(r).toMatchObject({ action: 'mode', seen: 'steady, red', t: '1970-01-01T00:00:00.000Z' });
-    expect(r.block).toHaveLength(256);
-    expect(r.block.slice(-4)).toBe('5aa5');
+  it('stores reads in the device-data file as hex per block', () => {
+    const [r] = probeForFile([read('check', led())]);
+    expect(r).toMatchObject({ action: 'check', t: '1970-01-01T00:00:00.000Z' });
+    expect(r.blocks.led).toHaveLength(256);
+    expect(r.blocks.led.slice(-4)).toBe('5aa5');
+    expect(r.blocks.palette).toHaveLength(0x400);
   });
 
-  it('reads the config block from the simulator without writing anything', async () => {
+  it('reads every block from the simulator without writing or touching the caches', async () => {
     const io = new MockWirelessIO();
     const dev = new Mk75Wireless(new WirelessLink(io, 0x13, undefined, fast), '3632');
-    const ref = io.led;
-    const b = await dev.readConfigBlock();
-    expect(b).toEqual(io.led);
-    b[0x06] = 0x99; // a copy: changing it doesn't touch the device or the next read
-    expect((await dev.readConfigBlock())[0x06]).toBe(io.led[0x06]);
-    expect(io.led).toBe(ref); // SetLed replaces the array, so the same object means no write
+    const ref = { led: io.led, palette: io.palette, layers: [...io.layers] };
+    const b = await dev.readRawBlocks();
+    expect(Object.keys(b)).toEqual(['led', 'palette', 'keymap 0', 'keymap 1', 'keymap 2', 'keymap 3']);
+    expect(b.led).toEqual(io.led);
+    // The simulator, like real receivers, sends only the first 490 palette and 504 keymap bytes.
+    expect(b.palette.subarray(0, 490)).toEqual(io.palette.subarray(0, 490));
+    io.layers.forEach((l, i) => expect(b[`keymap ${i}`].subarray(0, 504)).toEqual(l.subarray(0, 504)));
+    b.led[0x06] = 0x99; // a copy: changing it doesn't touch the device or the next read
+    expect((await dev.readRawBlocks()).led[0x06]).toBe(io.led[0x06]);
+    // Writes replace these arrays, so the same objects mean nothing was written.
+    expect(io.led).toBe(ref.led);
+    expect(io.palette).toBe(ref.palette);
+    io.layers.forEach((l, i) => expect(l).toBe(ref.layers[i]));
   });
 
-  it('refuses to report a sleeping keyboard\'s zeroed block', async () => {
+  it("refuses to report a sleeping keyboard's zeroed block", async () => {
     const io = new MockWirelessIO();
     const dev = new Mk75Wireless(new WirelessLink(io, 0x13, undefined, fast), '3632');
     io.asleepReads = Infinity;
-    await expect(dev.readConfigBlock()).rejects.toThrow(/asleep/);
+    await expect(dev.readRawBlocks()).rejects.toThrow(/asleep/);
   });
 });
