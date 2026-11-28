@@ -6,6 +6,7 @@ import { applyProfile, captureProfile, profileMatrix, readSideLightsFor } from '
 import { presetStore, shareLink } from './presetStore';
 import { fromHex, profileStore, useProfiles, validateProfile, type Profile } from './profileStore';
 import type { DeviceApi } from './useDevice';
+import { GameModeProfilesNote } from './GameModeCard';
 
 const eq = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((v, i) => v === b[i]);
 
@@ -113,6 +114,7 @@ export function ProfilesTab({ api }: { api: DeviceApi }) {
           <h2>Profiles</h2>
           <span className="muted small">{profiles.length} saved in this browser</span>
         </header>
+        <GameModeProfilesNote api={api} />
         {profiles.length === 0 && <p className="muted">No profiles yet. Save the keyboard's current setup to create one.</p>}
         <div className="profile-list">
           {profiles.map((p) => {

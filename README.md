@@ -104,6 +104,9 @@ hardware. They are hidden on the live site and only appear when you run it local
   back the Fn layer as the app first read it.
 - Changed keys are highlighted before you save. Keys using Fn redirect slots are handled the same way as in the
   official driver.
+- **Game mode:** one click in the header turns off the Win key and Caps Lock, and optionally stops the keyboard
+  sleeping and lights up WASD. A second click puts back exactly what it changed; keys you changed in between are
+  left as you set them. Choose the options on the Key mapping tab. The keyboard's own Fn + Win lock still works.
 
 ### Macros
 - Record from your keyboard and mouse (left/middle/right) with real timing, or use fixed delays. Edit each event

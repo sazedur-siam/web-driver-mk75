@@ -4,7 +4,9 @@ import { Mk75 } from '../protocol/mk75';
 import { WirelessLink } from '../protocol/wireless/link';
 import { MockWirelessIO } from '../protocol/wireless/mockWireless';
 import { Mk75Wireless } from '../protocol/wireless/mk75Wireless';
-import { buildBackup, parseBackup, restoreBackup } from './backup';
+import { planGameModeOn } from '../protocol/gameMode';
+import { buildBackup, parseBackup, restoreBackup, type BackupFile } from './backup';
+import { gameModeStore } from './gameModeStore';
 import { macroStore } from './macroStore';
 import type { DeviceSnapshot } from './useDevice';
 
@@ -64,5 +66,30 @@ describe('backup', () => {
     expect(() => parseBackup(JSON.stringify({ ...good, sideLights: 'steady' }))).toThrow(/side lights/);
     // Out-of-range fields are dropped, like in profiles; the valid ones are kept.
     expect(parseBackup(JSON.stringify({ ...good, sideLights: { mode: 2, colour: 99 } })).sideLights).toEqual({ mode: 2 });
+  });
+
+  it('carries the game mode options; restoring keeps them and forgets an active game mode', async () => {
+    macroStore.replaceAll({ macros: [], assignments: {} });
+    const mock = new MockMk75();
+    const dev = new Mk75(mock, { readDelayMs: 0, writeDelayMs: 0 });
+    const options = { disableWin: true, disableCaps: false, neverSleep: true, lighting: 'keep' as const };
+    gameModeStore.setOptions(options);
+    const snap = await read(dev);
+    const file = parseBackup(JSON.stringify(buildBackup(snap)));
+    expect(file.gameMode).toEqual(options);
+
+    // Game mode turned on (with other options) after the backup was taken, then the backup is restored:
+    // the restored key map replaces game mode's changes, so the record is dropped and the backup's options return.
+    gameModeStore.setOptions({ ...options, disableCaps: true });
+    gameModeStore.setActive(planGameModeOn(snap.matrix, snap.profile, { ...options, disableCaps: true }).record);
+    await restoreBackup(dev, snap, file);
+    expect(gameModeStore.get().options).toEqual(options);
+    expect(gameModeStore.get().active).toBeNull();
+
+    // Older backups have no game mode field; damaged ones are refused.
+    const old: Partial<BackupFile> = buildBackup(snap);
+    delete old.gameMode;
+    expect(parseBackup(JSON.stringify(old)).gameMode).toBeUndefined();
+    expect(() => parseBackup(JSON.stringify({ ...buildBackup(snap), gameMode: { lighting: 'disco' } }))).toThrow(/game mode/);
   });
 });

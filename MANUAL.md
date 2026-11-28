@@ -136,6 +136,21 @@ puts back the Fn layer as the app first read it.
 ![Key mapping tab](public/manual/key-mapping.webp)
 *Key mapping: click a key (here Caps Lock), choose its new job below, then Save to keyboard.*
 
+### Game mode
+Click **Game mode** at the top of the page before you play. It can turn off the Win key and Caps Lock, stop the
+keyboard from going to sleep, and light up WASD and the arrows. Pick which of these you want in the **Game mode**
+box on the **Key mapping** tab. Click **Game mode on** again after playing to put back exactly what it changed. If
+you changed one of those keys yourself in between, game mode leaves your change alone and tells you.
+
+- The keyboard remembers game mode when you unplug it. This browser remembers what to put back, so turn it off from
+  the same browser.
+- **WASD lighting** replaces the keyboard's Self-define colours. When game mode goes off they come back from this
+  browser's **Per-key RGB** editor.
+- The keyboard's own <kbd>Fn</kbd>+<kbd>Win</kbd> lock still works in game, without switching to the browser.
+
+![Game mode settings](public/manual/game-mode.webp)
+*Game mode: choose what it changes, then click Turn game mode on (or Game mode in the header).*
+
 ### Make a macro (one key types many keys)
 1. Open **Macros** and click **New macro**.
 2. Click **● Record**, type your keys, then click **■ Stop recording**. Or click **New from text…** and just type

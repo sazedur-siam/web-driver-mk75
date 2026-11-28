@@ -5,7 +5,9 @@
 import type { Mk75Device, SideLights } from '../protocol/device';
 import { PAGE_LEN, PROFILE_LEN } from '../protocol/mk75';
 import { writeSideLightsIfChanged } from './applyProfile';
+import { parseOptions, type GameModeOptions } from '../protocol/gameMode';
 import { effectStore, isEffectList } from './effectStore';
+import { gameModeStore } from './gameModeStore';
 import { isMacroState, macroStore } from './macroStore';
 import { parseSideLights, profileStore, validateProfile, type Profile } from './profileStore';
 import { withMacroCodes } from './saveKeys';
@@ -29,6 +31,8 @@ export interface BackupFile {
   profiles?: Profile[];
   /** Custom live effects (browser only). */
   effects?: ReturnType<typeof effectStore.get>;
+  /** Game mode options (browser only; not whether it's on: the restored key map decides that). */
+  gameMode?: GameModeOptions;
 }
 
 export function buildBackup(snap: DeviceSnapshot, sideLights?: SideLights): BackupFile {
@@ -43,6 +47,7 @@ export function buildBackup(snap: DeviceSnapshot, sideLights?: SideLights): Back
     macros: macroStore.get(),
     profiles: profileStore.get().profiles,
     effects: effectStore.get(),
+    gameMode: { ...gameModeStore.get().options },
   };
 }
 
@@ -64,6 +69,11 @@ export function parseBackup(text: string): BackupFile {
     if (!s) throw new Error('Backup side lights are damaged');
     b.sideLights = s;
   }
+  if (b.gameMode !== undefined) {
+    const g = parseOptions(b.gameMode);
+    if (!g) throw new Error('Backup game mode settings are damaged');
+    b.gameMode = g;
+  }
   return b;
 }
 
@@ -76,6 +86,8 @@ export async function restoreBackup(dev: Mk75Device, snap: DeviceSnapshot, b: Ba
   if (b.macros) macroStore.replaceAll(b.macros);
   if (b.effects?.length) effectStore.replaceAll(b.effects);
   if (b.profiles?.length) profileStore.replaceAll(b.profiles);
+  // The restored key map replaces whatever an active game mode changed: keep (or take) the options, drop the record.
+  gameModeStore.restoreOptions(b.gameMode);
   await dev.writeRgbTable(fromHexStr(b.rgbTable));
   // Macro pages first (ids are re-planned deterministically in key order), then the matrix.
   const { matrix, plan } = withMacroCodes(fromHexStr(b.keyMatrix), dev.caps.macros, snap.matrix);

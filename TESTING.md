@@ -118,6 +118,15 @@ Use a text editor and a keyboard/mouse tester website.
 - [ ] **B2** (P1) If B1 passes, repeat W3. Lighting changes apply.
 - [ ] **B3** (P1) Connect over Bluetooth 5 times in a row. Each connect succeeds, with no "timeout reading 0x44" error (issue #32). In the log, `←` reply lines with gaps in the packet index are expected: ______
 
+## 9a. Game mode
+
+- [ ] **G1** (P0) Cable: **Game mode** on (Win and Caps Lock). Win and Caps Lock do nothing; other keys work; macros still play.
+- [ ] **G2** (P0) Unplug and replug, then reconnect. Win and Caps Lock are still off, and the header shows **Game mode on**.
+- [ ] **G3** (P0) Game mode off. Win and Caps Lock work again; the Key mapping tab shows no other changes.
+- [ ] **G4** (P1) 2.4G with **Never sleep**: the keyboard stays awake 5 minutes idle; after game mode off it sleeps on its old timer.
+- [ ] **G5** (P1) **WASD lighting** on and off, once starting from a normal effect and once from Self-define. The effect (and the Self-define colours) come back.
+- [ ] **G6** (P2) Press Fn + Win while game mode is on. Note anything odd between the firmware lock and the disabled key: ______
+
 ## 10. Themes and browser
 
 - [ ] **T1** (P2) Click all four colourways, then reload. Each theme looks right, and the choice is remembered after reload.

@@ -7,14 +7,10 @@ Live app: https://mk75-web.vercel.app/ · Repo: https://github.com/sazedur-siam/
 
 ## Index
 
-New plans go here as `NN-short-name.md` with a row in this table. The hardware checks still open are in
-`TESTING.md`.
+Nothing planned right now. New plans go here as `NN-short-name.md` with a row in a table here. The hardware
+checks still open are in `TESTING.md`.
 
-| # | Feature | Group | Priority | Effort | Needs hardware? |
-|---|---|---|---|---|---|
-| [04](04-game-mode.md) | Game mode (Win/Caps off, never sleep, WASD lighting, exact undo) | Key mapping / lighting | High | M | Verify only |
-
-Effort: S ≈ 1 day or less, M ≈ 2–4 days. "Verify only" = buildable now, but confirm on a real MK75.
+Table columns: # · Feature · Group · Priority · Effort · Needs hardware?. Effort: S ≈ 1 day or less, M ≈ 2–4 days. "Verify only" = buildable now, but confirm on a real MK75.
 
 ## Not possible in a browser (don't plan these)
 

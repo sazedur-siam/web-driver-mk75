@@ -198,6 +198,7 @@ src/protocol/            pure logic + device I/O (unit-tested, no React)
   lighting.ts            LED_MODES (from KB.ini LedOpt), parse/patch profile & palette, per-key planes
   keycodes.ts            KeyAction encode/decode, HID tables, redirect-aware get/setKeyCode
   macro.ts textMacro.ts  macro slot encoder, id planning; text → events
+  gameMode.ts            game mode planning: on/off with an undo record (before/after per key and profile byte)
   layouts.ts preset.ts   hardware layouts; shareable presets (deflate + base64url in #p=)
   live.ts screenSync.ts signals.ts effectDesigner.ts imageMap.ts perKeyTools.ts heatmap.ts chatter.ts
   mock.ts                USB simulator (dev and tests only; loaded with import() so production leaves it out)
@@ -207,7 +208,8 @@ src/ui/                  React tabs + browser stores (profileStore, macroStore, 
                          presetStore), applyProfile.ts, saveKeys.ts, useDevice.ts, ticker.ts, pwa.ts,
                          guide.ts/GuideView.tsx (MANUAL/README reader), report.ts/ReportDialog.tsx,
                          contribute.ts/ContributeDialog.tsx (device-data JSON; contents in DEVICE_DATA.md),
-                         lazyParts.tsx (every tab, the Guide and the dialogs load on demand; chunk-error reload)
+                         lazyParts.tsx (every tab, the Guide and the dialogs load on demand; chunk-error reload),
+                         gameModeStore.ts (write sequence), GameModeToggle.tsx (header), GameModeCard.tsx (Key mapping card)
 src/presets/gallery.ts   bundled presets
 src/build/swPrecache.ts  build step: writes the asset list + build id into dist/sw.js (vite.config.ts plugin)
 public/                  manifest, sw.js (precaches every asset; cache `mk75-<build id>`), icons, favicon.svg,
@@ -219,7 +221,7 @@ desktop/                 Electron tray app: main.cjs serves ../dist on app://mk7
 - **Data ownership:**
   - Keyboard flash: lighting, palette, per-key, key map, macros, sleep.
   - Browser `localStorage` (`mk75.*` keys): profiles, macro library, per-key editor colours, custom effects,
-    heatmap, theme, last macro pages written.
+    heatmap, theme, last macro pages written, game mode options and its undo record (`mk75.gamemode`).
   - Backups (`BackupTab`) carry all of these.
 - **Dev hook:** in `npm run dev`, `window.__mk75.dev` is the connected device (simulator transports expose
   `profile`, `matrix`, `ledMatrix`, `liveFrames`, `writes`…). Browser tests use it.
