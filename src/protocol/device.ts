@@ -63,7 +63,8 @@ export interface Mk75Device {
   /** Wired model id (6 bytes) or null. */
   checkModel(): Promise<Uint8Array | null>;
   readonly canStream: boolean;
-  sendLiveFrame(rgb: Uint8Array): Promise<void>;
+  /** Send a live frame. Resolves false when it was skipped because the keyboard already shows it (liveGate.ts). */
+  sendLiveFrame(rgb: Uint8Array): Promise<boolean>;
   readBattery?(): Promise<{ level: number; charging: boolean } | null>;
   readSettings?(): Promise<KeyboardSettings>;
   /** Keymap layer 1 (Fn held), wired view like readKeyMatrix. Layout B boards only. */

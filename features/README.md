@@ -12,8 +12,6 @@ New plans go here as `NN-short-name.md` with a row in this table. The hardware c
 
 | # | Feature | Group | Priority | Effort | Needs hardware? |
 |---|---|---|---|---|---|
-| [01](01-live-frame-skip.md) | Skip unchanged live frames (with a keep-alive) | Performance / live effects | High | S | Verify only |
-| [03](03-readme-fn-layer.md) | README: Fn-layer remapping is missing | Docs | High | XS | No |
 | [04](04-game-mode.md) | Game mode (Win/Caps off, never sleep, WASD lighting, exact undo) | Key mapping / lighting | High | M | Verify only |
 
 Effort: S ≈ 1 day or less, M ≈ 2–4 days. "Verify only" = buildable now, but confirm on a real MK75.
