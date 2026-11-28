@@ -20,6 +20,7 @@ import { SharedPresetBanner } from './ui/SharedPresetBanner';
 import { readSession, useDevice } from './ui/useDevice';
 import { useBattery } from './ui/battery';
 import { BatteryIcon } from './ui/BatteryIcon';
+import { GameModeToggle } from './ui/GameModePanel';
 
 /** One theme per official MK75 colourway (product page): case / keycap colours for the swatch. */
 const THEMES = [
@@ -239,6 +240,7 @@ export default function App() {
                   <BatteryIcon battery={battery} size={1.25} />
                 </span>
               )}
+              <GameModeToggle api={api} />
               <button onClick={() => void api.disconnect()} disabled={!!api.busy} title={api.busy ? 'Wait for the current write to finish' : undefined}>
                 Disconnect
               </button>

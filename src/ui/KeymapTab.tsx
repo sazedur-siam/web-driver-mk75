@@ -23,6 +23,7 @@ import { macroStore, useMacros } from './macroStore';
 import { fromHex, toHex } from './profileStore';
 import { saveKeysAndMacros, withMacroCodes } from './saveKeys';
 import type { DeviceApi } from './useDevice';
+import { GameModeCard } from './GameModePanel';
 
 function defaultAction(index: number): KeyAction | null {
   const k = MK75_KEYS.find((x) => x.index === index);
@@ -171,6 +172,7 @@ export function KeymapTab({ api }: { api: DeviceApi }) {
 
   return (
     <div className="stack">
+      {layer === 0 && <GameModeCard api={api} />}
       <section className="card">
         <header className="card-h">
           <h2>Key mapping ({layer === 1 ? 'Fn layer' : 'base layer'})</h2>
