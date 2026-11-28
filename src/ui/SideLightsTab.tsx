@@ -8,7 +8,17 @@ import type { DeviceApi } from './useDevice';
  */
 /** Order of byte 0x12, matching the Fn + Right Shift cycle (flow → neon → steady → breathe → off). */
 export const SIDE_MODE_NAMES = ['Off', 'Flow', 'Neon', 'Steady', 'Breathe'];
-const SIDE_COLOUR_COUNT = 7;
+/** Byte 0x13 values 0..6 as a real MK75 shows them in Steady (seen by the owner, 2026-11-28). */
+export const SIDE_COLOURS = [
+  { name: 'Red', css: '#ff2a2a' },
+  { name: 'Green', css: '#2ecc40' },
+  { name: 'Blue', css: '#2f6bff' },
+  { name: 'Yellow', css: '#ffd400' },
+  { name: 'Purple', css: '#a23cff' },
+  { name: 'Cyan', css: '#00d5e6' },
+  { name: 'White', css: '#ffffff' },
+];
+const colourName = (c: number) => SIDE_COLOURS[c]?.name ?? `colour ${c + 1}`;
 /** Modes where the colour shows (the keyboard's Fn + / only works in these too). */
 const COLOUR_MODES = [3, 4];
 
@@ -45,7 +55,7 @@ export function SideLightsTab({ api }: { api: DeviceApi }) {
       await dev.writeSideLights!(s);
       const back = await dev.readSideLights!();
       setCur(back);
-      api.push({ dir: 'info', text: `Side lights: ${SIDE_MODE_NAMES[back.mode] ?? `mode ${back.mode}`}, colour ${back.colour + 1}` });
+      api.push({ dir: 'info', text: `Side lights: ${SIDE_MODE_NAMES[back.mode] ?? `mode ${back.mode}`}, ${colourName(back.colour)}` });
     });
 
   const busy = !!api.busy;
@@ -79,12 +89,13 @@ export function SideLightsTab({ api }: { api: DeviceApi }) {
 
         <div className="field">
           <span className="field-l">
-            Colour for Steady and Breathe <b>{cur ? cur.colour + 1 : '…'}</b>
+            Colour for Steady and Breathe <b>{cur ? colourName(cur.colour) : '…'}</b>
           </span>
-          <div className="levels seven" role="radiogroup" aria-label="Side-light colour">
-            {Array.from({ length: SIDE_COLOUR_COUNT }, (_, i) => (
-              <button key={i} role="radio" aria-checked={cur?.colour === i} className={cur?.colour === i ? 'on' : ''} disabled={busy || !cur} onClick={() => write({ colour: i })}>
-                {i + 1}
+          <div className="levels seven side-colours" role="radiogroup" aria-label="Side-light colour">
+            {SIDE_COLOURS.map((c, i) => (
+              <button key={c.name} role="radio" aria-checked={cur?.colour === i} className={cur?.colour === i ? 'on' : ''} disabled={busy || !cur} onClick={() => write({ colour: i })}>
+                <span className="side-dot" style={{ background: c.css }} aria-hidden="true" />
+                <span className="side-name">{c.name}</span>
               </button>
             ))}
           </div>

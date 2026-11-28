@@ -225,6 +225,12 @@ select {
 .levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .levels button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .levels.seven { grid-template-columns: repeat(7, 1fr); }
+.side-colours button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 2px; min-width: 0; }
+.side-dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
+.side-name { font-size: 12px; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@media (max-width: 520px) {
+  .levels.seven { grid-template-columns: repeat(4, 1fr); }
+}
 
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
 .swatch { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
