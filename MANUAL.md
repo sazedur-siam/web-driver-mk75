@@ -101,7 +101,10 @@ Right Ctrl**), click **Refresh** to see it in the tab. The keyboard saves a brig
 next mode or colour change, so Refresh can show the old level until then.
 
 This works on current MK75s (with the cable, the 2.4 GHz receiver or Bluetooth). It's new, so if a click doesn't
-change the lights, please use **Report an Issue**.
+change the lights, please use **Report an Issue**. Saved profiles and backups include the side lights.
+
+![Side lights tab](public/manual/side-lights.webp)
+*Side lights: pick a mode and colour, then set brightness and speed. The shortcuts on the right do the same from the keyboard.*
 
 ### Light shows, music and more (Live effects)
 1. Open **Live effects**.

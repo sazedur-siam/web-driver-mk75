@@ -1,5 +1,5 @@
 /**
- * Side-light probe (features/20-side-lights.md, phase 1): snapshot every readable layout B block, let the user
+ * Side-light probe (how the side-light bytes were found; PROTOCOL.md): snapshot every readable layout B block, let the user
  * press one side-light shortcut on the keyboard, read again, and show which bytes changed. Read-only: nothing
  * here writes to the keyboard. The reads go into the "Contribute device data" file.
  */

@@ -1,28 +1,9 @@
 import { useRef, useState } from 'react';
-import { PAGE_LEN, PROFILE_LEN } from '../protocol/mk75';
-import { effectStore, isEffectList } from './effectStore';
-import { isMacroState, macroStore } from './macroStore';
-import { profileStore, validateProfile, type Profile } from './profileStore';
-import { withMacroCodes } from './saveKeys';
+import type { SideLights } from '../protocol/device';
+import { buildBackup, parseBackup, restoreBackup, type BackupFile } from './backup';
 import type { DeviceApi } from './useDevice';
 
 const toHex = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
-const fromHexStr = (s: string) => new Uint8Array((s.match(/../g) ?? []).map((h) => parseInt(h, 16)));
-
-interface BackupFile {
-  format: 'mk75-driver-backup';
-  version: 1;
-  created: string;
-  profile: string;
-  keyMatrix: string;
-  rgbTable: string;
-  /** Macro library + assignments (kept in the browser; the keyboard can't send them back). */
-  macros?: ReturnType<typeof macroStore.get>;
-  /** Saved profiles (browser only). */
-  profiles?: Profile[];
-  /** Custom live effects (browser only). */
-  effects?: ReturnType<typeof effectStore.get>;
-}
 
 export function BackupTab({ api }: { api: DeviceApi }) {
   const { snap, dev, log } = api;
@@ -31,41 +12,30 @@ export function BackupTab({ api }: { api: DeviceApi }) {
 
   if (!snap || !dev) return null;
 
-  const exportBackup = () => {
-    const b: BackupFile = {
-      format: 'mk75-driver-backup',
-      version: 1,
-      created: new Date().toISOString(),
-      profile: toHex(snap.profile),
-      keyMatrix: toHex(snap.matrix),
-      rgbTable: toHex(snap.rgbTable),
-      macros: macroStore.get(),
-      profiles: profileStore.get().profiles,
-      effects: effectStore.get(),
-    };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `mk75-backup-${b.created.slice(0, 19).replace(/[:T]/g, '-')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const exportBackup = () =>
+    api.run('Preparing backup', async () => {
+      // The side lights aren't in the snapshot; read them now. A failed read shouldn't stop the backup.
+      let side: SideLights | undefined;
+      if (dev.readSideLights) {
+        try {
+          side = await dev.readSideLights();
+        } catch (e) {
+          api.push({ dir: 'error', text: `Backup saved without the side lights: ${e instanceof Error ? e.message : String(e)}` });
+        }
+      }
+      const b = buildBackup(snap, side);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(b, null, 2)], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `mk75-backup-${b.created.slice(0, 19).replace(/[:T]/g, '-')}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
 
   const onFile = async (f: File | undefined) => {
     if (!f) return;
     try {
-      const b = JSON.parse(await f.text()) as BackupFile;
-      if (b.format !== 'mk75-driver-backup') throw new Error('Not a Lingbao MK75 Driver backup file');
-      if (fromHexStr(b.profile).length !== PROFILE_LEN || fromHexStr(b.keyMatrix).length !== PAGE_LEN || fromHexStr(b.rgbTable).length !== PAGE_LEN)
-        throw new Error('Backup file is truncated or corrupted');
-      // Check the browser-side parts now, so a bad file fails before anything is written or replaced.
-      if (b.macros !== undefined && !isMacroState(b.macros)) throw new Error('Backup macros are damaged');
-      if (b.effects !== undefined && !isEffectList(b.effects)) throw new Error('Backup effects are damaged');
-      if (b.profiles !== undefined) {
-        if (!Array.isArray(b.profiles)) throw new Error('Backup profiles are damaged');
-        b.profiles = b.profiles.map(validateProfile);
-      }
-      setPending(b);
+      setPending(parseBackup(await f.text()));
     } catch (e) {
       api.setError(e instanceof Error ? e.message : String(e));
     }
@@ -74,19 +44,9 @@ export function BackupTab({ api }: { api: DeviceApi }) {
   const restore = () =>
     pending &&
     api.run('Restoring backup', async () => {
-      if (pending.macros) macroStore.replaceAll(pending.macros);
-      if (pending.effects?.length) effectStore.replaceAll(pending.effects);
-      if (pending.profiles?.length) profileStore.replaceAll(pending.profiles);
-      await dev.writeRgbTable(fromHexStr(pending.rgbTable));
-      // Macro pages first (ids are re-planned deterministically in key order), then the matrix.
-      const { matrix, plan } = withMacroCodes(fromHexStr(pending.keyMatrix), dev.caps.macros, snap.matrix);
-      if (plan.pages.length) {
-        await dev.checkKeyMatrix?.(matrix);
-        await dev.writeMacroPages(plan.pages);
-      }
-      await dev.writeKeyMatrix(matrix);
-      await dev.writeProfile(fromHexStr(pending.profile));
-      api.setSnap({ profile: await dev.readProfile(), matrix: await dev.readKeyMatrix(), rgbTable: await dev.readRgbTable() });
+      const res = await restoreBackup(dev, snap, pending);
+      api.setSnap(res.snap);
+      for (const n of res.notes) api.push({ dir: 'info', text: n });
       api.push({ dir: 'info', text: `Restored backup from ${pending.created}` });
       setPending(null);
     });
@@ -98,11 +58,11 @@ export function BackupTab({ api }: { api: DeviceApi }) {
           <h2>Backup &amp; restore</h2>
         </header>
         <p className="muted">
-          Save the keyboard's lighting profile, key matrix and colour palette, plus your macros and saved profiles, before experimenting. Per-key
-          Self-define colours aren't included, because they can't be read back from the keyboard.
+          Save the keyboard's lighting profile, key matrix, colour palette and side lights, plus your macros and saved profiles, before
+          experimenting. Per-key Self-define colours aren't included, because they can't be read back from the keyboard.
         </p>
         <div className="actions">
-          <button className="primary" onClick={exportBackup}>
+          <button className="primary" onClick={exportBackup} disabled={!!api.busy}>
             Download backup
           </button>
           <button onClick={() => file.current?.click()}>Load backup…</button>
@@ -111,7 +71,7 @@ export function BackupTab({ api }: { api: DeviceApi }) {
         {pending && (
           <div className="confirm">
             <p>
-              Restore backup from <b>{new Date(pending.created).toLocaleString()}</b>? This overwrites lighting, palette and key mapping.
+              Restore backup from <b>{new Date(pending.created).toLocaleString()}</b>? This overwrites lighting, palette and key mapping{pending.sideLights ? ', and the side lights' : ''}.
             </p>
             <div className="actions">
               <button className="danger" onClick={restore} disabled={!!api.busy}>

@@ -23,7 +23,7 @@ export interface ContributionInput {
   hid: HIDDevice[];
   log: LogLine[];
   note: string;
-  /** Side-light probe reads (features/20-side-lights.md), if the user ran it. */
+  /** Side-light probe reads (PROTOCOL.md, layout B side light bars), if the user ran it. */
   probe?: ProbeRead[];
 }
 
