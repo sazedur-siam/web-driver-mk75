@@ -129,6 +129,11 @@ export class G5WiredLink implements LayoutBLink {
     });
   }
 
+  /** Input reports the keyboard sends on its own: the G5 protocol itself uses feature reports only. */
+  onUnsolicited(cb: (reportId: number, data: Uint8Array) => void): (() => void) | null {
+    return this.t.onInput ? this.t.onInput(cb) : null;
+  }
+
   close() {
     return this.t.close();
   }

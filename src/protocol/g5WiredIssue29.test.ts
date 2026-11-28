@@ -89,6 +89,7 @@ describe('IC2481 USB capture from issue #29', () => {
   it('reads the settings, battery and lighting this board reported', async () => {
     const dev = new Mk75G5Wired(new Replay());
     expect(await dev.readSettings()).toEqual({ debounce: 2, knob: 0 });
+    expect(await dev.readSideLights()).toEqual({ mode: 1, colour: 0, brightness: 4, speed: 4 }); // flow, red, top levels
     expect(await dev.readBattery()).toEqual({ level: 100, charging: true });
     const p = await dev.readProfile();
     expect(modeByHw(p[0x05], p[0x04] === 1)?.name).toBe('Neon stream');

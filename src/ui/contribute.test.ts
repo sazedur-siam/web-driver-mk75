@@ -38,6 +38,7 @@ describe('contribute device data', () => {
     expect(c.log[0].hex).toBe('06aa');
     expect('hex' in c.log[1]).toBe(false);
     expect(c.note).toBe('cable, Windows 11');
+    expect(c.probe).toBeNull();
     expect(new URL(dataIssueUrl(c)).searchParams.get('template')).toBe('device_data.md');
   });
 });

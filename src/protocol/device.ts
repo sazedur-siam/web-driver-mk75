@@ -22,6 +22,29 @@ export interface KeyboardSettings {
   knob: number;
 }
 
+/**
+ * The side light bars (layout B config block; found with the side-light probe on a real IC2481 MK75, 2026-11-28).
+ * The keyboard stores a brightness or speed change from its shortcuts only at the next mode or colour change.
+ */
+export interface SideLights {
+  /** Byte 0x12: 0 off, 1 flow, 2 neon, 3 steady, 4 breathe (the Fn + Right Shift cycle). */
+  mode: number;
+  /** Byte 0x13: 0 red, 1 green, 2 blue, 3 yellow, 4 purple, 5 cyan, 6 white (Fn + /); shows in steady and breathe. */
+  colour: number;
+  /** Byte 0x14: brightness level 0..4 (Fn + Right Alt). */
+  brightness: number;
+  /** Byte 0x15: speed level 0..4 (Fn + Right Ctrl). */
+  speed: number;
+}
+
+/** Where each side-light field lives in the layout B LED block, and how many values it has. */
+export const SIDE_LIGHT_FIELDS: Record<keyof SideLights, { at: number; count: number }> = {
+  mode: { at: 0x12, count: 5 },
+  colour: { at: 0x13, count: 7 },
+  brightness: { at: 0x14, count: 5 },
+  speed: { at: 0x15, count: 5 },
+};
+
 export interface Mk75Device {
   readonly kind: 'wired' | 'wireless';
   readonly transport: { readonly name: string; close(): Promise<void> };
@@ -47,4 +70,17 @@ export interface Mk75Device {
   readFnLayer?(): Promise<Uint8Array>;
   writeFnLayer?(m: Uint8Array): Promise<void>;
   writeSettings?(s: Partial<KeyboardSettings>): Promise<void>;
+  /** Side light bars (layout B boards only). Writes change only the given fields' bytes. */
+  readSideLights?(): Promise<SideLights>;
+  writeSideLights?(s: Partial<SideLights>): Promise<void>;
+  /**
+   * Every readable layout B block, raw, as the keyboard holds it: `led` (128-byte config: LED profile, debounce,
+   * knob ...), `palette`, `keymap 0`..`keymap 3`. Read-only, for diagnostics such as the side-light probe.
+   */
+  readRawBlocks?(): Promise<Record<string, Uint8Array>>;
+  /**
+   * Input reports the keyboard sends unasked on its vendor interface (diagnostics). Returns the unsubscribe
+   * function, or null where the connection can't tell them apart from protocol replies (2.4 GHz, Bluetooth).
+   */
+  onRawInput?(cb: (reportId: number, data: Uint8Array) => void): (() => void) | null;
 }

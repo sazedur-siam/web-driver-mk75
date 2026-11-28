@@ -5,6 +5,7 @@
 import type { Mk75Device } from '../protocol/device';
 import { toHex } from './profileStore';
 import { ISSUES_URL } from './report';
+import { probeForFile, type ProbeRead } from './sideLightProbe';
 import type { DeviceSnapshot, LogLine } from './useDevice';
 
 export const DATA_DOC_URL = 'https://github.com/sazedur-siam/web-driver-mk75/blob/main/DEVICE_DATA.md';
@@ -22,6 +23,8 @@ export interface ContributionInput {
   hid: HIDDevice[];
   log: LogLine[];
   note: string;
+  /** Side-light probe reads (features/20-side-lights.md), if the user ran it. */
+  probe?: ProbeRead[];
 }
 
 export type DeviceData = ReturnType<typeof buildContribution>;
@@ -52,6 +55,7 @@ export function buildContribution(i: ContributionInput) {
     snapshot: i.snap ? { profile: toHex(i.snap.profile), keyMatrix: toHex(i.snap.matrix), rgbTable: toHex(i.snap.rgbTable) } : null,
     log: i.log.map((l) => ({ t: new Date(l.t).toISOString(), dir: l.dir, text: l.text, ...(l.hex ? { hex: l.hex } : {}) })),
     note: i.note.trim(),
+    probe: i.probe?.length ? probeForFile(i.probe) : null,
   };
 }
 

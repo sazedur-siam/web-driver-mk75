@@ -4,13 +4,14 @@
  *
  *  LED profile (cmd 0x44 / 0x04), 128 B, "layout B", signature 5A A5 at 0x7E:
  *    0x03 debounce 0..4 · 0x09 custom flag · 0x0A hw effect · 0x0B colour group · 0x16 tap/hold threshold · 0x18 sleep (0 = never) · 0x1A knob 0 media / 1 lighting
+ *    0x12 side-light mode 0..4 · 0x13 colour 0..6 · 0x14 brightness 0..4 · 0x15 speed 0..4
  *    0x38/0x39 = FF · 0x3A+2i brightness · 0x3B+2i speed<<4 | (colourful ? 7 : 0)   (i < 19)
  *  Key matrix (cmd 0x41 / 0x01, sub = layer: 0 base, 1 Fn, 2 unused, 3 tap/hold), 512 B = 128 u32, last u32 = 0xA55A0000.
  *  Palette (cmd 0x49 / 0x09), 0x200 B: same offsets as wired (0x15*hw), 5A A5 at 0x1FA.
  *  Per-key colours (cmd 0x02, sub = group), 0x17A B: R/G/B planes of 126.
  *  Live stream (cmd 0x88, no ack): groups [R,G,B,count,led...], <= 200 bytes.
  */
-import type { DeviceCaps, KeyboardSettings, Mk75Device } from '../device';
+import { SIDE_LIGHT_FIELDS, type DeviceCaps, type KeyboardSettings, type Mk75Device, type SideLights } from '../device';
 import { PROFILE_LEN } from '../mk75';
 import { LED_GROUP_LEN, PER_MODE_SLOTS } from '../lighting';
 import { STORE_BLOCK, STORE_BLOCKS } from '../macro';
@@ -63,6 +64,11 @@ export interface LayoutBLink {
   readonly io: { readonly name: string };
   read(cmd: number, sub: number, len: number, min?: number): Promise<Uint8Array>;
   write(cmd: number, sub: number, data: Uint8Array): Promise<void>;
+  /**
+   * Input reports the keyboard sends unasked (diagnostics). Only links whose protocol doesn't itself use input
+   * reports can offer this; 2.4 GHz / Bluetooth replies arrive as input reports, so WirelessLink leaves it out.
+   */
+  onUnsolicited?(cb: (reportId: number, data: Uint8Array) => void): (() => void) | null;
   close(): Promise<void>;
 }
 
@@ -194,6 +200,20 @@ export class Mk75Wireless implements Mk75Device {
   }
 
   // ---------------------------------------------------------------- settings outside the wired profile
+  onRawInput(cb: (reportId: number, data: Uint8Array) => void): (() => void) | null {
+    return this.link.onUnsolicited?.(cb) ?? null;
+  }
+
+  /** All readable blocks, unchanged, without touching the adapter's caches. Waits for any write in progress. */
+  readRawBlocks(): Promise<Record<string, Uint8Array>> {
+    return this.exclusive(async () => {
+      const out: Record<string, Uint8Array> = { led: new Uint8Array(await this.readLedRaw()) };
+      out.palette = new Uint8Array(await this.link.read(this.ops.getPalette, 0, PALETTE_LEN, PALETTE_READ_MIN));
+      for (let l = 0; l < 4; l++) out[`keymap ${l}`] = new Uint8Array(await this.link.read(this.ops.getMatrix, l, LAYER_LEN, LAYER_READ_MIN));
+      return out;
+    });
+  }
+
   async readSettings(): Promise<KeyboardSettings> {
     const raw = await this.readLedRaw();
     return { debounce: raw[0x03], knob: raw[0x1a] };
@@ -215,6 +235,30 @@ export class Mk75Wireless implements Mk75Device {
     }
     await sleep(60);
     await this.link.write(this.ops.setLed, 0, raw);
+  }
+
+  // ---------------------------------------------------------------- side light bars
+  async readSideLights(): Promise<SideLights> {
+    const raw = await this.readLedRaw();
+    const f = SIDE_LIGHT_FIELDS;
+    return { mode: raw[f.mode.at], colour: raw[f.colour.at], brightness: raw[f.brightness.at], speed: raw[f.speed.at] };
+  }
+
+  writeSideLights(s: Partial<SideLights>): Promise<void> {
+    return this.exclusive(async () => {
+      const fields = (Object.keys(SIDE_LIGHT_FIELDS) as (keyof SideLights)[]).filter((k) => s[k] !== undefined);
+      // Check before reading, so a bad value never leads to a write.
+      for (const k of fields) {
+        const v = s[k]!;
+        const { count } = SIDE_LIGHT_FIELDS[k];
+        if (!Number.isInteger(v) || v < 0 || v >= count) throw new RangeError(`Side-light ${k} must be 0..${count - 1}`);
+      }
+      if (!fields.length) return;
+      const raw = await this.readLedRaw();
+      for (const k of fields) raw[SIDE_LIGHT_FIELDS[k].at] = s[k]!;
+      await sleep(60);
+      await this.link.write(this.ops.setLed, 0, raw);
+    });
   }
 
   // ---------------------------------------------------------------- key layers (0 base, 1 Fn)

@@ -224,6 +224,15 @@ select {
 .field-l b { color: var(--text); margin-left: 4px; }
 .levels { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .levels button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.levels.seven { grid-template-columns: repeat(7, 1fr); }
+/* A setting the current mode doesn't use (Side lights tab). */
+.field.na .field-l, .field.na .levels, .field.na input[type='range'] { opacity: 0.45; }
+.side-colours button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 2px; min-width: 0; }
+.side-dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15); }
+.side-name { font-size: 12px; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+@media (max-width: 520px) {
+  .levels.seven { grid-template-columns: repeat(4, 1fr); }
+}
 
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; }
 .swatch { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
@@ -409,6 +418,22 @@ footer p { margin: 2px 0; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.45); display: grid; place-items: center; padding: 16px; }
 .modal { width: min(620px, 100%); max-height: calc(100vh - 32px); overflow: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35); }
 .diag-preview { max-height: 180px; overflow: auto; background: var(--surface-2); padding: 8px; border-radius: 8px; }
+.probe { margin: 8px 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
+.probe > summary { cursor: pointer; font-weight: 600; }
+.probe-now { margin: 10px 0; padding: 14px 16px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+.probe-now p { margin: 0; }
+.probe-progress { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.probe-prompt { font-size: 22px; font-weight: 700; line-height: 1.25; }
+.probe-nudge { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding-top: 4px; border-top: 1px solid var(--border); }
+.probe-ok { color: var(--ok); }
+.probe-got { color: var(--ok); font-weight: 600; }
+.probe-h { margin: 12px 0 4px; font-size: 13px; }
+.probe-reads { margin: 8px 0; padding-left: 20px; max-height: 200px; overflow: auto; }
+.probe-reads li { margin-bottom: 4px; }
+.probe-reads .mono { word-break: break-word; }
+.probe-table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+.probe-table th, .probe-table td { border: 1px solid var(--border); padding: 4px 8px; text-align: left; vertical-align: top; }
+.probe-table th { background: var(--surface-2); }
 .guide img { display: block; max-width: 100%; height: auto; margin: 12px 0 6px; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); }
 .guide img + em { display: block; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
 

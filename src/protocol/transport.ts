@@ -15,6 +15,8 @@ export interface FeatureTransport {
   receiveFeature(reportId: number): Promise<Uint8Array>;
   /** Declared payload size (excluding report ID) of a feature report, if known. */
   featureSize(reportId: number): number | undefined;
+  /** Listen for input reports on the opened vendor interfaces (diagnostics). Returns the unsubscribe function. */
+  onInput?(cb: (reportId: number, data: Uint8Array) => void): () => void;
   readonly name: string;
   close(): Promise<void>;
 }
@@ -116,6 +118,14 @@ export class WebHidTransport implements FeatureTransport {
     // Chrome prefixes the report ID on most platforms; strip it if present.
     if (bytes.length === route.size + 1 && bytes[0] === reportId) bytes = bytes.subarray(1);
     return new Uint8Array(bytes);
+  }
+
+  onInput(cb: (reportId: number, data: Uint8Array) => void): () => void {
+    const h = (e: HIDInputReportEvent) => cb(e.reportId, new Uint8Array(e.data.buffer, e.data.byteOffset, e.data.byteLength));
+    for (const d of this.devices) d.addEventListener('inputreport', h);
+    return () => {
+      for (const d of this.devices) d.removeEventListener('inputreport', h);
+    };
   }
 
   async close(): Promise<void> {

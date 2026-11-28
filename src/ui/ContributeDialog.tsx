@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { buildContribution, DATA_DOC_URL, dataIssueUrl, downloadContribution } from './contribute';
+import type { ProbeRead } from './sideLightProbe';
+import { SideLightProbePanel } from './SideLightProbePanel';
 import type { DeviceApi } from './useDevice';
 
 const version = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'dev';
@@ -11,6 +13,7 @@ export function ContributeDialog({ api, onClose }: { api: DeviceApi; onClose: ()
   const [note, setNote] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [probe, setProbe] = useState<ProbeRead[]>([]);
 
   useEffect(() => {
     api.grantedDevices().then(setHid).catch(() => setHid([]));
@@ -20,8 +23,9 @@ export function ContributeDialog({ api, onClose }: { api: DeviceApi; onClose: ()
   }, [api, onClose]);
 
   const data = useMemo(
-    () => (api.dev ? buildContribution({ version, userAgent: navigator.userAgent, dev: api.dev, modelId: api.modelId, snap: api.snap, hid, log: api.log, note }) : null),
-    [api.dev, api.modelId, api.snap, api.log, hid, note],
+    () =>
+      api.dev ? buildContribution({ version, userAgent: navigator.userAgent, dev: api.dev, modelId: api.modelId, snap: api.snap, hid, log: api.log, note, probe }) : null,
+    [api.dev, api.modelId, api.snap, api.log, hid, note, probe],
   );
   const json = useMemo(() => (data ? JSON.stringify(data, null, 2) : ''), [data]);
 
@@ -48,7 +52,7 @@ export function ContributeDialog({ api, onClose }: { api: DeviceApi; onClose: ()
             <ul className="small">
               <li>
                 <b>Included:</b> connection mode, USB IDs and HID interface layout, model id, the keyboard's lighting / key-map / palette settings, the
-                recent configuration traffic log, browser and app version.
+                recent configuration traffic log, browser and app version, and the side-light probe reads if you run it.
               </li>
               <li>
                 <b>Never included:</b> what you type (browsers block the typing interface), macro contents (hidden in the log), anything stored in this
@@ -65,6 +69,12 @@ export function ContributeDialog({ api, onClose }: { api: DeviceApi; onClose: ()
                 onChange={(e) => setNote(e.target.value)}
               />
             </label>
+          </>
+        )}
+        {/* Same place in the tree with or without a device: it must survive the unplug in its re-plug step. */}
+        <SideLightProbePanel api={api} reads={probe} setReads={setProbe} />
+        {data && (
+          <>
             <details>
               <summary>
                 Preview file ({Math.round(json.length / 1024)} KB, {data.hid.length} HID interface{data.hid.length === 1 ? '' : 's'}, {data.log.length} log lines)
