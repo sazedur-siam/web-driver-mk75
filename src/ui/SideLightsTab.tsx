@@ -20,8 +20,21 @@ export const SIDE_COLOURS = [
   { name: 'White', css: '#ffffff' },
 ];
 const colourName = (c: number) => SIDE_COLOURS[c]?.name ?? `colour ${c + 1}`;
-/** Modes where the colour shows (the keyboard's Fn + / only works in these too). */
-const COLOUR_MODES = [3, 4];
+/**
+ * Which settings each mode uses (0 off, 1 flow, 2 neon, 3 steady, 4 breathe). Fn + / only changes the colour in steady
+ * and breathe; flow and neon cycle their own colours; nothing moves in steady; off shows nothing.
+ */
+export const SIDE_APPLIES = {
+  colour: [3, 4],
+  brightness: [1, 2, 3, 4],
+  speed: [1, 2, 4],
+} as const;
+const applies = (k: keyof typeof SIDE_APPLIES, mode: number | undefined) => mode !== undefined && (SIDE_APPLIES[k] as readonly number[]).includes(mode);
+const WHY_NOT: Record<keyof typeof SIDE_APPLIES, string> = {
+  colour: 'Only Steady and Breathe use a colour; Flow and Neon cycle their own.',
+  brightness: 'The side lights are off.',
+  speed: 'Only the moving modes (Flow, Neon, Breathe) have a speed.',
+};
 /** A slider writes this long after the last move, so dragging across levels blinks the lights once. */
 const SLIDER_WRITE_MS = 450;
 type Level = 'brightness' | 'speed';
@@ -82,7 +95,7 @@ export function SideLightsTab({ api }: { api: DeviceApi }) {
   };
 
   const busy = !!api.busy;
-  const colourShows = !!cur && COLOUR_MODES.includes(cur.mode);
+  const mode = cur?.mode;
 
   return (
     <div className="panel-grid">
@@ -112,36 +125,37 @@ export function SideLightsTab({ api }: { api: DeviceApi }) {
           </div>
         </div>
 
-        <div className="field">
+        <div className={`field${applies('colour', mode) ? '' : ' na'}`}>
           <span className="field-l">
-            Colour for Steady and Breathe <b>{cur ? colourName(cur.colour) : '…'}</b>
+            Colour <b>{cur ? colourName(cur.colour) : '…'}</b>
           </span>
           <div className="levels seven side-colours" role="radiogroup" aria-label="Side-light colour">
             {SIDE_COLOURS.map((c, i) => (
-              <button key={c.name} role="radio" aria-checked={cur?.colour === i} className={cur?.colour === i ? 'on' : ''} disabled={busy || !cur} onClick={() => write({ colour: i })}>
+              <button key={c.name} role="radio" aria-checked={cur?.colour === i} className={cur?.colour === i ? 'on' : ''} disabled={busy || !cur || !applies('colour', mode)} onClick={() => write({ colour: i })}>
                 <span className="side-dot" style={{ background: c.css }} aria-hidden="true" />
                 <span className="side-name">{c.name}</span>
               </button>
             ))}
           </div>
-          {cur && !colourShows && <p className="hint">The colour shows in Steady and Breathe. Other modes use their own colours.</p>}
-          <p className="hint">The keyboard has 7 fixed side-light colours, the same ones Fn + / steps through.</p>
+          <p className="hint">{cur && !applies('colour', mode) ? WHY_NOT.colour : 'The keyboard has 7 fixed side-light colours, the same ones Fn + / steps through.'}</p>
         </div>
 
         {(['brightness', 'speed'] as const).map((k) => {
           const v = draft[k] ?? cur?.[k];
+          const on = applies(k, mode);
           return (
-            <label className="field" key={k}>
+            <label className={`field${on ? '' : ' na'}`} key={k}>
               <span className="field-l">
                 {k === 'brightness' ? 'Brightness' : 'Speed'} <b>{v === undefined ? '…' : `${v + 1} of 5`}</b>
               </span>
-              <input type="range" min={0} max={4} step={1} value={v ?? 0} disabled={!cur || (busy && draft[k] === undefined)} onChange={(e) => slide(k, Number(e.target.value))} />
+              <input type="range" min={0} max={4} step={1} value={v ?? 0} disabled={!cur || !on || (busy && draft[k] === undefined)} onChange={(e) => slide(k, Number(e.target.value))} />
+              {cur && !on && <span className="hint">{WHY_NOT[k]}</span>}
             </label>
           );
         })}
         <p className="hint">
-          Speed shows in the moving modes. If you change brightness or speed with the keyboard shortcuts, the keyboard only saves it at the next mode or
-          colour change, so Refresh may still show the old level until then.
+          If you change brightness or speed with the keyboard shortcuts, the keyboard only saves it at the next mode or colour change, so Refresh may
+          still show the old level until then.
         </p>
       </section>
 
