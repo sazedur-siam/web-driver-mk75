@@ -207,7 +207,7 @@ src/ui/                  React tabs + browser stores (profileStore, macroStore, 
                          presetStore), applyProfile.ts, saveKeys.ts, useDevice.ts, ticker.ts, pwa.ts,
                          guide.ts/GuideView.tsx (MANUAL/README reader), report.ts/ReportDialog.tsx,
                          contribute.ts/ContributeDialog.tsx (device-data JSON; contents in DEVICE_DATA.md),
-                         gameModeStore.ts/GameModePanel.tsx (header toggle, Key mapping card, write sequence)
+                         gameModeStore.ts (write sequence), GameModeToggle.tsx (header), GameModeCard.tsx (Key mapping card)
 src/presets/gallery.ts   bundled presets
 public/                  manifest, sw.js (cache name `mk75-vN`), icons, favicon.svg, manual/*.webp screenshots
 desktop/                 Electron tray app: main.cjs serves ../dist on app://mk75 (secure context for WebHID),

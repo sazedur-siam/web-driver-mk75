@@ -20,7 +20,7 @@ import { SharedPresetBanner } from './ui/SharedPresetBanner';
 import { readSession, useDevice } from './ui/useDevice';
 import { useBattery } from './ui/battery';
 import { BatteryIcon } from './ui/BatteryIcon';
-import { GameModeToggle } from './ui/GameModePanel';
+import { GameModeToggle } from './ui/GameModeToggle';
 
 /** One theme per official MK75 colourway (product page): case / keycap colours for the swatch. */
 const THEMES = [

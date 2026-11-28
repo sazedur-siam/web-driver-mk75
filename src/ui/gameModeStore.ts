@@ -3,7 +3,6 @@
  * sequence. Planning is pure and tested in protocol/gameMode.ts.
  */
 import { useSyncExternalStore } from 'react';
-import { GALLERY } from '../presets/gallery';
 import {
   DEFAULT_GAME_MODE,
   gameModeStatus,
@@ -81,8 +80,9 @@ export function useGameModeStatus(api: DeviceApi) {
   return { ...s, status: gameModeStatus(s.active, api.snap?.matrix, api.snap?.profile) };
 }
 
-/** The WASD highlight colours from the "WASD gamer" gallery preset. */
-function wasdColours(): Map<number, RGB> {
+/** The WASD highlight colours from the "WASD gamer" gallery preset (loaded only when needed: the header toggle lives in the app shell). */
+async function wasdColours(): Promise<Map<number, RGB>> {
+  const { GALLERY } = await import('../presets/gallery');
   const p = GALLERY.find((g) => g.name === 'WASD gamer');
   return perKeyMap((p?.perKey ?? {}) as Record<number, RGB>);
 }
@@ -103,7 +103,7 @@ export function turnGameModeOn(api: DeviceApi) {
     }
     // Vendor order: key matrix → per-key pages → profile.
     if (keysChanged) await dev.writeKeyMatrix(plan.matrix);
-    if (plan.record.perKeyWritten) await dev.writeLedMatrix(buildLedMatrix(wasdColours()));
+    if (plan.record.perKeyWritten) await dev.writeLedMatrix(buildLedMatrix(await wasdColours()));
     if (profileChanged) await dev.writeProfile(plan.profile);
     const back = keysChanged ? await dev.readKeyMatrix() : matrix;
     api.setSnap({ ...snap, matrix: back, profile: profileChanged ? plan.profile : profile });

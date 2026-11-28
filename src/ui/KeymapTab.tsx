@@ -23,7 +23,7 @@ import { macroStore, useMacros } from './macroStore';
 import { fromHex, toHex } from './profileStore';
 import { saveKeysAndMacros, withMacroCodes } from './saveKeys';
 import type { DeviceApi } from './useDevice';
-import { GameModeCard } from './GameModePanel';
+import { GameModeCard } from './GameModeCard';
 
 function defaultAction(index: number): KeyAction | null {
   const k = MK75_KEYS.find((x) => x.index === index);

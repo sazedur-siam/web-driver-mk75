@@ -6,7 +6,7 @@ import { applyProfile, captureProfile, profileMatrix, readSideLightsFor } from '
 import { presetStore, shareLink } from './presetStore';
 import { fromHex, profileStore, useProfiles, validateProfile, type Profile } from './profileStore';
 import type { DeviceApi } from './useDevice';
-import { GameModeProfilesNote } from './GameModePanel';
+import { GameModeProfilesNote } from './GameModeCard';
 
 const eq = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((v, i) => v === b[i]);
 
