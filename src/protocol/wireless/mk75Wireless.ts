@@ -17,6 +17,7 @@ import { LED_GROUP_LEN, PER_MODE_SLOTS } from '../lighting';
 import { STORE_BLOCK, STORE_BLOCKS } from '../macro';
 import { wiredToWireless, wirelessToWired } from './codes';
 import { WCmd } from './packet';
+import { LiveGate } from '../liveGate';
 
 const LED_LEN = 128;
 const LAYER_LEN = 512;
@@ -105,6 +106,14 @@ export class Mk75Wireless implements Mk75Device {
   private layers = new Map<number, { raw: Uint8Array; view: Uint8Array }>();
   private paletteRaw: Uint8Array | null = null;
   private chain: Promise<unknown> = Promise.resolve();
+  /** Skips live frames the keyboard already shows (see liveGate.ts). */
+  readonly liveGate = new LiveGate();
+
+  /** Every config write goes through here: afterwards the keyboard no longer shows the last live frame. */
+  private write(cmd: number, sub: number, data: Uint8Array): Promise<void> {
+    this.liveGate.reset();
+    return this.link.write(cmd, sub, data);
+  }
 
   /** Read-modify-write sequences must not interleave: the link only queues single transfers. */
   private exclusive<T>(fn: () => Promise<T>): Promise<T> {
@@ -195,7 +204,7 @@ export class Mk75Wireless implements Mk75Device {
     raw[0x7e] = 0x5a;
     raw[0x7f] = 0xa5;
     await sleep(60);
-    await this.link.write(this.ops.setLed, 0, raw);
+    await this.write(this.ops.setLed, 0, raw);
     this.ledView = new Uint8Array(p);
   }
 
@@ -234,7 +243,7 @@ export class Mk75Wireless implements Mk75Device {
       raw[0x1a] = s.knob;
     }
     await sleep(60);
-    await this.link.write(this.ops.setLed, 0, raw);
+    await this.write(this.ops.setLed, 0, raw);
   }
 
   // ---------------------------------------------------------------- side light bars
@@ -257,7 +266,7 @@ export class Mk75Wireless implements Mk75Device {
       const raw = await this.readLedRaw();
       for (const k of fields) raw[SIDE_LIGHT_FIELDS[k].at] = s[k]!;
       await sleep(60);
-      await this.link.write(this.ops.setLed, 0, raw);
+      await this.write(this.ops.setLed, 0, raw);
     });
   }
 
@@ -304,7 +313,7 @@ export class Mk75Wireless implements Mk75Device {
 
   private async writeLayerNow(layer: number, m: Uint8Array): Promise<void> {
     const raw = await this.encodeLayer(layer, m);
-    await this.link.write(this.ops.setMatrix, layer, raw);
+    await this.write(this.ops.setMatrix, layer, raw);
     this.layers.set(layer, { raw, view: new Uint8Array(m) });
     await sleep(50);
   }
@@ -352,12 +361,12 @@ export class Mk75Wireless implements Mk75Device {
     buf[0x1fa] = 0x5a;
     buf[0x1fb] = 0xa5;
     await sleep(120);
-    await this.link.write(this.ops.setPalette, 0, buf);
+    await this.write(this.ops.setPalette, 0, buf);
     this.paletteRaw = buf;
   }
 
   async writeLedMatrix(buf: Uint8Array): Promise<void> {
-    await this.link.write(this.ops.setColors, 0, buf.subarray(0, LED_GROUP_LEN));
+    await this.write(this.ops.setColors, 0, buf.subarray(0, LED_GROUP_LEN));
   }
 
   /** Macro store blocks from planMacros(…, 'store'): contiguous from block 0, 512 bytes each, never block 8+. */
@@ -378,9 +387,9 @@ export class Mk75Wireless implements Mk75Device {
       // Cable: one transfer, the block number in the frame addresses the sector.
       const all = new Uint8Array(pages.length * STORE_BLOCK);
       pages.forEach((p, i) => all.set(p.data, i * STORE_BLOCK));
-      await this.link.write(OP_USB_MACRO, 0, all);
+      await this.write(OP_USB_MACRO, 0, all);
     } else {
-      for (const p of pages) await this.link.write(WCmd.SetMacro, p.sub, p.data);
+      for (const p of pages) await this.write(WCmd.SetMacro, p.sub, p.data);
     }
     await sleep(50);
   }
@@ -430,10 +439,14 @@ export class Mk75Wireless implements Mk75Device {
     this.liveLeds = leds;
   }
 
-  async sendLiveFrame(rgb: Uint8Array): Promise<void> {
+  async sendLiveFrame(rgb: Uint8Array): Promise<boolean> {
     const payload = Mk75Wireless.encodeLive(rgb, this.liveLeds ?? []);
+    // Gate on the encoded groups: frames that differ only below the quantisation step look the same on the keyboard.
+    if (!this.liveGate.shouldSend(payload)) return false;
     // sub 1 = per-key colour groups (matches captured vendor traffic: 13 88 01 00 15 …).
     await this.link.write(WCmd.Live, 1, payload);
+    this.liveGate.sent(payload);
+    return true;
   }
 
   /** [percent, flags]; flags 0x01 on battery, 0x10 charging (keys go dark), 0x11 charged (hw-re-docs). */
