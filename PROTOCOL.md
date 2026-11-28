@@ -161,6 +161,12 @@ read; we restore these values when 483–489 match.
 
 LED profile (MK75 "layout B"): `0x09` custom flag, `0x0A` hw effect, `0x0B` colour group, `0x03` debounce 0–4, `0x16` tap/hold threshold, `0x18` sleep (`0` = never),
 `0x38-39 = FF`, per effect `0x3A+2i` brightness and `0x3B+2i` = `speed<<4 | (colourful ? 7 : 0)`.
+Side light bars (side-light probe on a real IC2481 MK75, cable, 2026-11-28; the vendor driver never touches them): `0x12` mode
+0–4 = off, flow, neon, steady, breathe (the Fn + Right Shift cycle) and `0x13` colour 0–6 (Fn + /, wraps 6 → 0). Side-light
+brightness (Fn + Right Alt) and speed (Fn + Right Ctrl) change no readable byte. Every Fn shortcut makes the keyboard send
+input reports `02 00 00` and `03 08 00 01` on the vendor interface; changes that are stored (mode, colour) add
+`06 0A 07 00 00 00 00 00`, and the block updates a moment after those reports. Writing `0x12`/`0x13` back is built
+(read-modify-write of the block) but not yet confirmed on hardware.
 Macro store (IC2481 cable op `05`/`85`, wireless `03`/`43`; hw-re-docs, tested on a real MK75): up to 8 blocks
 of 512 B (never block 8+, that's firmware). `[N × (offset u16, length u16)]` then bodies
 `[2 × nameChars][name UTF-16LE][4-byte events]`; event `[release<<7 | type<<4 | delay>>16, delay>>8, delay, code]`,

@@ -4,6 +4,16 @@
 |---|---|---|---|---|
 | Lighting | P1 | M (plus about 1 h of hardware probing) | **Yes**: phases 1 and 2 can't be done without a real MK75 | `feat/side-lights` |
 
+## Status (2026-11-28)
+
+| Phase | State |
+|---|---|
+| 1. Find the bytes | ✅ Done on a real MK75 (cable): `led 0x12` mode 0–4 (0 off, 1 flow, 2 neon, 3 steady, 4 breathe), `led 0x13` colour 0–6. Brightness and speed aren't stored anywhere readable. |
+| 2. Prove writes work | ⏳ Built, waiting for a hardware pass: TESTING.md **S1–S5**. Also needed: the names of colours 1–7, to show swatches instead of numbers. |
+| 3. Protocol | ✅ `readSideLights` / `writeSideLights` (read-modify-write of only those two bytes, range-checked first), tests in `sideLights.test.ts` and the issue #29 replay. |
+| 4. UI | ✅ A **Side lights** tab of its own (the user asked for it to be easy to find, not a card in Lighting). Profiles and backups carry mode and colour. Brightness and speed are shown as keyboard shortcuts. |
+| 5. Docs | ✅ PROTOCOL.md, CLAUDE.md, README, MANUAL, TESTING. Still to do on ship: a manual screenshot, and delete this file. |
+
 ## Goal
 
 Add a **Side lights** card to the Lighting tab where the user can:

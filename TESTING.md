@@ -35,8 +35,16 @@ behaves as expected.
 - [ ] **L4** (P0) Fixed on, pick each of the 7 swatches. The keyboard shows that colour each time.
 - [ ] **L5** (P1) Change palette colour 1 to purple and save. The keyboard turns purple.
 - [ ] **L6** (P1) **Colourful** makes the colours random or rainbow.
-- [ ] **L7** (P0) **Off** turns off all backlight LEDs. The side light strip may stay on; it's controlled from the keyboard.
+- [ ] **L7** (P0) **Off** turns off all backlight LEDs. The side light bars stay on; they have their own **Side lights** tab.
 - [ ] **L8** (P0) Save a setting, unplug, plug back in. The setting is kept.
+
+## 2b. Side lights (IC2481 boards: cable, 2.4 GHz, Bluetooth)
+
+- [ ] **S1** (P0) **Side lights** tab, click Off, Flow, Neon, Steady and Breathe. The bars change at once and each name matches what they do.
+- [ ] **S2** (P0) Steady, click colours 1 → 7. The bars change colour each time. Note the colours in order: ______
+- [ ] **S3** (P1) Change the mode with Fn + Right Shift, then click **Refresh**. The tab shows the new mode.
+- [ ] **S4** (P0) Pick a distinctive mode and colour, unplug, plug back in. They're kept.
+- [ ] **S5** (P1) Save a profile, change the side lights, apply the profile. The side lights go back.
 
 ## 3. Per-key colours
 

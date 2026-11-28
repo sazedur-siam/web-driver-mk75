@@ -63,6 +63,13 @@ hardware. They are hidden on the live site and only appear when you run it local
   contrast. Each key takes the average colour under it. Save a still as per-key colours, or play a GIF live at its
   own frame timing.
 
+### Side lights (experimental)
+- Its own tab for the light bars on both sides: mode (Off, Flow, Neon, Steady, Breathe) and the keyboard's 7
+  side-light colours, applied with one click. Profiles and backups include them.
+- Side-light brightness and speed stay on the keyboard's shortcuts (Fn + Right Alt / Fn + Right Ctrl): the keyboard
+  doesn't share them with the computer.
+- IC2481 boards (all current MK75s), on the cable, 2.4 GHz or Bluetooth.
+
 ### Live effects (streamed from the computer, like the official app)
 - **Real-time effects:** Static, Stars, Snow, Breathing, Shrink, Aspect, Follow (lights the keys you press),
   Rotating and Rainbow wave. Colour: rainbow, single colour or your per-key layout. Speed and brightness are
@@ -147,6 +154,7 @@ hardware. They are hidden on the live site and only appear when you run it local
 | Profiles and presets | ✅ | ✅ (macros skipped) |
 | Sleep timer | ✅ | ✅ |
 | Debounce, knob mode | ✅ IC2481 boards (all current MK75s) | ✅ |
+| Side lights (mode, colour) | ✅ IC2481 boards (experimental) | ✅ (experimental) |
 | Battery level, low-battery alerts | ✅ IC2481 boards (all current MK75s) | receivers with report ID 0x13 (the MK75's) |
 
 Bluetooth support assumes the keyboard exposes the same configuration interface as the receiver. It's not yet
@@ -156,7 +164,7 @@ confirmed on hardware.
 
 | On the keyboard (survives closing the tab, unplugging, other PCs) | In this browser only |
 |---|---|
-| Lighting, palette, per-key colours, key mapping, macros, sleep timer | Profiles, macro library, per-key editor layout, custom effects, heatmap counts, theme |
+| Lighting, palette, per-key colours, side lights, key mapping, macros, sleep timer | Profiles, macro library, per-key editor layout, custom effects, heatmap counts, theme |
 
 Use **Backup & log** to move browser-only data to another browser or computer. Live effects need the page open;
 the keyboard can't run them by itself.

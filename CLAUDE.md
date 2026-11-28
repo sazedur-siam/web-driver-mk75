@@ -169,6 +169,7 @@ Real MK75s (KB.ini `IC2481=1`, `Fw=24`, issue #4) use the vendor **CDevG5KB** cl
   still need a capture.
 - **Inferred:**
   - Whether speed level 0 is the slowest or the fastest.
+  - Whether side-light writes (`0x12`/`0x13`) apply at once and persist; the reads are confirmed on hardware.
   - Whether Bluetooth writes work. Bluetooth does expose the vendor collection and answers reads (replayed from
     issue #35), but drops about half of each reply, so reads merge packets across attempts (issue #32, PROTOCOL.md).
   - Wireless live-stream sub=1 (taken from an F99 capture in OpenRGB issue #5166).
@@ -277,6 +278,9 @@ npm run build    # tsc -b && vite build → dist/
   translation happens only inside the adapter.
 - **Firmware version:** only in USB `bcdDevice`, which WebHID doesn't expose.
 - **Factory reset:** there's no reset command on the wired class.
+- **Side lights:** layout B `0x12` mode (0 off, 1 flow, 2 neon, 3 steady, 4 breathe) and `0x13` colour (0–6), found
+  with the side-light probe on a real MK75 (Contribute device data). Brightness and speed are keyboard-only. The block
+  updates a moment after the keyboard's input reports, so diagnostics must wait for it to settle.
 - **Debounce:** layout B byte `0x03` (0–4, the vendor UI shows +1), from hw-re-docs tests on a real MK75. The
   CDev916KB wired class never sends it.
 - **GitHub issues:** they need an account. "Report an Issue" builds a pre-filled `issues/new` URL (≤ 7 KB);

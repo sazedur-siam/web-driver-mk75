@@ -87,6 +87,18 @@ You can also put a **picture or GIF** on your keys: scroll down to **Image / GIF
 ![Per-key RGB tab](public/manual/per-key.webp)
 *Per-key RGB: select keys, pick a colour, paint. Region buttons and gradients save time.*
 
+### Change the side lights
+
+The MK75 has light bars on both sides. Open **Side lights** and click a **Mode** (Off, Flow, Neon, Steady,
+Breathe) or a **Colour** (1–7, the keyboard's own side-light colours). Each click changes the lights right away.
+The colour shows in Steady and Breathe.
+
+Brightness and speed of the side lights can only be changed on the keyboard: **Fn + Right Alt** and **Fn + Right
+Ctrl**. If you change the mode on the keyboard (**Fn + Right Shift**), click **Refresh** to see it in the tab.
+
+This works on current MK75s (with the cable, the 2.4 GHz receiver or Bluetooth). It's new, so if a click doesn't
+change the lights, please use **Report an Issue**.
+
 ### Light shows, music and more (Live effects)
 1. Open **Live effects**.
 2. Choose a type:
