@@ -19,4 +19,4 @@ assignees: ''
 _Paste or drag screenshots here._
 
 ### Diagnostics
-_Tip: use the **Report an Issue** button in the app (https://mk75-web.vercel.app/) to fill this in automatically._
+_Tip: use the **Report an Issue** button in the app (https://lingbao-mk75-web.vercel.app/) to fill this in automatically._

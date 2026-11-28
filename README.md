@@ -4,7 +4,7 @@ A browser-based configuration app for the **Lingbao MK75** keyboard. It covers e
 "LINGBAO Keyboard Driver" does, adds features the official app doesn't have, and runs in Chrome, Edge or Opera on
 Windows, macOS, Linux and ChromeOS. There's nothing to install, and you can also install it as an app.
 
-**Live app:** https://mk75-web.vercel.app/ · **New here?** Read the [user manual](MANUAL.md) (also in the app under **Guide**).
+**Live app:** https://lingbao-mk75-web.vercel.app/ · **New here?** Read the [user manual](MANUAL.md) (also in the app under **Guide**).
 
 > Unofficial and not affiliated with Lingbao. The protocol was reverse-engineered from the official driver
 > (see [PROTOCOL.md](PROTOCOL.md)). **Download a backup before changing anything.**

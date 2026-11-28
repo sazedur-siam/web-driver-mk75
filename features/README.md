@@ -3,7 +3,7 @@
 Planning notes for the remaining features (not built yet). When a feature ships, its file is removed.
 Reverse-engineering specs and emulation scripts that these plans rely on are in `reverse-engineering/`.
 
-Live app: https://mk75-web.vercel.app/ · Repo: https://github.com/sazedur-siam/web-driver-mk75
+Live app: https://lingbao-mk75-web.vercel.app/ · Repo: https://github.com/sazedur-siam/web-driver-mk75
 
 ## Index
 
