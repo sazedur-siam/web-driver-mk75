@@ -41,7 +41,9 @@ behaves as expected.
 ## 2b. Side lights (IC2481 boards: cable, 2.4 GHz, Bluetooth)
 
 - [ ] **S1** (P0) **Side lights** tab, click Off, Flow, Neon, Steady and Breathe. The bars change at once and each name matches what they do.
-- [ ] **S2** (P0) Steady, click colours 1 → 7. The bars change colour each time. Note the colours in order: ______
+- [x] **S2** (P0) Steady, click each colour. The bars change colour each time: red, green, blue, yellow, purple, cyan, white (confirmed 2026-11-28).
+- [ ] **S2b** (P0) Steady, move **Brightness** 1 → 5. The bars get brighter at each step, with one blink per change.
+- [ ] **S2c** (P1) Breathe, move **Speed** 1 → 5. The breathing changes speed. Note whether 5 is fastest or slowest: ______
 - [ ] **S3** (P1) Change the mode with Fn + Right Shift, then click **Refresh**. The tab shows the new mode.
 - [ ] **S4** (P0) Pick a distinctive mode and colour, unplug, plug back in. They're kept.
 - [ ] **S5** (P1) Save a profile, change the side lights, apply the profile. The side lights go back.

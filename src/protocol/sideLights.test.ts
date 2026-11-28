@@ -10,12 +10,28 @@ const make = () => {
 };
 const diff = (a: Uint8Array, b: Uint8Array) => [...a].flatMap((v, i) => (v === b[i] ? [] : [i]));
 
-describe('side lights (layout B 0x12 mode, 0x13 colour)', () => {
-  it('reads mode and colour from the config block', async () => {
+describe('side lights (layout B 0x12 mode, 0x13 colour, 0x14 brightness, 0x15 speed)', () => {
+  it('reads all four from the config block', async () => {
     const { io, dev } = make();
-    io.led[0x12] = 4;
-    io.led[0x13] = 6;
-    expect(await dev.readSideLights()).toEqual({ mode: 4, colour: 6 });
+    io.led.set([4, 6, 2, 0], 0x12);
+    expect(await dev.readSideLights()).toEqual({ mode: 4, colour: 6, brightness: 2, speed: 0 });
+  });
+
+  it('brightness and speed writes change only their own byte', async () => {
+    const { io, dev } = make();
+    const before = new Uint8Array(io.led);
+    await dev.writeSideLights({ brightness: 1 });
+    expect(diff(before, io.led)).toEqual([0x14]);
+    const mid = new Uint8Array(io.led);
+    await dev.writeSideLights({ speed: 0 });
+    expect(diff(mid, io.led)).toEqual([0x15]);
+  });
+
+  it('an empty write sends nothing', async () => {
+    const { io, dev } = make();
+    const ref = io.led;
+    await dev.writeSideLights({});
+    expect(io.led).toBe(ref);
   });
 
   it('a mode write changes only byte 0x12, a colour write only 0x13', async () => {
@@ -26,7 +42,7 @@ describe('side lights (layout B 0x12 mode, 0x13 colour)', () => {
     const mid = new Uint8Array(io.led);
     await dev.writeSideLights({ colour: 5 });
     expect(diff(mid, io.led)).toEqual([0x13]);
-    expect(await dev.readSideLights()).toEqual({ mode: 1, colour: 5 });
+    expect(await dev.readSideLights()).toEqual({ mode: 1, colour: 5, brightness: 4, speed: 4 });
     expect([io.led[0x7e], io.led[0x7f]]).toEqual([0x5a, 0xa5]);
   });
 
@@ -37,6 +53,8 @@ describe('side lights (layout B 0x12 mode, 0x13 colour)', () => {
     await expect(dev.writeSideLights({ colour: 7 })).rejects.toThrow(RangeError);
     await expect(dev.writeSideLights({ mode: -1 })).rejects.toThrow(RangeError);
     await expect(dev.writeSideLights({ colour: 1.5 })).rejects.toThrow(RangeError);
+    await expect(dev.writeSideLights({ brightness: 5 })).rejects.toThrow(RangeError);
+    await expect(dev.writeSideLights({ mode: 1, speed: 9 })).rejects.toThrow(RangeError); // one bad field stops the whole write
     expect(io.led).toBe(ref); // SetLed replaces the array: same object = nothing written
   });
 

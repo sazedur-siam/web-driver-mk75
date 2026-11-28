@@ -64,10 +64,10 @@ hardware. They are hidden on the live site and only appear when you run it local
   own frame timing.
 
 ### Side lights (experimental)
-- Its own tab for the light bars on both sides: mode (Off, Flow, Neon, Steady, Breathe) and the keyboard's 7
-  side-light colours, applied with one click. Profiles and backups include them.
-- Side-light brightness and speed stay on the keyboard's shortcuts (Fn + Right Alt / Fn + Right Ctrl): the keyboard
-  doesn't share them with the computer.
+- Its own tab for the light bars on both sides: mode (Off, Flow, Neon, Steady, Breathe), the keyboard's 7
+  side-light colours (red, green, blue, yellow, purple, cyan, white), and brightness and speed sliders. Profiles and
+  backups include them.
+- Each change makes the keyboard blink its lighting once while it applies it (firmware behaviour).
 - IC2481 boards (all current MK75s), on the cable, 2.4 GHz or Bluetooth.
 
 ### Live effects (streamed from the computer, like the official app)
@@ -154,7 +154,7 @@ hardware. They are hidden on the live site and only appear when you run it local
 | Profiles and presets | ✅ | ✅ (macros skipped) |
 | Sleep timer | ✅ | ✅ |
 | Debounce, knob mode | ✅ IC2481 boards (all current MK75s) | ✅ |
-| Side lights (mode, colour) | ✅ IC2481 boards (experimental) | ✅ (experimental) |
+| Side lights (mode, colour, brightness, speed) | ✅ IC2481 boards (experimental) | ✅ (experimental) |
 | Battery level, low-battery alerts | ✅ IC2481 boards (all current MK75s) | receivers with report ID 0x13 (the MK75's) |
 
 Bluetooth support assumes the keyboard exposes the same configuration interface as the receiver. It's not yet

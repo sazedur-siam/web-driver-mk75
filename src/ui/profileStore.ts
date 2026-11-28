@@ -4,7 +4,7 @@
  * The keyboard stores one setup at a time; applying a profile writes it to the keyboard's flash.
  */
 import { useSyncExternalStore } from 'react';
-import type { SideLights } from '../protocol/device';
+import { SIDE_LIGHT_FIELDS, type SideLights } from '../protocol/device';
 import type { RGB } from '../protocol/lighting';
 import type { Macro, MacroAssignment } from '../protocol/macro';
 import { isMacroState } from './macroStore';
@@ -19,8 +19,8 @@ export interface Profile {
   keyMatrix: string; // hex, 1024 B key matrix (base layer view)
   perKey: Record<number, RGB>;
   macros: { macros: Macro[]; assignments: Record<number, MacroAssignment> };
-  /** Side light bars, when the keyboard could report them (layout B boards). Older profiles have none. */
-  sideLights?: SideLights;
+  /** Side light bars, when the keyboard could report them (layout B boards). Older profiles have none or only some fields. */
+  sideLights?: Partial<SideLights>;
 }
 
 interface State {
@@ -100,13 +100,17 @@ export function validateProfile(p: unknown): Profile {
     keyMatrix: o.keyMatrix,
     perKey: o.perKey && typeof o.perKey === 'object' ? o.perKey : {},
     macros: isMacroState(o.macros) ? o.macros : { macros: [], assignments: {} },
-    ...(isSideLights(o.sideLights) ? { sideLights: { mode: o.sideLights.mode, colour: o.sideLights.colour } } : {}),
+    ...(parseSideLights(o.sideLights) ? { sideLights: parseSideLights(o.sideLights) } : {}),
   };
 }
 
-const inRange = (v: unknown, n: number) => Number.isInteger(v) && (v as number) >= 0 && (v as number) < n;
-/** Mode 0..4 and colour 0..6 (see SideLights); anything else in an imported file is dropped. */
-export function isSideLights(v: unknown): v is SideLights {
-  const o = v as Partial<SideLights> | null;
-  return !!o && typeof o === 'object' && inRange(o.mode, 5) && inRange(o.colour, 7);
+/** The valid side-light fields of an imported value (see SIDE_LIGHT_FIELDS); out-of-range ones are dropped. */
+export function parseSideLights(v: unknown): Partial<SideLights> | undefined {
+  if (!v || typeof v !== 'object') return undefined;
+  const out: Partial<SideLights> = {};
+  for (const [k, { count }] of Object.entries(SIDE_LIGHT_FIELDS) as [keyof SideLights, { count: number }][]) {
+    const x = (v as Record<string, unknown>)[k];
+    if (Number.isInteger(x) && (x as number) >= 0 && (x as number) < count) out[k] = x as number;
+  }
+  return Object.keys(out).length ? out : undefined;
 }

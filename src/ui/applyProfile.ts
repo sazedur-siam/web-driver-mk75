@@ -15,7 +15,7 @@ import type { DeviceSnapshot } from './useDevice';
 
 const eq = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((v, i) => v === b[i]);
 
-export function captureProfile(name: string, snap: DeviceSnapshot, id?: string, created?: string, sideLights?: SideLights): Profile {
+export function captureProfile(name: string, snap: DeviceSnapshot, id?: string, created?: string, sideLights?: Partial<SideLights>): Profile {
   const now = new Date().toISOString();
   return {
     id: id ?? Math.random().toString(36).slice(2, 10),
@@ -117,9 +117,11 @@ export async function applyProfile(dev: Mk75Device, snap: DeviceSnapshot, p: Pro
     if (!dev.readSideLights || !dev.writeSideLights) skipped.push('side lights (not supported on this connection)');
     else {
       const cur = await dev.readSideLights();
-      if (cur.mode !== p.sideLights.mode || cur.colour !== p.sideLights.colour) {
+      const want = p.sideLights;
+      const changed = (Object.keys(want) as (keyof SideLights)[]).filter((k) => want[k] !== undefined && want[k] !== cur[k]);
+      if (changed.length) {
         step?.('Side lights');
-        await dev.writeSideLights(p.sideLights);
+        await dev.writeSideLights(Object.fromEntries(changed.map((k) => [k, want[k]])));
         wrote.push('side lights');
       }
     }

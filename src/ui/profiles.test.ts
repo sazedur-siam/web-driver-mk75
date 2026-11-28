@@ -80,12 +80,18 @@ describe('profiles', () => {
     const dev = new Mk75Wireless(new WirelessLink(io, 0x13, undefined, { pace: 0, livePace: 0, ackMs: 300, readMs: 300 }), '3632');
     const snap = await read(dev);
     const p = captureProfile('Side', snap, undefined, undefined, await readSideLightsFor(dev));
-    expect(p.sideLights).toEqual({ mode: 3, colour: 0 });
+    expect(p.sideLights).toEqual({ mode: 3, colour: 0, brightness: 4, speed: 4 });
 
-    await dev.writeSideLights({ mode: 1, colour: 5 }); // changed later, e.g. with the shortcuts
+    await dev.writeSideLights({ mode: 1, colour: 5, brightness: 0 }); // changed later, e.g. with the shortcuts
     const res = await applyProfile(dev, snap, p);
     expect(res.wrote).toEqual(['side lights']);
-    expect([io.led[0x12], io.led[0x13]]).toEqual([3, 0]);
+    expect([...io.led.subarray(0x12, 0x16)]).toEqual([3, 0, 4, 4]);
+
+    // A profile saved before brightness and speed existed restores only mode and colour.
+    await dev.writeSideLights({ mode: 2, brightness: 1 });
+    await applyProfile(dev, res.snap, { ...p, sideLights: { mode: 3, colour: 0 } });
+    expect([...io.led.subarray(0x12, 0x16)]).toEqual([3, 0, 1, 4]);
+    await dev.writeSideLights({ brightness: 4 });
     expect((await applyProfile(dev, res.snap, p)).wrote).toEqual([]);
 
     await dev.writeSideLights({ mode: 4 });
@@ -112,9 +118,11 @@ describe('profiles', () => {
     const bad = validateProfile({ name: 'x', profile: '00'.repeat(254), rgbTable: '00'.repeat(1024), keyMatrix: '00'.repeat(1024), macros: { macros: [] } as never });
     expect(bad.macros).toEqual({ macros: [], assignments: {} });
     const blocks = { profile: '00'.repeat(254), rgbTable: '00'.repeat(1024), keyMatrix: '00'.repeat(1024) };
-    expect(validateProfile({ name: 'x', ...blocks, sideLights: { mode: 4, colour: 6 } }).sideLights).toEqual({ mode: 4, colour: 6 });
+    expect(validateProfile({ name: 'x', ...blocks, sideLights: { mode: 4, colour: 6, brightness: 0, speed: 4 } }).sideLights).toEqual({ mode: 4, colour: 6, brightness: 0, speed: 4 });
+    expect(validateProfile({ name: 'x', ...blocks, sideLights: { mode: 4, colour: 6 } }).sideLights).toEqual({ mode: 4, colour: 6 }); // older profile
     // Out-of-range or malformed side lights are dropped rather than written to the keyboard later.
-    expect('sideLights' in validateProfile({ name: 'x', ...blocks, sideLights: { mode: 5, colour: 0 } as never })).toBe(false);
+    expect(validateProfile({ name: 'x', ...blocks, sideLights: { mode: 5, colour: 0, brightness: 9 } as never }).sideLights).toEqual({ colour: 0 });
+    expect('sideLights' in validateProfile({ name: 'x', ...blocks, sideLights: { mode: 5 } as never })).toBe(false);
     expect('sideLights' in validateProfile({ name: 'x', ...blocks, sideLights: 'steady' as never })).toBe(false);
   });
 

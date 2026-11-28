@@ -90,11 +90,13 @@ You can also put a **picture or GIF** on your keys: scroll down to **Image / GIF
 ### Change the side lights
 
 The MK75 has light bars on both sides. Open **Side lights** and click a **Mode** (Off, Flow, Neon, Steady,
-Breathe) or a **Colour** (1–7, the keyboard's own side-light colours). Each click changes the lights right away.
-The colour shows in Steady and Breathe.
+Breathe) or a **Colour** (red, green, blue, yellow, purple, cyan or white), or move the **Brightness** and **Speed**
+sliders. Each change is sent right away, and the keyboard blinks its lights once while it applies it. The colour
+shows in Steady and Breathe; speed shows in the moving modes.
 
-Brightness and speed of the side lights can only be changed on the keyboard: **Fn + Right Alt** and **Fn + Right
-Ctrl**. If you change the mode on the keyboard (**Fn + Right Shift**), click **Refresh** to see it in the tab.
+If you change the side lights on the keyboard instead (**Fn + Right Shift**, **Fn + /**, **Fn + Right Alt**, **Fn +
+Right Ctrl**), click **Refresh** to see it in the tab. The keyboard saves a brightness or speed change only at your
+next mode or colour change, so Refresh can show the old level until then.
 
 This works on current MK75s (with the cable, the 2.4 GHz receiver or Bluetooth). It's new, so if a click doesn't
 change the lights, please use **Report an Issue**.

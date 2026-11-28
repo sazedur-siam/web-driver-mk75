@@ -35,6 +35,7 @@ export class MockWirelessIO implements ReportIO {
     this.led[0x03] = 2; // debounce (factory value, issue #4)
     this.led[0x18] = 4; // sleep 120 s
     this.led[0x12] = 3; // side lights steady (real MK75, side-light probe)
+    this.led[0x14] = this.led[0x15] = 4; // side-light brightness and speed, as in every real capture
     this.led[0x38] = this.led[0x39] = 0xff;
     for (let i = 0; i < 19; i++) {
       this.led[0x3a + 2 * i] = 4;

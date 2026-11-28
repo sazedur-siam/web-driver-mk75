@@ -4,14 +4,14 @@
  *
  *  LED profile (cmd 0x44 / 0x04), 128 B, "layout B", signature 5A A5 at 0x7E:
  *    0x03 debounce 0..4 · 0x09 custom flag · 0x0A hw effect · 0x0B colour group · 0x16 tap/hold threshold · 0x18 sleep (0 = never) · 0x1A knob 0 media / 1 lighting
- *    0x12 side-light mode 0..4 · 0x13 side-light colour 0..6
+ *    0x12 side-light mode 0..4 · 0x13 colour 0..6 · 0x14 brightness 0..4 · 0x15 speed 0..4
  *    0x38/0x39 = FF · 0x3A+2i brightness · 0x3B+2i speed<<4 | (colourful ? 7 : 0)   (i < 19)
  *  Key matrix (cmd 0x41 / 0x01, sub = layer: 0 base, 1 Fn, 2 unused, 3 tap/hold), 512 B = 128 u32, last u32 = 0xA55A0000.
  *  Palette (cmd 0x49 / 0x09), 0x200 B: same offsets as wired (0x15*hw), 5A A5 at 0x1FA.
  *  Per-key colours (cmd 0x02, sub = group), 0x17A B: R/G/B planes of 126.
  *  Live stream (cmd 0x88, no ack): groups [R,G,B,count,led...], <= 200 bytes.
  */
-import type { DeviceCaps, KeyboardSettings, Mk75Device, SideLights } from '../device';
+import { SIDE_LIGHT_FIELDS, type DeviceCaps, type KeyboardSettings, type Mk75Device, type SideLights } from '../device';
 import { PROFILE_LEN } from '../mk75';
 import { LED_GROUP_LEN, PER_MODE_SLOTS } from '../lighting';
 import { STORE_BLOCK, STORE_BLOCKS } from '../macro';
@@ -35,11 +35,6 @@ const PALETTE_DATA = 0x1a4;
 export const PALETTE_TAIL_AT = 483;
 export const MK75_PALETTE_TAIL = Uint8Array.from([3, 0, 0, 0, 0, 0xc6, 0, 0, 0x10, ...new Array(14).fill(0), 0x5a, 0xa5, 0, 0x10, 0, 0]);
 const WL_MODES = 19;
-/** Side light bars in the LED block (side-light probe on a real MK75): mode 0..4 at 0x12, colour 0..6 at 0x13. */
-const SIDE_MODE = 0x12;
-const SIDE_COLOUR = 0x13;
-export const SIDE_MODES = 5;
-export const SIDE_COLOURS = 7;
 const LIVE_MAX = 200;
 const OP_USB_MACRO = 0x05;
 /** Layout-B cell types: 07 device function, 0D Fn key (never changed); 03 macro, 08 lighting (kept raw). */
@@ -245,19 +240,22 @@ export class Mk75Wireless implements Mk75Device {
   // ---------------------------------------------------------------- side light bars
   async readSideLights(): Promise<SideLights> {
     const raw = await this.readLedRaw();
-    return { mode: raw[SIDE_MODE], colour: raw[SIDE_COLOUR] };
+    const f = SIDE_LIGHT_FIELDS;
+    return { mode: raw[f.mode.at], colour: raw[f.colour.at], brightness: raw[f.brightness.at], speed: raw[f.speed.at] };
   }
 
   writeSideLights(s: Partial<SideLights>): Promise<void> {
     return this.exclusive(async () => {
+      const fields = (Object.keys(SIDE_LIGHT_FIELDS) as (keyof SideLights)[]).filter((k) => s[k] !== undefined);
       // Check before reading, so a bad value never leads to a write.
-      if (s.mode !== undefined && (!Number.isInteger(s.mode) || s.mode < 0 || s.mode >= SIDE_MODES)) throw new RangeError(`Side-light mode must be 0..${SIDE_MODES - 1}`);
-      if (s.colour !== undefined && (!Number.isInteger(s.colour) || s.colour < 0 || s.colour >= SIDE_COLOURS)) {
-        throw new RangeError(`Side-light colour must be 0..${SIDE_COLOURS - 1}`);
+      for (const k of fields) {
+        const v = s[k]!;
+        const { count } = SIDE_LIGHT_FIELDS[k];
+        if (!Number.isInteger(v) || v < 0 || v >= count) throw new RangeError(`Side-light ${k} must be 0..${count - 1}`);
       }
+      if (!fields.length) return;
       const raw = await this.readLedRaw();
-      if (s.mode !== undefined) raw[SIDE_MODE] = s.mode;
-      if (s.colour !== undefined) raw[SIDE_COLOUR] = s.colour;
+      for (const k of fields) raw[SIDE_LIGHT_FIELDS[k].at] = s[k]!;
       await sleep(60);
       await this.link.write(this.ops.setLed, 0, raw);
     });

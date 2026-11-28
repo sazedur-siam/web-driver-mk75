@@ -8,10 +8,10 @@
 
 | Phase | State |
 |---|---|
-| 1. Find the bytes | ✅ Done on a real MK75 (cable): `led 0x12` mode 0–4 (0 off, 1 flow, 2 neon, 3 steady, 4 breathe), `led 0x13` colour 0–6. Brightness and speed aren't stored anywhere readable. |
-| 2. Prove writes work | ⏳ Built, waiting for a hardware pass: TESTING.md **S1–S5**. Also needed: the names of colours 1–7, to show swatches instead of numbers. |
+| 1. Find the bytes | ✅ Done on a real MK75 (cable): `led 0x12` mode 0–4 (0 off, 1 flow, 2 neon, 3 steady, 4 breathe), `led 0x13` colour 0–6 (red, green, blue, yellow, purple, cyan, white), `led 0x14` brightness 0–4 and `led 0x15` speed 0–4. The keyboard saves shortcut brightness/speed only at the next mode or colour change, which hid them at first. |
+| 2. Prove writes work | ✅ Mode and colour (the owner saw each colour). ⏳ Brightness and speed: TESTING.md **S2b**, **S2c**; persistence: **S4**. Every write blinks the lighting once (firmware); the tab writes only real changes and debounces sliders. |
 | 3. Protocol | ✅ `readSideLights` / `writeSideLights` (read-modify-write of only those two bytes, range-checked first), tests in `sideLights.test.ts` and the issue #29 replay. |
-| 4. UI | ✅ A **Side lights** tab of its own (the user asked for it to be easy to find, not a card in Lighting). Profiles and backups carry mode and colour. Brightness and speed are shown as keyboard shortcuts. |
+| 4. UI | ✅ A **Side lights** tab of its own (the user asked for it to be easy to find, not a card in Lighting): mode buttons, named colour swatches, brightness and speed sliders, the keyboard shortcuts. Profiles and backups carry all four (older profiles: the fields they have). |
 | 5. Docs | ✅ PROTOCOL.md, CLAUDE.md, README, MANUAL, TESTING. Still to do on ship: a manual screenshot, and delete this file. |
 
 ## Goal
