@@ -3,7 +3,7 @@ import type { SideLights } from '../protocol/device';
 import type { DeviceApi } from './useDevice';
 
 /**
- * Side light bars (features/20-side-lights.md): mode, colour, brightness and speed in the layout B config block
+ * Side light bars (PROTOCOL.md, layout B side light bars): mode, colour, brightness and speed in the layout B config block
  * (0x12..0x15). Every write makes the keyboard restart its lighting (a short blink), so the page writes only real
  * changes, and a slider only once the user stops moving it.
  */
@@ -42,10 +42,23 @@ type Level = 'brightness' | 'speed';
 export function SideLightsTab({ api }: { api: DeviceApi }) {
   const { dev } = api;
   const [cur, setCur] = useState<SideLights | null>(null);
-  /** Slider positions not written yet. */
+  /** Slider positions not written yet (what the sliders show). */
   const [draft, setDraft] = useState<Partial<Record<Level, number>>>({});
   const timer = useRef<ReturnType<typeof setTimeout>>();
-  useEffect(() => () => clearTimeout(timer.current), []);
+  /** Slider changes waiting for the next write, with the connection they belong to. Both sliders share one write. */
+  const pending = useRef<{ dev: typeof dev; s: Partial<SideLights> } | null>(null);
+  const devNow = useRef(dev);
+  devNow.current = dev;
+  /** Sends the pending slider changes; replaced every render so it uses the current state. */
+  const flush = useRef(() => {});
+  // Leaving the tab sends a change the user just made instead of dropping it.
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      flush.current();
+    },
+    [],
+  );
 
   const read = useCallback(() => {
     if (!dev?.readSideLights) return;
@@ -85,13 +98,23 @@ export function SideLightsTab({ api }: { api: DeviceApi }) {
     });
   };
 
+  flush.current = () => {
+    const p = pending.current;
+    pending.current = null;
+    // A change made on an earlier connection is dropped, never sent to a different keyboard.
+    if (!p || p.dev !== devNow.current) return;
+    const s = p.s;
+    void Promise.resolve(write(s)).finally(() =>
+      // Keep a slider's position until its value is read back, unless the user has moved it again since.
+      setDraft((d) => Object.fromEntries(Object.entries(d).filter(([k, v]) => s[k as Level] !== v))),
+    );
+  };
+
   const slide = (k: Level, v: number) => {
     setDraft((d) => ({ ...d, [k]: v }));
+    pending.current = { dev, s: { ...(pending.current?.dev === dev ? pending.current.s : {}), [k]: v } };
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      setDraft({});
-      void write({ [k]: v });
-    }, SLIDER_WRITE_MS);
+    timer.current = setTimeout(() => flush.current(), SLIDER_WRITE_MS);
   };
 
   const busy = !!api.busy;
