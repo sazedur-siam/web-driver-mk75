@@ -79,7 +79,7 @@ export function SideLightsTab({ api }: { api: DeviceApi }) {
 
         <div className="field">
           <span className="field-l">
-            Colour <b>{cur ? cur.colour + 1 : '…'}</b>
+            Colour for Steady and Breathe <b>{cur ? cur.colour + 1 : '…'}</b>
           </span>
           <div className="levels seven" role="radiogroup" aria-label="Side-light colour">
             {Array.from({ length: SIDE_COLOUR_COUNT }, (_, i) => (
