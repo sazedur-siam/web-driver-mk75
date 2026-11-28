@@ -12,6 +12,7 @@ import {
   type LightingState,
   type RGB,
 } from '../protocol/lighting';
+import { EffectPreview } from './EffectPreview';
 import type { DeviceApi } from './useDevice';
 
 export function LightingTab({ api }: { api: DeviceApi }) {
@@ -84,6 +85,11 @@ export function LightingTab({ api }: { api: DeviceApi }) {
         <header className="card-h">
           <h2>{mode.name}</h2>
         </header>
+        <EffectPreview
+          modeIndex={mode.index}
+          settings={s}
+          color={pal[mode.index]?.[dev.caps.paletteIndex ? s.colorIndex : 0] ?? [255, 255, 255]}
+        />
         {!mode.brightness && !mode.speed && !mode.color && <p className="muted">This effect has no adjustable settings.</p>}
         {mode.brightness && (
           <Level label="Brightness" value={s.brightness} onChange={(v) => setS({ brightness: v })} />
