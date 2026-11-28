@@ -12,7 +12,6 @@ New plans go here as `NN-short-name.md` with a row in this table. The hardware c
 
 | # | Feature | Group | Priority | Effort | Needs hardware? |
 |---|---|---|---|---|---|
-| [02](02-lazy-tabs.md) | Load tabs on demand, precache them for offline | Performance / app shell | High | M | No |
 | [04](04-game-mode.md) | Game mode (Win/Caps off, never sleep, WASD lighting, exact undo) | Key mapping / lighting | High | M | Verify only |
 
 Effort: S ≈ 1 day or less, M ≈ 2–4 days. "Verify only" = buildable now, but confirm on a real MK75.

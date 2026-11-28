@@ -2,10 +2,8 @@ import { useCallback, useRef, useState } from 'react';
 import { MK75_KEYS } from '../device/mk75Layout';
 import { MK75_FILTERS, openMk75, requestMk75 } from '../protocol/connect';
 import type { Mk75Device } from '../protocol/device';
-import { MockMk75 } from '../protocol/mock';
 import { Mk75 } from '../protocol/mk75';
 import { WirelessLink } from '../protocol/wireless/link';
-import { MockWirelessIO } from '../protocol/wireless/mockWireless';
 import { Mk75Wireless } from '../protocol/wireless/mk75Wireless';
 import { toHex } from './profileStore';
 
@@ -159,10 +157,18 @@ export function useDevice() {
   const connectDemo = useCallback(
     (mode: 'wired' | 'wireless' = 'wired') =>
       run('Starting simulator', async () => {
-        if (mode === 'wired') return attach(new Mk75(new MockMk75(), { onFrame: wiredLog }), 'demo-wired');
-        const w = new Mk75Wireless(new WirelessLink(new MockWirelessIO(), 0x13, wirelessLog, { pace: 2, livePace: 1, ackMs: 800, readMs: 800 }), '3632');
-        w.setLiveLeds(MK75_KEYS.map((k) => k.index));
-        return attach(w, 'demo-wireless');
+        // The simulators are developer tools: loaded only in `npm run dev`, so production builds leave them out.
+        if (import.meta.env.DEV) {
+          if (mode === 'wired') {
+            const { MockMk75 } = await import('../protocol/mock');
+            return attach(new Mk75(new MockMk75(), { onFrame: wiredLog }), 'demo-wired');
+          }
+          const { MockWirelessIO } = await import('../protocol/wireless/mockWireless');
+          const w = new Mk75Wireless(new WirelessLink(new MockWirelessIO(), 0x13, wirelessLog, { pace: 2, livePace: 1, ackMs: 800, readMs: 800 }), '3632');
+          w.setLiveLeds(MK75_KEYS.map((k) => k.index));
+          return attach(w, 'demo-wireless');
+        }
+        throw new Error('The simulators are only available in development builds.');
       }),
     [run, attach, wiredLog, wirelessLog],
   );

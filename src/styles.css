@@ -203,6 +203,7 @@ select {
 
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.part-loading { min-height: 240px; } /* a tab loading on demand keeps roughly its space, so the page doesn't jump */
 .panel-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 14px; }
 .stack { display: flex; flex-direction: column; gap: 14px; }
 @media (max-width: 820px) { .panel-grid { grid-template-columns: minmax(0, 1fr); } }

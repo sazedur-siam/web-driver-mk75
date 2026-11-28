@@ -3,7 +3,7 @@
  * in the URL hash (#p=…) so they never reach a server. Applied on top of the keyboard's current blocks.
  */
 import { MK75_KEYS } from '../device/mk75Layout';
-import { vkToHid } from './mock';
+import { vkToHid } from './vk';
 import { decodeAction, encodeAction, getKeyCode, setKeyCode, type KeyAction } from './keycodes';
 import { LED_MODES, LEVELS, PALETTE_SIZE, parseProfile, parseRgbTable, patchProfile, patchRgbTable, type RGB } from './lighting';
 
