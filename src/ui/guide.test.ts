@@ -13,7 +13,7 @@ describe('guide renderer', () => {
   it('resolves links: anchors stay, repo files go to GitHub, URLs open externally', () => {
     expect(resolveHref('#features')).toEqual({ href: '#features', external: false });
     expect(resolveHref('TESTING.md').href).toBe('https://github.com/sazedur-siam/web-driver-mk75/blob/main/TESTING.md');
-    expect(resolveHref('https://mk75-web.vercel.app/').external).toBe(true);
+    expect(resolveHref('https://lingbao-mk75-web.vercel.app/').external).toBe(true);
   });
   it('renders headings with ids, a TOC, tables and safe external links', () => {
     const { html, toc } = renderGuide('# T\n\n## Quick start\n\n### Profiles\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\nSee [tests](TESTING.md).');

@@ -486,3 +486,9 @@ footer p { margin: 2px 0; }
 .theme-pick-grid button.on { box-shadow: 0 0 0 2px var(--accent); }
 .theme-pick-grid .theme-dot { width: 28px; height: 28px; }
 @media (max-width: 420px) { .theme-pick-grid { grid-template-columns: 1fr; } }
+
+/* index.html #intro: static text for crawlers and no-JS visitors, shown only until React replaces #root's children. */
+#intro { max-width: 680px; margin: 0 auto; padding: 48px 16px; line-height: 1.55; }
+#intro h1 { font-size: 28px; margin: 0 0 12px; }
+#intro p, #intro li { color: var(--muted); }
+#intro a { color: var(--accent); }

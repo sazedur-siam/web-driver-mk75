@@ -4,13 +4,74 @@
     <meta charset="UTF-8" />
     <meta name="theme-color" content="#0e110f" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lingbao MK75 Driver</title>
+    <title>Lingbao MK75 Driver: Web Keyboard Software, No Install</title>
+    <meta
+      name="description"
+      content="Free, unofficial web driver for the Lingbao MK75 keyboard. Change lighting effects, per-key RGB, key mapping, macros and profiles in Chrome or Edge on Windows, macOS and Linux. Works over USB, 2.4 GHz and Bluetooth."
+    />
+    <link rel="canonical" href="https://lingbao-mk75-web.vercel.app/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Lingbao MK75 Driver" />
+    <meta property="og:title" content="Lingbao MK75 Driver: Web Keyboard Software, No Install" />
+    <meta
+      property="og:description"
+      content="Lighting, per-key RGB, key mapping, macros and profiles for the Lingbao MK75, in your browser. Windows, macOS and Linux."
+    />
+    <meta property="og:url" content="https://lingbao-mk75-web.vercel.app/" />
+    <meta property="og:image" content="https://lingbao-mk75-web.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Lingbao MK75 Driver per-key RGB editor" />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Lingbao MK75 Driver",
+        "alternateName": ["MK75 web driver", "Lingbao MK75 software"],
+        "url": "https://lingbao-mk75-web.vercel.app/",
+        "image": "https://lingbao-mk75-web.vercel.app/og-image.png",
+        "description": "Free, unofficial browser-based driver for the Lingbao MK75 keyboard: lighting effects, per-key RGB, key mapping, macros and profiles.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Windows, macOS, Linux, ChromeOS",
+        "browserRequirements": "Requires a browser with WebHID: Chrome, Edge or Opera on desktop.",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "author": { "@type": "Person", "name": "Sazedur Rahman", "url": "https://github.com/sazedur-siam" },
+        "sameAs": ["https://github.com/sazedur-siam/web-driver-mk75"]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main id="intro">
+        <h1>Lingbao MK75 Driver</h1>
+        <p>
+          A free, unofficial web driver for the <strong>Lingbao MK75</strong> keyboard. It does everything the official
+          Windows "LINGBAO Keyboard Driver" does, with nothing to install, in Chrome, Edge or Opera on Windows, macOS,
+          Linux and ChromeOS. Connect over the USB cable, the 2.4 GHz receiver or Bluetooth.
+        </p>
+        <ul>
+          <li>Lighting: all 16 MK75 effects with brightness, speed and custom colour palettes</li>
+          <li>Per-key RGB editor with gradients, region selection and an eyedropper</li>
+          <li>Live effects: screen sync, music visualiser and custom animated effects</li>
+          <li>Key mapping and remapping, including the Fn layer and media keys</li>
+          <li>Macros, game mode, side lights and a key tester</li>
+          <li>Profiles, shareable presets and full backups</li>
+        </ul>
+        <p>
+          Loading the app. If nothing happens, enable JavaScript and use a desktop Chromium browser.
+          Source code and documentation:
+          <a href="https://github.com/sazedur-siam/web-driver-mk75">github.com/sazedur-siam/web-driver-mk75</a>.
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

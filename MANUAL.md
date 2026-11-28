@@ -3,7 +3,7 @@
 This manual shows you how to connect your **Lingbao MK75** keyboard to the MK75 Driver website and use its
 features. No technical knowledge needed.
 
-**Website:** https://mk75-web.vercel.app/
+**Website:** https://lingbao-mk75-web.vercel.app/
 
 ---
 
@@ -25,7 +25,7 @@ features. No technical knowledge needed.
    (the keyboard icon).
 2. Plug the keyboard into your computer with the **USB cable**.
 3. Press **Fn + W** on the keyboard (this puts it in Windows mode, which the driver needs; do it on a Mac too).
-4. Open **https://mk75-web.vercel.app/** in Chrome, Edge or Opera.
+4. Open **https://lingbao-mk75-web.vercel.app/** in Chrome, Edge or Opera.
 5. Click the green **Connect keyboard** button.
 6. A small window from the browser appears with a list of devices. Click your keyboard (it may be called
    **MK75**, **USB Keyboard** or similar), then click **Connect**.

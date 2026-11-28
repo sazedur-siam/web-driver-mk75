@@ -3,7 +3,8 @@
 Project memory for future work (AI assistants and humans). It explains what this repo is, how the keyboard
 protocol was reverse-engineered, how the code is organised, and the rules to follow when changing it.
 
-- **Live app:** https://mk75-web.vercel.app/ (Vercel, auto-deploys from `main`)
+- **Live app:** https://lingbao-mk75-web.vercel.app/ (Vercel, auto-deploys from `main`). The old
+  `mk75-web.vercel.app` redirects there.
 - **Repo:** https://github.com/sazedur-siam/web-driver-mk75
 - **User docs:** `README.md` (features), `MANUAL.md` (how to use, with screenshots), `TESTING.md` (hardware test
   plan). **Protocol:** `PROTOCOL.md`. **Backlog:** `features/` (one plan per unbuilt feature). **Bugs:** `bug-fix/` (one plan per known bug,
@@ -213,7 +214,8 @@ src/ui/                  React tabs + browser stores (profileStore, macroStore, 
 src/presets/gallery.ts   bundled presets
 src/build/swPrecache.ts  build step: writes the asset list + build id into dist/sw.js (vite.config.ts plugin)
 public/                  manifest, sw.js (precaches every asset; cache `mk75-<build id>`), icons, favicon.svg,
-                         manual/*.webp screenshots
+                         manual/*.webp screenshots, SEO files (robots.txt, sitemap.xml, og-image.png 1200×630,
+                         google7e89feaa1f838180.html = Search Console verification, never delete it)
 desktop/                 Electron tray app: main.cjs serves ../dist on app://mk75 (secure context for WebHID),
                          grants HID, auto-picks the device, answers getDisplayMedia; `npm run smoke` self-checks
 ```
@@ -267,6 +269,11 @@ npm run build    # tsc -b && vite build → dist/
   (`src/build/swPrecache.ts`), so every deploy that changes code installs a new worker and shows the update notice.
   Edit `public/sw.js` only to change the caching strategy, and keep its `BUILD`/`ASSETS` placeholder lines (the
   build fails without them).
+- **SEO** (Google Search Console property `https://lingbao-mk75-web.vercel.app/`): `index.html` holds the title,
+  meta description, canonical, Open Graph tags, a `SoftwareApplication` JSON-LD block, and a static `#intro`
+  block inside `#root` that crawlers read before React replaces it. Keep the intro's feature list true to the
+  README when features change. If the domain changes, update the canonical, `og:*` URLs, JSON-LD, `robots.txt`
+  and `sitemap.xml` together.
 - **New tabs or dialogs** go in `src/ui/lazyParts.tsx` (lazy, prefetched after connect), rendered inside
   `PartBoundary` + `Suspense` in `App.tsx`. Don't import them statically from the shell.
 - **Manual screenshots:**
