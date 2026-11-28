@@ -298,5 +298,5 @@ npm run build    # tsc -b && vite build → dist/
   CDev916KB wired class never sends it.
 - **GitHub issues:** they need an account. "Report an Issue" builds a pre-filled `issues/new` URL (≤ 7 KB);
   screenshots are pasted on GitHub.
-- **Footer flag:** the Bangladesh flag is an inline SVG ("Ported in Bangladesh"), because Windows renders flag
+- **Footer flag:** the Bangladesh flag is an inline SVG next to the author's name, because Windows renders flag
   emoji as letters.

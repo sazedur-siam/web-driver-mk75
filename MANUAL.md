@@ -29,7 +29,7 @@ features. No technical knowledge needed.
 5. Click the green **Connect keyboard** button.
 6. A small window from the browser appears with a list of devices. Click your keyboard (it may be called
    **MK75**, **USB Keyboard** or similar), then click **Connect**.
-7. Done: the tabs appear (Profiles, Lighting, Per-key RGB…). You're connected.
+7. Done: the sections appear in the sidebar on the left (Profiles, Lighting, Per-key RGB…). You're connected.
 
 **Next time**, just click **Reconnect MK75** on the start page. No list to choose from.
 
