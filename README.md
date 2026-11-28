@@ -91,14 +91,16 @@ hardware. They are hidden on the live site and only appear when you run it local
   stopping restores your saved effect.
 
 ### Key mapping
-- Remap any key (base layer):
+- Remap any key, and on current MK75 boards also what it does while Fn is held (**Fn layer**, experimental):
   - a key or combination (press it, or pick from a list), or a modifier
   - media keys (play/pause, volume, mute, browser and app keys)
   - mouse buttons (left, middle, right, forward, back)
   - shortcuts (Alt+F4, Win+L, Win+D, copy/undo/save…)
-  - a macro, or **Disable**
+  - a macro (base layer), or **Disable**
 - **Hardware layouts:** QWERTY, Colemak, Colemak-DH, Dvorak and Workman are stored in the keyboard, so they work
   on any computer set to US QWERTY. Tweaks: Mac Ctrl·Option·Cmd swap, Caps Lock → Ctrl or Esc.
+- **Fn layer:** the mode, pairing and battery keys are locked so you can't lose them, and **Restore Fn layer** puts
+  back the Fn layer as the app first read it.
 - Changed keys are highlighted before you save. Keys using Fn redirect slots are handled the same way as in the
   official driver.
 
@@ -152,6 +154,7 @@ hardware. They are hidden on the live site and only appear when you run it local
 | Per-key colours, image to keys | ✅ | ✅ |
 | Live effects, music, screen sync, signals, custom | ✅ ~33 fps | ✅ (lower frame rate, colour-grouped frames) |
 | Key mapping and layouts | ✅ | ✅ |
+| Fn layer remapping | ✅ IC2481 boards (all current MK75s, experimental) | ✅ (experimental) |
 | Macros | ✅ | ✅ (0x13 receivers, the MK75's) |
 | Profiles and presets | ✅ | ✅ (macros skipped) |
 | Sleep timer | ✅ | ✅ |
