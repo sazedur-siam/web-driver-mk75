@@ -123,6 +123,12 @@ Key reference in the matrix: `[10, 00, mode, id-1]`, mode 1 = once, 2 = while he
 Wired: feature report `0x08` = `0A 7A 01` + 126 × RGB triplets indexed by LED index, ~50 fps, no enable/disable command.
 Wireless: cmd `0x88` sub 1 = groups `[R, G, B, count, led…]`, ≤ 200 bytes.
 
+Unchanged frames (`src/protocol/liveGate.ts`): each device class compares what it would put on the wire (the RGB
+bytes on the cable, the encoded groups over 2.4 GHz / Bluetooth) with the last frame sent, and skips repeats. It
+still resends at least every 250 ms, because the firmware's behaviour without frames is unknown (the vendor driver
+streams continuously; OpenRGB reports a ~1 s fallback on the F75). Any config write resets the comparison, so the
+first frame after a restore is always sent.
+
 ## Misc
 
 * Model check: report 05 `05 81 …` → `01 03 00 00 00 00 C6` (KB.ini `Psd`).

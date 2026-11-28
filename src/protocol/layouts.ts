@@ -3,7 +3,7 @@
  * computer set to US QWERTY. Maps are "QWERTY key position → character it should produce".
  */
 import { MK75_KEYS } from '../device/mk75Layout';
-import { vkToHid } from './mock';
+import { vkToHid } from './vk';
 import type { KeyAction } from './keycodes';
 import { charUsage } from './textMacro';
 

@@ -88,6 +88,8 @@ Use a text editor and a keyboard/mouse tester website.
 - [ ] **V3** (P1) **Music** with a shared tab playing music. The lights react to the music.
 - [ ] **V4** (P0) **Stop** brings back the saved effect within 1 s.
 - [ ] **V5** (P1) Close the browser tab while streaming. Note what happens; the keyboard should return to its saved effect within a few seconds: ______
+- [ ] **V6** (P0) **Static** with **Single colour** → **Start**, over the cable, for 2 minutes. The header shows about 4 sent/s, and the keyboard keeps the colour without ever flashing back to the saved effect.
+- [ ] **V7** (P2) Measure the firmware's live timeout: while connected, run `await __mk75.dev.sendLiveFrame(new Uint8Array(378).fill(80))` in the console (dev build), then nothing else. Note whether and after how long the keyboard returns to its saved effect: ______ (this settles the 250 ms keep-alive in `liveGate.ts`)
 
 ## 7. Device tab
 
@@ -106,6 +108,7 @@ Use a text editor and a keyboard/mouse tester website.
 - [ ] **W5** (P0) Repeat K1 over 2.4G. Caps Lock works as Ctrl.
 - [ ] **W6** (P1) Connect by cable after W5. Note whether Caps Lock is still Ctrl (the cable and wireless key maps may be stored separately): ______
 - [ ] **W7** (P1) Rainbow wave over 2.4G. The keyboard animates (5 fps or more is fine) with roughly correct colours.
+- [ ] **W10** (P1) Repeat V6 over 2.4G. The colour holds for 2 minutes without flashing back to the saved effect.
 - [ ] **W8** (P0) Repeat M1 and M7 over 2.4G. The macro plays, survives a power cycle, and still plays when you switch to the cable (shared storage).
 - [ ] **W9** (P2) **Device** tab: note whether a Battery row appears. This tells which receiver type you have: ______
 

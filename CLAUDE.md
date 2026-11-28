@@ -201,15 +201,19 @@ src/protocol/            pure logic + device I/O (unit-tested, no React)
   gameMode.ts            game mode planning: on/off with an undo record (before/after per key and profile byte)
   layouts.ts preset.ts   hardware layouts; shareable presets (deflate + base64url in #p=)
   live.ts screenSync.ts signals.ts effectDesigner.ts imageMap.ts perKeyTools.ts heatmap.ts chatter.ts
-  mock.ts                USB simulator (also VK→HID table)
+  mock.ts                USB simulator (dev and tests only; loaded with import() so production leaves it out)
+  vk.ts                  VK → HID table (KB.ini vk codes)
 src/device/              mk75Layout.ts (generated from KB.ini), mk75Units.ts (unit files), codeMap.ts
 src/ui/                  React tabs + browser stores (profileStore, macroStore, effectStore, perKeyStore,
                          presetStore), applyProfile.ts, saveKeys.ts, useDevice.ts, ticker.ts, pwa.ts,
                          guide.ts/GuideView.tsx (MANUAL/README reader), report.ts/ReportDialog.tsx,
                          contribute.ts/ContributeDialog.tsx (device-data JSON; contents in DEVICE_DATA.md),
+                         lazyParts.tsx (every tab, the Guide and the dialogs load on demand; chunk-error reload),
                          gameModeStore.ts (write sequence), GameModeToggle.tsx (header), GameModeCard.tsx (Key mapping card)
 src/presets/gallery.ts   bundled presets
-public/                  manifest, sw.js (cache name `mk75-vN`), icons, favicon.svg, manual/*.webp screenshots
+src/build/swPrecache.ts  build step: writes the asset list + build id into dist/sw.js (vite.config.ts plugin)
+public/                  manifest, sw.js (precaches every asset; cache `mk75-<build id>`), icons, favicon.svg,
+                         manual/*.webp screenshots
 desktop/                 Electron tray app: main.cjs serves ../dist on app://mk75 (secure context for WebHID),
                          grants HID, auto-picks the device, answers getDisplayMedia; `npm run smoke` self-checks
 ```
@@ -259,8 +263,12 @@ npm run build    # tsc -b && vite build → dist/
   `bug-fix/` (branch `fix/…`), deleted with its row in `bug-fix/README.md` when the fix ships.
 - **Pushing:** the repo belongs to `sazedur-siam`; push as that account. The repo-local git identity is already
   set. No AI attribution lines in commits or PRs.
-- **Vercel** redeploys on push to `main`. Bump `CACHE` in `public/sw.js` only when the caching strategy changes;
-  hashed assets don't need it.
+- **Vercel** redeploys on push to `main`. The service worker's cache name and asset list are written at build time
+  (`src/build/swPrecache.ts`), so every deploy that changes code installs a new worker and shows the update notice.
+  Edit `public/sw.js` only to change the caching strategy, and keep its `BUILD`/`ASSETS` placeholder lines (the
+  build fails without them).
+- **New tabs or dialogs** go in `src/ui/lazyParts.tsx` (lazy, prefetched after connect), rendered inside
+  `PartBoundary` + `Suspense` in `App.tsx`. Don't import them statically from the shell.
 - **Manual screenshots:**
   1. Run `npm run dev`, set the theme to Dark green-orange at 1200×780, and use the USB simulator.
   2. Capture each tab and convert to WebP (q≈80) into `public/manual/`.

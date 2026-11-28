@@ -87,18 +87,21 @@ hardware. They are hidden on the live site and only appear when you run it local
 - **Custom (effect designer):** stack layers (solid, breathe, wave, ripple, stars, gradient scroll, key reactive).
   Each layer has its own keys, two colours, speed, width, direction and blend (replace, add or lighten).
   Effects are saved in the browser and include an "Aurora" starter.
-- About 33 fps over the cable. Effects keep running when the tab is in the background (worker clock), and
-  stopping restores your saved effect.
+- About 33 fps over the cable. Frames the keyboard already shows aren't sent again (a still effect sends about 4
+  a second), which leaves more room on 2.4 GHz and Bluetooth for frames that change. Effects keep running when the
+  tab is in the background (worker clock), and stopping restores your saved effect.
 
 ### Key mapping
-- Remap any key (base layer):
+- Remap any key, and on current MK75 boards also what it does while Fn is held (**Fn layer**, experimental):
   - a key or combination (press it, or pick from a list), or a modifier
   - media keys (play/pause, volume, mute, browser and app keys)
   - mouse buttons (left, middle, right, forward, back)
   - shortcuts (Alt+F4, Win+L, Win+D, copy/undo/save…)
-  - a macro, or **Disable**
+  - a macro (base layer), or **Disable**
 - **Hardware layouts:** QWERTY, Colemak, Colemak-DH, Dvorak and Workman are stored in the keyboard, so they work
   on any computer set to US QWERTY. Tweaks: Mac Ctrl·Option·Cmd swap, Caps Lock → Ctrl or Esc.
+- **Fn layer:** the mode, pairing and battery keys are locked so you can't lose them, and **Restore Fn layer** puts
+  back the Fn layer as the app first read it.
 - Changed keys are highlighted before you save. Keys using Fn redirect slots are handled the same way as in the
   official driver.
 - **Game mode:** one click in the header turns off the Win key and Caps Lock, and optionally stops the keyboard
@@ -142,8 +145,10 @@ hardware. They are hidden on the live site and only appear when you run it local
 - **Contribute device data:** saves one JSON file (HID interface layout, keyboard settings, configuration
   traffic) to attach to a GitHub issue, so more firmware variants and modes can be supported. Never includes
   typing or macro contents. Full list: [DEVICE_DATA.md](DEVICE_DATA.md).
-- **Installable (PWA):** an *Install app* button, works offline, shows an update notice after a new version is
-  deployed, and reconnects to previously allowed keyboards in one click.
+- **Installable (PWA):** an *Install app* button, works offline (every tab, after one online visit), shows an
+  update notice after a new version is deployed, and reconnects to previously allowed keyboards in one click.
+- **Fast first load:** only the app shell downloads up front; each tab, the Guide and the dialogs load when first
+  opened (and in the background once a keyboard is connected).
 
 ---
 
@@ -155,6 +160,7 @@ hardware. They are hidden on the live site and only appear when you run it local
 | Per-key colours, image to keys | ✅ | ✅ |
 | Live effects, music, screen sync, signals, custom | ✅ ~33 fps | ✅ (lower frame rate, colour-grouped frames) |
 | Key mapping and layouts | ✅ | ✅ |
+| Fn layer remapping | ✅ IC2481 boards (all current MK75s, experimental) | ✅ (experimental) |
 | Macros | ✅ | ✅ (0x13 receivers, the MK75's) |
 | Profiles and presets | ✅ | ✅ (macros skipped) |
 | Sleep timer | ✅ | ✅ |

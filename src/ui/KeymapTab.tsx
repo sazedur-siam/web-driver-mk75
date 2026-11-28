@@ -15,7 +15,7 @@ import {
   SHORTCUTS,
   type KeyAction,
 } from '../protocol/keycodes';
-import { vkToHid } from '../protocol/mock';
+import { vkToHid } from '../protocol/vk';
 import { LAYOUTS, layoutActions, type LayoutTweaks } from '../protocol/layouts';
 import { Keyboard } from './Keyboard';
 import { REPEAT_LABELS, STORE_REPEAT_LABELS } from './MacrosTab';
