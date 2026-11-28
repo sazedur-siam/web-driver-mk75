@@ -25,7 +25,7 @@ behaves as expected.
 - [ ] **C2** (P0) **Device** tab model check shows `03 00 00 00 00 c6 (MK75 ✓)`.
 - [ ] **C3** (P0) The effect highlighted on the **Lighting** tab is the one running on the keyboard.
 - [ ] **C4** (P1) Unplug while connected, plug back in, connect again. The app returns to the start screen without freezing, and reconnecting works.
-- [ ] **C5** (P0) **Download backup** saves a `.json` file containing `profile`, `keyMatrix`, `rgbTable` and `macros`.
+- [ ] **C5** (P0) **Download backup** saves a `.json` file containing `profile`, `keyMatrix`, `rgbTable` and `macros`, plus `sideLights` on current MK75s (matching the Side lights tab).
 
 ## 2. Lighting
 
@@ -95,7 +95,7 @@ Use a text editor and a keyboard/mouse tester website.
 - [ ] **D2** (P1) With the sleep timer set to **Never**, it doesn't sleep within 5 minutes.
 - [ ] **D4** (P2) Set **Debounce** to level 5 and save, then unplug and replug. It still reads level 5, and the Key tester's chatter check flags fewer double presses than at level 1.
 - [ ] **D5** (P1) Set **Knob** to Lighting and save. Turning the knob changes brightness; set Volume, it changes volume again.
-- [ ] **D3** (P0) **Load backup** → Restore. Lighting, key mapping and macros return to the backup state.
+- [ ] **D3** (P0) **Load backup** → Restore. Lighting, key mapping, macros and side lights return to the backup state.
 
 ## 8. 2.4 GHz receiver
 

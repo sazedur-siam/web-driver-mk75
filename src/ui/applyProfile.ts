@@ -37,6 +37,19 @@ export async function readSideLightsFor(dev: Mk75Device): Promise<SideLights | u
 }
 
 /**
+ * Write the saved side lights, only the fields that differ from the keyboard (every LED block write blinks the
+ * lighting). 'unsupported' when this connection has no side lights; otherwise whether anything was written.
+ */
+export async function writeSideLightsIfChanged(dev: Mk75Device, want: Partial<SideLights>): Promise<'unsupported' | boolean> {
+  if (!dev.readSideLights || !dev.writeSideLights) return 'unsupported';
+  const cur = await dev.readSideLights();
+  const changed = (Object.keys(want) as (keyof SideLights)[]).filter((k) => want[k] !== undefined && want[k] !== cur[k]);
+  if (!changed.length) return false;
+  await dev.writeSideLights(Object.fromEntries(changed.map((k) => [k, want[k]])));
+  return true;
+}
+
+/**
  * The key matrix a profile will actually write: its saved matrix plus macro codes from its own macro
  * assignments (cable), or with macro keys left as they are now (wireless, where macros can't be written).
  */
@@ -114,17 +127,10 @@ export async function applyProfile(dev: Mk75Device, snap: DeviceSnapshot, p: Pro
 
   // 5. Side lights (their own bytes in the LED block; the lighting write above keeps them as they were).
   if (p.sideLights) {
-    if (!dev.readSideLights || !dev.writeSideLights) skipped.push('side lights (not supported on this connection)');
-    else {
-      const cur = await dev.readSideLights();
-      const want = p.sideLights;
-      const changed = (Object.keys(want) as (keyof SideLights)[]).filter((k) => want[k] !== undefined && want[k] !== cur[k]);
-      if (changed.length) {
-        step?.('Side lights');
-        await dev.writeSideLights(Object.fromEntries(changed.map((k) => [k, want[k]])));
-        wrote.push('side lights');
-      }
-    }
+    step?.('Side lights');
+    const r = await writeSideLightsIfChanged(dev, p.sideLights);
+    if (r === 'unsupported') skipped.push('side lights (not supported on this connection)');
+    else if (r) wrote.push('side lights');
   }
 
   step?.('Reading back');
