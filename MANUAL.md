@@ -69,7 +69,9 @@ changes, click **Load backup…** and restore it.
 ### Change the lighting effect
 1. Open the **Lighting** tab.
 2. Click an effect (for example **Rainbow** or **Respire**).
-3. Choose brightness, speed and colour on the right.
+3. Choose brightness, speed and colour on the right. The animated keyboard above them previews the effect as
+   you change it. For effects that react to typing (Reaction, Ripples shining…), type or click a key to try
+   them. The preview is an approximation; the keyboard draws the real effect.
 4. Click **Save to keyboard**.
 
 ![Lighting tab](public/manual/lighting.webp)

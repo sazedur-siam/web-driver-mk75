@@ -50,6 +50,8 @@ hardware. They are hidden on the live site and only appear when you run it local
   Self-define and Off. Effects hidden by the vendor are available behind a checkbox.
 - Brightness and speed (5 levels each), a palette colour or **Colourful** (random).
 - Edit each effect's 7-colour palette.
+- **Live preview:** an animated keyboard shows roughly how the chosen effect looks and flows with your speed,
+  brightness and colour, before you save. Reactive effects respond to typing or clicking keys.
 
 ### Per-key RGB ("Self-define")
 - Click, drag or shift-click to select keys, then paint with a brush, preset colours or an **eyedropper**.

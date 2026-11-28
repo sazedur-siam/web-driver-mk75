@@ -282,6 +282,12 @@ select {
 .kl { font-size: 7.5px; pointer-events: none; font-weight: 600; }
 .ks { font-size: 5.5px; fill: var(--accent-2); pointer-events: none; font-weight: 700; paint-order: stroke; stroke: var(--case); stroke-width: 1.5px; }
 .kb-lasso { fill: color-mix(in srgb, var(--accent) 15%, transparent); stroke: var(--accent); stroke-dasharray: 3 2; }
+/* Lighting tab: animated effect preview */
+.effect-preview { display: flex; flex-direction: column; gap: 6px; }
+.effect-preview .key rect { transition: none; }
+.effect-preview .key.lit rect { stroke: rgba(0, 0, 0, 0.35); }
+.effect-preview-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.effect-preview-bar button { padding: 2px 10px; }
 .knob-ring { fill: var(--knob); stroke: var(--cap-edge); }
 .knob-cap { fill: var(--cap-mod); stroke: color-mix(in srgb, var(--accent-2) 70%, transparent); stroke-width: 1.2; }
 .knob-tick { stroke: var(--accent-2); stroke-width: 1.6; stroke-linecap: round; }
