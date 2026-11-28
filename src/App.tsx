@@ -26,6 +26,7 @@ import { readSession, useDevice } from './ui/useDevice';
 import { useBattery } from './ui/battery';
 import { BatteryIcon } from './ui/BatteryIcon';
 import { GameModeToggle } from './ui/GameModeToggle';
+import { SideNav, TABS, type Tab } from './ui/SideNav';
 
 /** One theme per official MK75 colourway (product page): case / keycap colours for the swatch. */
 const THEMES = [
@@ -113,8 +114,6 @@ function ThemeSwitch() {
   );
 }
 
-const TABS = ['Profiles', 'Lighting', 'Per-key RGB', 'Side lights', 'Live effects', 'Key mapping', 'Macros', 'Key tester', 'Device', 'Backup & log'] as const;
-type Tab = (typeof TABS)[number];
 const TAB_KEY = 'mk75.tab';
 const GUIDE_KEY = 'mk75.guideOpen';
 
@@ -215,8 +214,16 @@ export default function App() {
     };
   }, [supported]);
 
+  const guide = (
+    <PartBoundary resetKey="guide">
+      <Suspense fallback={<PartLoading label="the guide" />}>
+        <GuideView onClose={() => setGuideOpen(false)} />
+      </Suspense>
+    </PartBoundary>
+  );
+
   return (
-    <div className="app">
+    <div className={api.dev ? 'app wide' : 'app'}>
       <header className="top">
         <div className="brand">
           <div className="brand-logo" aria-hidden>
@@ -293,12 +300,8 @@ export default function App() {
         </div>
       )}
 
-      {guideOpen ? (
-        <PartBoundary resetKey="guide">
-          <Suspense fallback={<PartLoading label="the guide" />}>
-            <GuideView onClose={() => setGuideOpen(false)} />
-          </Suspense>
-        </PartBoundary>
+      {guideOpen && !api.dev ? (
+        guide
       ) : !api.dev && testerOnly ? (
         <main className="stack">
           <button onClick={() => setTesterOnly(false)} style={{ alignSelf: 'flex-start' }}>
@@ -361,31 +364,38 @@ export default function App() {
           </section>
         </main>
       ) : (
-        <>
-          <nav className="tabs" role="tablist">
-            {TABS.map((t) => (
-              <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
-                {t}
-              </button>
-            ))}
-          </nav>
-          <main>
-            <PartBoundary resetKey={tab}>
-              <Suspense fallback={<PartLoading label={tab} />}>
-                {tab === 'Profiles' && <ProfilesTab api={api} />}
-                {tab === 'Lighting' && <LightingTab api={api} />}
-                {tab === 'Per-key RGB' && <PerKeyTab api={api} />}
-                {tab === 'Side lights' && <SideLightsTab api={api} />}
-                {tab === 'Live effects' && <LiveTab api={api} />}
-                {tab === 'Key mapping' && <KeymapTab api={api} />}
-                {tab === 'Macros' && <MacrosTab api={api} />}
-                {tab === 'Key tester' && <TesterTab api={api} />}
-                {tab === 'Device' && <DeviceTab api={api} battery={battery} />}
-                {tab === 'Backup & log' && <BackupTab api={api} />}
-              </Suspense>
-            </PartBoundary>
-          </main>
-        </>
+        <div className="shell">
+          {/* Stays beside the Guide too (nothing highlighted); picking a section closes the Guide. */}
+          <SideNav
+            active={guideOpen ? null : tab}
+            onSelect={(t) => {
+              setTab(t);
+              setGuideOpen(false);
+              // The sidebar stays on screen while scrolling, so a new section starts at its top.
+              if (window.scrollY > 0) window.scrollTo({ top: 0 });
+            }}
+          />
+          {guideOpen ? (
+            guide
+          ) : (
+            <main className="shell-main">
+              <PartBoundary resetKey={tab}>
+                <Suspense fallback={<PartLoading label={tab} />}>
+                  {tab === 'Profiles' && <ProfilesTab api={api} />}
+                  {tab === 'Lighting' && <LightingTab api={api} />}
+                  {tab === 'Per-key RGB' && <PerKeyTab api={api} />}
+                  {tab === 'Side lights' && <SideLightsTab api={api} />}
+                  {tab === 'Live effects' && <LiveTab api={api} />}
+                  {tab === 'Key mapping' && <KeymapTab api={api} />}
+                  {tab === 'Macros' && <MacrosTab api={api} />}
+                  {tab === 'Key tester' && <TesterTab api={api} />}
+                  {tab === 'Device' && <DeviceTab api={api} battery={battery} />}
+                  {tab === 'Backup & log' && <BackupTab api={api} />}
+                </Suspense>
+              </PartBoundary>
+            </main>
+          )}
+        </div>
       )}
       {(reportOpen || contributeOpen) && (
         <PartBoundary resetKey={reportOpen ? 'report' : 'contribute'}>
@@ -405,7 +415,13 @@ export default function App() {
           </button>
         </p>
         <p className="made-in">
-          Ported in Bangladesh
+          <a className="author" href="https://github.com/sazedur-siam" target="_blank" rel="noopener noreferrer" title="sazedur-siam on GitHub">
+            {/* GitHub mark (Octicons mark-github). */}
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden>
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+            Sazedur Rahman
+          </a>
           {/* Flag of Bangladesh (10:6, red disc offset towards the hoist). Drawn as SVG because Windows shows flag emoji as letters. */}
           <svg className="bd-flag" viewBox="0 0 10 6" width="20" height="12" role="img" aria-label="Flag of Bangladesh">
             <rect width="10" height="6" fill="#006a4e" />
