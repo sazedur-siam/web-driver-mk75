@@ -139,8 +139,10 @@ hardware. They are hidden on the live site and only appear when you run it local
 - **Contribute device data:** saves one JSON file (HID interface layout, keyboard settings, configuration
   traffic) to attach to a GitHub issue, so more firmware variants and modes can be supported. Never includes
   typing or macro contents. Full list: [DEVICE_DATA.md](DEVICE_DATA.md).
-- **Installable (PWA):** an *Install app* button, works offline, shows an update notice after a new version is
-  deployed, and reconnects to previously allowed keyboards in one click.
+- **Installable (PWA):** an *Install app* button, works offline (every tab, after one online visit), shows an
+  update notice after a new version is deployed, and reconnects to previously allowed keyboards in one click.
+- **Fast first load:** only the app shell downloads up front; each tab, the Guide and the dialogs load when first
+  opened (and in the background once a keyboard is connected).
 
 ---
 

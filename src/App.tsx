@@ -1,18 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { WebHidTransport } from './protocol/transport';
-import { BackupTab } from './ui/BackupTab';
-import { DeviceTab } from './ui/DeviceTab';
-import { GuideView } from './ui/GuideView';
-import { ReportDialog } from './ui/ReportDialog';
-import { ContributeDialog } from './ui/ContributeDialog';
-import { LiveTab } from './ui/LiveTab';
-import { MacrosTab } from './ui/MacrosTab';
-import { KeymapTab } from './ui/KeymapTab';
-import { LightingTab } from './ui/LightingTab';
-import { PerKeyTab } from './ui/PerKeyTab';
-import { SideLightsTab } from './ui/SideLightsTab';
-import { ProfilesTab } from './ui/ProfilesTab';
-import { TesterTab } from './ui/TesterTab';
+import {
+  BackupTab,
+  ContributeDialog,
+  DeviceTab,
+  GuideView,
+  KeymapTab,
+  LightingTab,
+  LiveTab,
+  MacrosTab,
+  PartBoundary,
+  PartLoading,
+  PerKeyTab,
+  prefetchParts,
+  ProfilesTab,
+  ReportDialog,
+  SideLightsTab,
+  TesterTab,
+} from './ui/lazyParts';
 import { Keyboard } from './ui/Keyboard';
 import { usePwa } from './ui/pwa';
 import { loadPresetFromHash } from './ui/presetStore';
@@ -166,6 +171,10 @@ export default function App() {
     if (api.dev) return;
     api.grantedDevices().then((d) => setCanReconnect(d.length > 0)).catch(() => setCanReconnect(false));
   }, [api.dev, api.grantedDevices]);
+  // Once a keyboard is connected, load the other tabs in idle time so switching is instant.
+  useEffect(() => {
+    if (api.dev) prefetchParts();
+  }, [api.dev]);
   const supported = WebHidTransport.isSupported();
   const apiRef = useRef(api);
   apiRef.current = api;
@@ -283,13 +292,21 @@ export default function App() {
       )}
 
       {guideOpen ? (
-        <GuideView onClose={() => setGuideOpen(false)} />
+        <PartBoundary resetKey="guide">
+          <Suspense fallback={<PartLoading label="the guide" />}>
+            <GuideView onClose={() => setGuideOpen(false)} />
+          </Suspense>
+        </PartBoundary>
       ) : !api.dev && testerOnly ? (
         <main className="stack">
           <button onClick={() => setTesterOnly(false)} style={{ alignSelf: 'flex-start' }}>
             ← Back
           </button>
-          <TesterTab />
+          <PartBoundary resetKey="tester">
+            <Suspense fallback={<PartLoading label="the key tester" />}>
+              <TesterTab />
+            </Suspense>
+          </PartBoundary>
         </main>
       ) : !api.dev ? (
         <main className="welcome">
@@ -351,21 +368,31 @@ export default function App() {
             ))}
           </nav>
           <main>
-            {tab === 'Profiles' && <ProfilesTab api={api} />}
-            {tab === 'Lighting' && <LightingTab api={api} />}
-            {tab === 'Per-key RGB' && <PerKeyTab api={api} />}
-            {tab === 'Side lights' && <SideLightsTab api={api} />}
-            {tab === 'Live effects' && <LiveTab api={api} />}
-            {tab === 'Key mapping' && <KeymapTab api={api} />}
-            {tab === 'Macros' && <MacrosTab api={api} />}
-            {tab === 'Key tester' && <TesterTab api={api} />}
-            {tab === 'Device' && <DeviceTab api={api} battery={battery} />}
-            {tab === 'Backup & log' && <BackupTab api={api} />}
+            <PartBoundary resetKey={tab}>
+              <Suspense fallback={<PartLoading label={tab} />}>
+                {tab === 'Profiles' && <ProfilesTab api={api} />}
+                {tab === 'Lighting' && <LightingTab api={api} />}
+                {tab === 'Per-key RGB' && <PerKeyTab api={api} />}
+                {tab === 'Side lights' && <SideLightsTab api={api} />}
+                {tab === 'Live effects' && <LiveTab api={api} />}
+                {tab === 'Key mapping' && <KeymapTab api={api} />}
+                {tab === 'Macros' && <MacrosTab api={api} />}
+                {tab === 'Key tester' && <TesterTab api={api} />}
+                {tab === 'Device' && <DeviceTab api={api} battery={battery} />}
+                {tab === 'Backup & log' && <BackupTab api={api} />}
+              </Suspense>
+            </PartBoundary>
           </main>
         </>
       )}
-      {reportOpen && <ReportDialog api={api} onClose={() => setReportOpen(false)} />}
-      {contributeOpen && <ContributeDialog api={api} onClose={() => setContributeOpen(false)} />}
+      {(reportOpen || contributeOpen) && (
+        <PartBoundary resetKey={reportOpen ? 'report' : 'contribute'}>
+          <Suspense fallback={null}>
+            {reportOpen && <ReportDialog api={api} onClose={() => setReportOpen(false)} />}
+            {contributeOpen && <ContributeDialog api={api} onClose={() => setContributeOpen(false)} />}
+          </Suspense>
+        </PartBoundary>
+      )}
       <footer className="muted small">
         <p>
           <button className="report-btn" onClick={() => setReportOpen(true)}>

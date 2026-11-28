@@ -1,6 +1,6 @@
 /** KeyboardEvent.code → MK75 key (matrix/LED index), via HID usages. */
 import { HID_KEYS, HID_MODIFIERS } from '../protocol/keycodes';
-import { vkToHid } from '../protocol/mock';
+import { vkToHid } from '../protocol/vk';
 import { MK75_KEYS } from './mk75Layout';
 
 const USAGE_BY_CODE = new Map<string, number>([...HID_KEYS.map((k) => [k.code, k.usage] as const), ...HID_MODIFIERS.map((m) => [m.code, m.usage] as const)]);
