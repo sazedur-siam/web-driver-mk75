@@ -17,7 +17,7 @@ import { Keyboard } from './ui/Keyboard';
 import { usePwa } from './ui/pwa';
 import { loadPresetFromHash } from './ui/presetStore';
 import { SharedPresetBanner } from './ui/SharedPresetBanner';
-import { useDevice } from './ui/useDevice';
+import { readSession, useDevice } from './ui/useDevice';
 import { useBattery } from './ui/battery';
 import { BatteryIcon } from './ui/BatteryIcon';
 
@@ -109,13 +109,44 @@ function ThemeSwitch() {
 
 const TABS = ['Profiles', 'Lighting', 'Per-key RGB', 'Side lights', 'Live effects', 'Key mapping', 'Macros', 'Key tester', 'Device', 'Backup & log'] as const;
 type Tab = (typeof TABS)[number];
+const TAB_KEY = 'mk75.tab';
+const GUIDE_KEY = 'mk75.guideOpen';
+
+/** Tiny storage helpers: storage can throw (private windows, blocked site data), so fall back silently. */
+function load(store: () => Storage, key: string): string | null {
+  try {
+    return store().getItem(key);
+  } catch {
+    return null;
+  }
+}
+function save(store: () => Storage, key: string, value: string | null) {
+  try {
+    if (value === null) store().removeItem(key);
+    else store().setItem(key, value);
+  } catch {
+    /* storage unavailable */
+  }
+}
+const local = () => localStorage;
+const session = () => sessionStorage;
+
+function readTab(): Tab {
+  const v = load(local, TAB_KEY);
+  return TABS.includes(v as Tab) ? (v as Tab) : 'Lighting';
+}
+
+/** Reopen the device after a page refresh only once, even under StrictMode's double effects. */
+let resumeTried = false;
 
 export default function App() {
   const api = useDevice();
   const battery = useBattery(api.dev);
-  const [tab, setTab] = useState<Tab>('Lighting');
+  const [tab, setTab] = useState<Tab>(readTab);
   const [testerOnly, setTesterOnly] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(() => load(session, GUIDE_KEY) === '1');
+  useEffect(() => save(local, TAB_KEY, tab), [tab]);
+  useEffect(() => save(session, GUIDE_KEY, guideOpen ? '1' : null), [guideOpen]);
   const [reportOpen, setReportOpen] = useState(false);
   const [contributeOpen, setContributeOpen] = useState(false);
   useEffect(() => {
@@ -139,11 +170,22 @@ export default function App() {
   const apiRef = useRef(api);
   apiRef.current = api;
 
+  // A refresh drops the WebHID handles; if this tab was connected, reopen the same device without a prompt.
+  useEffect(() => {
+    if (resumeTried) return;
+    resumeTried = true;
+    const kind = readSession();
+    const api = apiRef.current;
+    if (kind === 'hid' && supported) void api.grantedDevices().then((d) => (d.length ? api.reconnect() : undefined));
+    else if (kind === 'demo-wired' && import.meta.env.DEV) void api.connectDemo('wired');
+    else if (kind === 'demo-wireless' && import.meta.env.DEV) void api.connectDemo('wireless');
+  }, [supported]);
+
   useEffect(() => {
     if (!supported) return;
     const onDisconnect = () => {
       const api = apiRef.current;
-      if (api.dev && !api.isDemo) void api.disconnect();
+      if (api.dev && !api.isDemo) void api.disconnect(true);
     };
     // Plugging an already-allowed MK75 back in reconnects; its interfaces arrive one by one, so wait for all.
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -197,7 +239,7 @@ export default function App() {
                   <BatteryIcon battery={battery} size={1.25} />
                 </span>
               )}
-              <button onClick={api.disconnect} disabled={!!api.busy} title={api.busy ? 'Wait for the current write to finish' : undefined}>
+              <button onClick={() => void api.disconnect()} disabled={!!api.busy} title={api.busy ? 'Wait for the current write to finish' : undefined}>
                 Disconnect
               </button>
             </>

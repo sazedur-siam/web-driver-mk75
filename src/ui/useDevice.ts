@@ -39,6 +39,29 @@ export function logBytes(d: Uint8Array, macro: boolean): Pick<LogLine, 'text' | 
 const isWiredMacro = (id: number, d: Uint8Array) => id === 0x06 && (d[0] & 0x7f) === 0x05;
 const isWirelessMacro = (d: Uint8Array) => (d[0] & 0xbf) === 0x03;
 
+/**
+ * What this browser tab is connected to, kept in sessionStorage so a page refresh can reopen it
+ * (WebHID handles don't survive a reload). Cleared only when the user clicks Disconnect.
+ */
+export type SessionKind = 'hid' | 'demo-wired' | 'demo-wireless';
+const SESSION_KEY = 'mk75.session';
+export function readSession(): SessionKind | null {
+  try {
+    const v = sessionStorage.getItem(SESSION_KEY);
+    return v === 'hid' || v === 'demo-wired' || v === 'demo-wireless' ? v : null;
+  } catch {
+    return null;
+  }
+}
+function writeSession(v: SessionKind | null) {
+  try {
+    if (v) sessionStorage.setItem(SESSION_KEY, v);
+    else sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export function useDevice() {
   const [dev, setDev] = useState<Mk75Device | null>(null);
   const [modelId, setModelId] = useState<Uint8Array | null>(null);
@@ -87,7 +110,7 @@ export function useDevice() {
   );
 
   const attach = useCallback(
-    async (d: Mk75Device) => {
+    async (d: Mk75Device, session: SessionKind) => {
       push({ dir: 'info', text: `Connected: ${d.transport.name} (${d.kind === 'wired' ? 'USB cable' : '2.4 GHz / Bluetooth'})` });
       const id = await d.checkModel();
       setModelId(id);
@@ -97,6 +120,7 @@ export function useDevice() {
       const rgbTable = await d.readRgbTable();
       setDev(d);
       setSnap({ profile, matrix, rgbTable });
+      writeSession(session);
       // Dev-only test hook (stripped from production builds).
       if (import.meta.env.DEV) (window as unknown as { __mk75?: unknown }).__mk75 = { dev: d };
     },
@@ -104,7 +128,7 @@ export function useDevice() {
   );
 
   const connect = useCallback(
-    () => run('Connecting', async () => attach(await requestMk75({ onFrame: wiredLog, onWireless: wirelessLog }))),
+    () => run('Connecting', async () => attach(await requestMk75({ onFrame: wiredLog, onWireless: wirelessLog }), 'hid')),
     [run, attach, wiredLog, wirelessLog],
   );
 
@@ -127,7 +151,7 @@ export function useDevice() {
       run('Reconnecting', async () => {
         const granted = await grantedDevices();
         if (!granted.length) throw new Error('No previously connected MK75 found. Use Connect keyboard.');
-        return attach(await openMk75(granted, { onFrame: wiredLog, onWireless: wirelessLog }));
+        return attach(await openMk75(granted, { onFrame: wiredLog, onWireless: wirelessLog }), 'hid');
       }),
     [run, attach, grantedDevices, wiredLog, wirelessLog],
   );
@@ -135,15 +159,17 @@ export function useDevice() {
   const connectDemo = useCallback(
     (mode: 'wired' | 'wireless' = 'wired') =>
       run('Starting simulator', async () => {
-        if (mode === 'wired') return attach(new Mk75(new MockMk75(), { onFrame: wiredLog }));
+        if (mode === 'wired') return attach(new Mk75(new MockMk75(), { onFrame: wiredLog }), 'demo-wired');
         const w = new Mk75Wireless(new WirelessLink(new MockWirelessIO(), 0x13, wirelessLog, { pace: 2, livePace: 1, ackMs: 800, readMs: 800 }), '3632');
         w.setLiveLeds(MK75_KEYS.map((k) => k.index));
-        return attach(w);
+        return attach(w, 'demo-wireless');
       }),
     [run, attach, wiredLog, wirelessLog],
   );
 
-  const disconnect = useCallback(async () => {
+  /** `unplugged`: the keyboard went away by itself, so a refresh should still try to reopen it. */
+  const disconnect = useCallback(async (unplugged = false) => {
+    if (!unplugged) writeSession(null);
     await dev?.transport.close();
     setDev(null);
     setSnap(null);
