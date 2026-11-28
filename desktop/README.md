@@ -19,7 +19,7 @@ npm run dist       # installer in release/ (Windows NSIS / macOS dmg, unsigned)
   plugged back in.
 - **Music sync without the share dialog:** system audio is captured directly on Windows.
 
-## Limits (see `../features/19-desktop-tray-app.md`)
+## Limits
 - macOS: no system-audio capture yet (needs ScreenCaptureKit audio or a virtual audio device).
 - A live effect doesn't restart by itself after login or after the keyboard is unplugged: open the window and
   start it again.
