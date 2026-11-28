@@ -2,7 +2,7 @@
  * Capture / apply profiles. Apply follows the vendor ApplySetting order and skips blocks that are already
  * identical on the keyboard, so applying the active profile again writes nothing.
  */
-import type { DeviceCaps, Mk75Device } from '../protocol/device';
+import type { DeviceCaps, Mk75Device, SideLights } from '../protocol/device';
 import { setKeyCode } from '../protocol/keycodes';
 import { buildLedMatrix, CUSTOM_MODE_INDEX, parseProfile } from '../protocol/lighting';
 import { planMacros } from '../protocol/macro';
@@ -15,7 +15,7 @@ import type { DeviceSnapshot } from './useDevice';
 
 const eq = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((v, i) => v === b[i]);
 
-export function captureProfile(name: string, snap: DeviceSnapshot, id?: string, created?: string): Profile {
+export function captureProfile(name: string, snap: DeviceSnapshot, id?: string, created?: string, sideLights?: SideLights): Profile {
   const now = new Date().toISOString();
   return {
     id: id ?? Math.random().toString(36).slice(2, 10),
@@ -27,7 +27,13 @@ export function captureProfile(name: string, snap: DeviceSnapshot, id?: string, 
     keyMatrix: toHex(snap.matrix),
     perKey: loadPerKey(),
     macros: structuredClone(macroStore.get()),
+    ...(sideLights ? { sideLights: { ...sideLights } } : {}),
   };
+}
+
+/** Side lights for a new or updated profile; undefined where the keyboard can't report them. */
+export async function readSideLightsFor(dev: Mk75Device): Promise<SideLights | undefined> {
+  return dev.readSideLights ? dev.readSideLights() : undefined;
 }
 
 /**
@@ -104,6 +110,19 @@ export async function applyProfile(dev: Mk75Device, snap: DeviceSnapshot, p: Pro
     step?.('Lighting');
     await dev.writeProfile(profile);
     wrote.push('lighting');
+  }
+
+  // 5. Side lights (their own bytes in the LED block; the lighting write above keeps them as they were).
+  if (p.sideLights) {
+    if (!dev.readSideLights || !dev.writeSideLights) skipped.push('side lights (not supported on this connection)');
+    else {
+      const cur = await dev.readSideLights();
+      if (cur.mode !== p.sideLights.mode || cur.colour !== p.sideLights.colour) {
+        step?.('Side lights');
+        await dev.writeSideLights(p.sideLights);
+        wrote.push('side lights');
+      }
+    }
   }
 
   step?.('Reading back');

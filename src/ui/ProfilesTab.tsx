@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { LED_MODES, parseProfile } from '../protocol/lighting';
 import { GALLERY } from '../presets/gallery';
 import { factoryKeyCode, presetFromBlocks, presetSummary } from '../protocol/preset';
-import { applyProfile, captureProfile, profileMatrix } from './applyProfile';
+import { applyProfile, captureProfile, profileMatrix, readSideLightsFor } from './applyProfile';
 import { presetStore, shareLink } from './presetStore';
 import { fromHex, profileStore, useProfiles, validateProfile, type Profile } from './profileStore';
 import type { DeviceApi } from './useDevice';
@@ -44,14 +44,15 @@ export function ProfilesTab({ api }: { api: DeviceApi }) {
     return out;
   };
 
-  const saveNew = () => {
-    const n = name.trim() || `Profile ${profiles.length + 1}`;
-    const p = captureProfile(n, snap);
-    profileStore.upsert(p);
-    profileStore.setActive(p.id);
-    setName('');
-    api.push({ dir: 'info', text: `Saved profile "${n}"` });
-  };
+  const saveNew = () =>
+    api.run('Saving profile', async () => {
+      const n = name.trim() || `Profile ${profiles.length + 1}`;
+      const p = captureProfile(n, snap, undefined, undefined, await readSideLightsFor(dev));
+      profileStore.upsert(p);
+      profileStore.setActive(p.id);
+      setName('');
+      api.push({ dir: 'info', text: `Saved profile "${n}"` });
+    });
 
   const apply = (p: Profile) =>
     api.run(`Applying "${p.name}"`, async () => {
@@ -79,10 +80,11 @@ export function ProfilesTab({ api }: { api: DeviceApi }) {
     api.push({ dir: 'info', text: `Share link for "${p.name}" (${url.length} chars)${p.macros.macros.length ? '; macros are not included in links' : ''}` });
   };
 
-  const update = (p: Profile) => {
-    profileStore.upsert(captureProfile(p.name, snap, p.id, p.created));
-    api.push({ dir: 'info', text: `Updated "${p.name}" from the keyboard` });
-  };
+  const update = (p: Profile) =>
+    api.run(`Updating "${p.name}"`, async () => {
+      profileStore.upsert(captureProfile(p.name, snap, p.id, p.created, await readSideLightsFor(dev)));
+      api.push({ dir: 'info', text: `Updated "${p.name}" from the keyboard` });
+    });
 
   const duplicate = (p: Profile) => {
     const now = new Date().toISOString();
