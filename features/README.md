@@ -12,7 +12,6 @@ New plans go here as `NN-short-name.md` with a row in this table. The hardware c
 
 | # | Feature | Group | Priority | Effort | Needs hardware? |
 |---|---|---|---|---|---|
-| [01](01-live-frame-skip.md) | Skip unchanged live frames (with a keep-alive) | Performance / live effects | High | S | Verify only |
 | [02](02-lazy-tabs.md) | Load tabs on demand, precache them for offline | Performance / app shell | High | M | No |
 | [04](04-game-mode.md) | Game mode (Win/Caps off, never sleep, WASD lighting, exact undo) | Key mapping / lighting | High | M | Verify only |
 

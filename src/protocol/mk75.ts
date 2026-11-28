@@ -9,6 +9,7 @@
  * echoes the op byte and carries the payload from offset 7. A write sends the whole frame on 0x06.
  */
 import type { DeviceCaps, Mk75Device } from './device';
+import { LiveGate } from './liveGate';
 import type { FeatureTransport } from './transport';
 
 export const REPORT_CMD = 0x05;
@@ -58,6 +59,8 @@ export class Mk75 implements Mk75Device {
   private queue: Promise<unknown> = Promise.resolve();
   private readDelay: number;
   private writeDelay: number;
+  /** Skips live frames the keyboard already shows (see liveGate.ts). */
+  readonly liveGate = new LiveGate();
 
   constructor(
     readonly transport: FeatureTransport,
@@ -127,6 +130,7 @@ export class Mk75 implements Mk75Device {
 
   private async writeBlock(op: number, sub: number, flag: number, payload: Uint8Array) {
     if (payload.length > DATA_FRAME_LEN - DATA_HEADER_LEN) throw new ProtocolError('payload too large');
+    this.liveGate.reset(); // after any config write the keyboard no longer shows the last live frame
     const frame = new Uint8Array(DATA_FRAME_LEN);
     frame.set([op, sub, 0x00, flag, 0x00, 0x00, 0x00]);
     frame.set(payload, DATA_HEADER_LEN);
@@ -196,11 +200,15 @@ export class Mk75 implements Mk75Device {
    * Send one live frame (music / real-time effects): report 0x08 = [0A 7A 01] + 378 bytes of
    * R,G,B triplets indexed by LED index (126 LEDs). Not queued behind config I/O, not logged.
    */
-  async sendLiveFrame(rgb: Uint8Array) {
+  async sendLiveFrame(rgb: Uint8Array): Promise<boolean> {
+    const colours = rgb.subarray(0, STREAM_LEN);
+    if (!this.liveGate.shouldSend(colours)) return false;
     const frame = new Uint8Array(3 + STREAM_LEN);
     frame.set([0x0a, 0x7a, 0x01]);
-    frame.set(rgb.subarray(0, STREAM_LEN), 3);
+    frame.set(colours, 3);
     await this.transport.sendFeature(REPORT_STREAM, frame);
+    this.liveGate.sent(colours);
+    return true;
   }
 
   /** Write the per-key "Self-define" colour buffer (split into two 1 KiB pages, as the vendor does). */

@@ -87,8 +87,9 @@ hardware. They are hidden on the live site and only appear when you run it local
 - **Custom (effect designer):** stack layers (solid, breathe, wave, ripple, stars, gradient scroll, key reactive).
   Each layer has its own keys, two colours, speed, width, direction and blend (replace, add or lighten).
   Effects are saved in the browser and include an "Aurora" starter.
-- About 33 fps over the cable. Effects keep running when the tab is in the background (worker clock), and
-  stopping restores your saved effect.
+- About 33 fps over the cable. Frames the keyboard already shows aren't sent again (a still effect sends about 4
+  a second), which leaves more room on 2.4 GHz and Bluetooth for frames that change. Effects keep running when the
+  tab is in the background (worker clock), and stopping restores your saved effect.
 
 ### Key mapping
 - Remap any key, and on current MK75 boards also what it does while Fn is held (**Fn layer**, experimental):

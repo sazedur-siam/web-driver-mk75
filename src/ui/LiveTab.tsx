@@ -45,6 +45,8 @@ export function LiveTab({ api }: { api: DeviceApi }) {
   const [audioLabel, setAudioLabel] = useState<string | null>(null);
   const [preview, setPreview] = useState<Map<number, string>>(new Map());
   const [fps, setFps] = useState(0);
+  /** Frames per second actually sent: frames the keyboard already shows are skipped (protocol/liveGate.ts). */
+  const [sentFps, setSentFps] = useState(0);
 
   const audio = useRef<{ ctx: AudioContext; analyser: AnalyserNode; stream: MediaStream } | null>(null);
   const effect = useRef(new RtEffect(rtMode, speed));
@@ -78,6 +80,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
     if (!running || !dev) return;
     let busy = false;
     let frames = 0;
+    let sent = 0;
     let lastPreview = 0;
     let lastFps = performance.now();
     const t0 = performance.now();
@@ -130,7 +133,7 @@ export function LiveTab({ api }: { api: DeviceApi }) {
           } else intensity = effect.current.intensities(t);
           frame = compose(intensity, src, t, c.brightness);
         }
-        await dev.sendLiveFrame(frame);
+        if (await dev.sendLiveFrame(frame)) sent++;
         frames++;
         const now = performance.now();
         if (now - lastPreview > 60) {
@@ -139,7 +142,9 @@ export function LiveTab({ api }: { api: DeviceApi }) {
         }
         if (now - lastFps > 1000) {
           setFps(Math.round((frames * 1000) / (now - lastFps)));
+          setSentFps(Math.round((sent * 1000) / (now - lastFps)));
           frames = 0;
+          sent = 0;
           lastFps = now;
         }
       } catch (e) {
@@ -275,8 +280,8 @@ export function LiveTab({ api }: { api: DeviceApi }) {
       <section className="card">
         <header className="card-h">
           <h2>Live preview</h2>
-          <span className="muted small">
-            {running ? `streaming · ${fps} fps` : 'stopped'}
+          <span className="muted small" title={running ? "Frames the keyboard already shows aren't sent again" : undefined}>
+            {running ? `streaming · ${fps} fps · ${sentFps} sent/s` : 'stopped'}
             {running && kind === 'signals' && signal === 'timer' && timerLeft ? ` · ${timerLeft}` : ''}
           </span>
         </header>

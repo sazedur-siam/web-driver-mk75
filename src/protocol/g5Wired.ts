@@ -152,7 +152,11 @@ export class Mk75G5Wired extends Mk75Wireless {
     }
   }
 
-  override async sendLiveFrame(rgb: Uint8Array): Promise<void> {
-    await this.link.write(OP_LIVE, 0, rgb.subarray(0, STREAM_LEN));
+  override async sendLiveFrame(rgb: Uint8Array): Promise<boolean> {
+    const colours = rgb.subarray(0, STREAM_LEN);
+    if (!this.liveGate.shouldSend(colours)) return false;
+    await this.link.write(OP_LIVE, 0, colours);
+    this.liveGate.sent(colours);
+    return true;
   }
 }
