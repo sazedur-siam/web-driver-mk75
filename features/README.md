@@ -7,18 +7,13 @@ Live app: https://mk75-web.vercel.app/ · Repo: https://github.com/sazedur-siam/
 
 ## Index
 
+Nothing planned right now. Every planned feature has shipped; the hardware checks still open are in `TESTING.md`.
+New plans go here as `NN-short-name.md` with a row in this table:
+
 | # | Feature | Group | Priority | Effort | Needs hardware? |
 |---|---|---|---|---|---|
-| 19 | [Desktop tray app (always-on live effects)](19-desktop-tray-app.md) | Platform | P2 | M | No · first version built |
 
 Effort: S ≈ 1 day or less, M ≈ 2–4 days. "Verify only" = buildable now, but confirm on a real MK75.
-
-## Suggested order
-
-1. Run the hardware tests in `TESTING.md` first: several features build on behaviour that's still unconfirmed.
-2. Batch 1: 01 Profiles, 03 Text → macro, 04 Layout presets, 05 Key tester, 12 PWA.
-3. Batch 2: 02 Shareable presets, 06 Lighting tools, 07 Screen sync.
-4. Batch 3: the rest, then the reverse-engineering items once a keyboard is available.
 
 ## Not possible in a browser (don't plan these)
 

@@ -28,7 +28,7 @@ describe('guide renderer', () => {
   it('renders the real README with all main sections', () => {
     const { toc } = renderGuide(readme);
     const ids = toc.map((t) => t.id);
-    for (const id of ['quick-start', 'features', 'connection-support', 'planned-features']) expect(ids).toContain(id);
+    for (const id of ['quick-start', 'features', 'connection-support']) expect(ids).toContain(id);
   });
   it('renders the user manual with its main sections', () => {
     const ids = renderGuide(manual).toc.map((t) => t.id);
